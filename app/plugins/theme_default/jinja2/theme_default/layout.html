@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="{{ locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  {% if htmx_config %}<meta name="htmx-config" content="{{ htmx_config }}">{% endif %}
+  <title>{% block title %}Kvízotron{% endblock %}</title>
+  {% for url in theme.stylesheet_urls() %}
+  <link rel="stylesheet" href="{{ url }}">
+  {% endfor %}
+  {% for url in scripts|default([]) %}
+  <script src="{{ url }}" defer></script>
+  {% endfor %}
+</head>
+<body>
+  <a class="skip-link" href="#content">{{ _("Skip to content") }}</a>
+  <header class="site-header container">
+    <a class="site-name" href="/">Kvízotron</a>
+    <p>{{ _("Turn on your brain. Start Kvízotron.") }}</p>
+  </header>
+  <main id="content" class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

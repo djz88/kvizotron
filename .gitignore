@@ -1,0 +1,29 @@
+# Soubory s tajnými údaji nepatří do repozitáře.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.secrets*
+
+# Provozní data mohou obsahovat osobní údaje (výsledky, e-maily, fotky).
+*.db
+*.sqlite
+*.sqlite3
+*-wal
+*-shm
+media/
+backups/
+exports/
+
+# Python a nástroje.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/

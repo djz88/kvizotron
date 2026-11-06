@@ -1,0 +1,2 @@
+[kvizotron.modules]
+auth.test = kvz_auth_test.manifest:MANIFEST

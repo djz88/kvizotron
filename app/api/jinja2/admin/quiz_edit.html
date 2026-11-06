@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+{% block admin %}
+<h1>{{ title }}</h1>
+<p>
+  {% if published_no %}{{ _("Published revision: %(no)s", no=published_no) }}{% else %}{{ _("Not published") }}{% endif %}
+  {% if has_draft %} · {{ _("Unpublished changes") }}{% endif %}
+</p>
+
+{% if problems %}
+<article role="alert">
+  <h2>{{ _("The quiz cannot be published yet") }}</h2>
+  <ul>
+    {% for problem in problems %}<li>{{ problem }}</li>{% endfor %}
+  </ul>
+</article>
+{% endif %}
+
+<h2>{{ _("Questions") }}</h2>
+{% for question in questions %}
+<article>
+  <a href="{{ url('admin_question_edit', args=[quiz.id, question.id]) }}">{{ question.number }}. {{ question.label }}</a>
+  <form method="post" action="{{ url('admin_question_delete', args=[quiz.id, question.id]) }}">
+    {{ csrf_input }}
+    <button type="submit" class="secondary">{{ _("Delete") }}</button>
+  </form>
+</article>
+{% else %}
+<p>{{ _("There are no questions yet.") }}</p>
+{% endfor %}
+{% for type_id in question_types %}
+<a href="{{ url('admin_question_new', args=[quiz.id]) }}?type={{ type_id }}" role="button" class="secondary">{{ _("Add question") }}: {{ type_id }}</a>
+{% endfor %}
+
+<h2>{{ _("Publication and rounds") }}</h2>
+<form method="post" action="{{ url('admin_quiz_publish', args=[quiz.id]) }}">
+  {{ csrf_input }}
+  <button type="submit">{{ _("Publish") }}</button>
+</form>
+{% if run_error %}<p role="alert">{{ run_error }}</p>{% endif %}
+{% if open_run %}
+<p><a href="{{ url('admin_run', args=[open_run.id]) }}">{{ _("Open round") }}</a></p>
+<p><small>{{ _("A round stays on the revision it was opened with. To use a newer revision, close it and open a new one.") }}</small></p>
+{% else %}
+<form method="post" action="{{ url('admin_run_open', args=[quiz.id]) }}">
+  {{ csrf_input }}
+  <button type="submit" class="secondary">{{ _("Open a new round") }}</button>
+</form>
+{% endif %}
+
+<h2>{{ _("Quiz settings") }}</h2>
+<form method="post" action="{{ url('admin_quiz_edit', args=[quiz.id]) }}">
+  {{ csrf_input }}
+  {{ form.as_div() }}
+  <button type="submit" class="secondary">{{ _("Save") }}</button>
+</form>
+{% endblock %}

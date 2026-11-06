@@ -1,0 +1,8 @@
+#: jinja2/theme_default/layout.html:17
+msgid "Skip to content"
+msgstr "Přeskočit na obsah"
+
+#: jinja2/theme_default/layout.html:20
+msgid "Turn on your brain. Start Kvízotron."
+msgstr "Zapni mozek. Spusť Kvízotron."
+

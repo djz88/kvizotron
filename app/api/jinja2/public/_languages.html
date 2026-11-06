@@ -1,0 +1,9 @@
+<nav aria-label="{{ _('Language') }}">
+  <ul>
+    {% for language in languages %}
+    <li>
+      <a href="?lang={{ language.code }}" lang="{{ language.code }}"{% if language.code == locale %} aria-current="true"{% endif %}>{{ language.name }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</nav>

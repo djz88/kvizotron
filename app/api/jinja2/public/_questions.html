@@ -1,0 +1,9 @@
+<form method="post" action="{{ url('submit', args=[attempt.id]) }}" hx-post="{{ url('submit', args=[attempt.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+  <input type="hidden" name="attempt_token" value="{{ attempt_token }}">
+  <input type="hidden" name="submission_key" value="{{ submission_key }}">
+  <input type="hidden" name="lang" value="{{ locale }}">
+  {% for question in questions %}
+  {{ question }}
+  {% endfor %}
+  <button type="submit">{{ _("Submit answers") }}</button>
+</form>

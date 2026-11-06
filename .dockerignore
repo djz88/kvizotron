@@ -1,0 +1,7 @@
+# Do image jde jen to, co Dockerfile opravdu kopíruje.
+*
+!pyproject.toml
+!uv.lock
+!manage.py
+!app/
+**/__pycache__

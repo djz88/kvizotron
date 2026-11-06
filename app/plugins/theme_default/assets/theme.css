@@ -1,0 +1,42 @@
+/* Only what Pico CSS does not supply. */
+.skip-link {
+  position: absolute;
+  left: -100vw;
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 10;
+}
+
+.site-header {
+  padding-block: 1rem;
+}
+
+.site-header p {
+  margin: 0;
+  color: var(--pico-muted-color);
+}
+
+.site-name {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.qr-code {
+  max-width: 16rem;
+  background: #fff;
+}
+
+.is-featured {
+  border-left: 0.25rem solid var(--pico-primary);
+}
+
+#play-message:not(:empty) {
+  color: var(--pico-del-color);
+}
+
+main > nav {
+  flex-wrap: wrap;
+}

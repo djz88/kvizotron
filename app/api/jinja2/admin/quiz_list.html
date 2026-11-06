@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% block admin %}
+<h1>{{ _("Quizzes") }}</h1>
+<a href="{{ url('admin_quiz_new') }}" role="button">{{ _("New quiz") }}</a>
+{% for quiz in quizzes %}
+<article>
+  <a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}">{{ quiz.title }}</a>
+  <small>/q/{{ quiz.slug }}</small>
+  <p>
+    {% if quiz.published_no %}{{ _("Published revision: %(no)s", no=quiz.published_no) }}{% else %}{{ _("Not published") }}{% endif %}
+    {% if quiz.has_draft %} · {{ _("Unpublished changes") }}{% endif %}
+    {% if quiz.open_run %} · <a href="{{ url('admin_run', args=[quiz.open_run.id]) }}">{{ _("Open round") }}</a>{% endif %}
+  </p>
+</article>
+{% else %}
+<p>{{ _("There are no quizzes yet.") }}</p>
+{% endfor %}
+{% endblock %}

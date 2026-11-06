@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% block admin %}
+<h1>{{ _("Admins") }}</h1>
+<ul>
+  {% for admin in admins %}<li>{{ admin.login }}</li>{% endfor %}
+</ul>
+<h2>{{ _("New admin") }}</h2>
+<form method="post">
+  {{ csrf_input }}
+  {{ form.as_div() }}
+  <button type="submit">{{ _("Create") }}</button>
+</form>
+{% endblock %}

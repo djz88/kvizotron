@@ -1,0 +1,275 @@
+from dataclasses import replace
+from datetime import timedelta
+from fractions import Fraction
+from unittest import mock
+from uuid import UUID, uuid7
+
+import pytest
+from django.db import OperationalError
+from django.utils import timezone
+
+from app.domain import attempts, authoring, tokens
+from app.domain.models import Attempt, QuizRevision
+from app.kernel.models import PluginInstallation
+from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B, add_question, open_quiz_run
+
+KEY = "key-00000001"
+
+
+def answers_for(run, *options):
+    questions = run.current_revision.snapshot_json["questions"]
+    return {q["id"]: {"option": o} for q, o in zip(questions, options, strict=False)}
+
+
+def submit(run, started, *options, key=KEY):
+    return attempts.submit(started.attempt.id, started.token, answers_for(run, *options), key)
+
+
+@pytest.fixture
+def run(db):
+    return open_quiz_run()
+
+
+@pytest.fixture
+def started(run):
+    return attempts.start(run)
+
+
+def test_start_on_closed_run_is_refused(run):
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    run.refresh_from_db()
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.start(run)
+    assert error.value.code == "run_closed"
+    assert not Attempt.objects.exists()
+
+
+def test_start_pins_revision_and_token_lifetime(run):
+    started = attempts.start(run)
+    claims = tokens.verify(started.token)
+    assert started.attempt.revision_id == run.current_revision_id
+    assert claims.expires_at - claims.started_at == timedelta(hours=24)
+    assert claims.manifest_hash == attempts.manifest_hash(run.current_revision.snapshot_json)
+
+
+def test_submission_key_is_random_and_not_uuid(run):
+    first, second = attempts.start(run), attempts.start(run)
+    assert first.submission_key != second.submission_key
+    assert len(first.submission_key) >= 16
+    with pytest.raises(ValueError):
+        UUID(first.submission_key)
+
+
+def test_correct_answer_scores_full_points(run, started):
+    result = submit(run, started, OPTION_A)
+    assert (result.earned_points, result.max_points) == (1, 1)
+    assert (result.percentage, result.correct_count) == (100, 1)
+    attempt = Attempt.objects.get()
+    assert attempt.status == Attempt.Status.SUBMITTED
+    assert (attempt.score, attempt.max_score, attempt.correct_count) == (1, 1, 1)
+    assert attempt.submission_key == KEY
+    assert attempt.duration_ms is not None
+
+
+def test_wrong_answer_scores_zero(run, started):
+    result = submit(run, started, OPTION_B)
+    assert (result.earned_points, result.max_points, result.correct_count) == (0, 1, 0)
+
+
+def test_blank_answer_scores_zero(run, started):
+    result = attempts.submit(started.attempt.id, started.token, {}, KEY)
+    assert (result.earned_points, result.max_points, result.correct_count) == (0, 1, 0)
+
+
+@pytest.mark.django_db
+def test_percentage_is_exact_before_rounding():
+    run = open_quiz_run(questions=5)
+    result = submit(run, attempts.start(run), OPTION_A, OPTION_A, OPTION_A, OPTION_A, OPTION_B)
+    assert result.percentage == 80
+    assert result.percentage < 90
+    run = open_quiz_run("third", questions=3)
+    result = submit(run, attempts.start(run), OPTION_A, OPTION_B, OPTION_B, key="key-00000002")
+    assert result.percentage == Fraction(100, 3)
+    assert result.percentage_display == 33.33
+
+
+def test_attempt_stays_on_revision_after_new_publication(run, started):
+    quiz = run.quiz
+    question_id = run.current_revision.snapshot_json["questions"][0]["id"]
+    add_question(quiz, OPTION_B, question_id=question_id)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    assert submit(run, started, OPTION_A).earned_points == 1
+
+
+def test_repeated_submit_with_same_key_returns_same_result(run, started):
+    first = submit(run, started, OPTION_A)
+    assert submit(run, started, OPTION_B) == first
+    assert Attempt.objects.get().score == 1
+
+
+def test_repeated_submit_with_other_key_is_already_submitted(run, started):
+    submit(run, started, OPTION_A)
+    with pytest.raises(attempts.AttemptError) as error:
+        submit(run, started, OPTION_A, key="other-key-1")
+    assert error.value.code == "already_submitted"
+
+
+def test_key_used_by_other_attempt_is_refused(run, started):
+    submit(run, started, OPTION_A)
+    other = attempts.start(run)
+    with pytest.raises(attempts.AttemptError) as error:
+        submit(run, other, OPTION_A)
+    assert error.value.code == "submission_key_used"
+    assert Attempt.objects.get(pk=other.attempt.pk).status == Attempt.Status.IN_PROGRESS
+
+
+def test_lost_race_returns_the_winner_result(run, started):
+    """Another request stores the result between the status check and the write."""
+    real_score = attempts._score
+
+    def score_then_lose(*args):
+        result = real_score(*args)
+        Attempt.objects.filter(pk=started.attempt.pk).update(
+            status=Attempt.Status.SUBMITTED,
+            submission_key=KEY,
+            score=1,
+            max_score=1,
+            correct_count=1,
+            submitted_at=timezone.now(),
+        )
+        return result
+
+    with mock.patch.object(attempts, "_score", score_then_lose):
+        result = submit(run, started, OPTION_B)
+    assert result.earned_points == 1
+
+
+@pytest.mark.parametrize("answer", [{"option": "nope"}, {"option": ""}, {}, {"other": OPTION_A}])
+def test_malformed_answer_is_refused_and_attempt_can_still_submit(run, started, answer):
+    question_id = run.current_revision.snapshot_json["questions"][0]["id"]
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(started.attempt.id, started.token, {question_id: answer}, KEY)
+    assert error.value.code == "invalid_answer"
+    assert Attempt.objects.get().status == Attempt.Status.IN_PROGRESS
+    assert submit(run, started, OPTION_A).earned_points == 1
+
+
+def test_unknown_question_id_is_ignored(run, started):
+    answers = answers_for(run, OPTION_A) | {"no-such": {"option": "x"}}
+    result = attempts.submit(started.attempt.id, started.token, answers, KEY)
+    assert result.earned_points == 1
+
+
+def test_token_of_other_attempt_is_refused(run, started):
+    other = attempts.start(run)
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(started.attempt.id, other.token, {}, KEY)
+    assert error.value.code == "invalid_token"
+
+
+def test_garbage_token_is_refused(started):
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(started.attempt.id, "garbage", {}, KEY)
+    assert error.value.code == "invalid_token"
+
+
+def test_unknown_attempt_is_not_found(run):
+    started = attempts.start(run)
+    claims = replace(tokens.verify(started.token), attempt_id=uuid7())
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(claims.attempt_id, tokens.issue(claims), {}, KEY)
+    assert error.value.code == "not_found"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"revision_id": uuid7()}, {"run_id": uuid7()}, {"manifest_hash": "tampered"}],
+    ids=["revision", "run", "manifest"],
+)
+def test_correctly_signed_token_with_other_claims_is_refused(run, started, change):
+    forged = tokens.issue(replace(tokens.verify(started.token), **change))
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(started.attempt.id, forged, answers_for(run, OPTION_A), KEY)
+    assert error.value.code == "invalid_token"
+    assert Attempt.objects.get().status == Attempt.Status.IN_PROGRESS
+
+
+def test_submit_after_run_closed_is_refused(run, started):
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    with pytest.raises(attempts.AttemptError) as error:
+        submit(run, started, OPTION_A)
+    assert error.value.code == "run_closed"
+
+
+def test_repeat_after_run_closed_still_returns_stored_result(run, started):
+    first = submit(run, started, OPTION_A)
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    assert submit(run, started, OPTION_A) == first
+
+
+def test_expired_token_is_refused(run, started):
+    expires = tokens.verify(started.token).expires_at
+    late = expires + timedelta(seconds=1)
+    with mock.patch("app.domain.attempts.timezone.now", return_value=late):
+        with pytest.raises(attempts.AttemptError) as error:
+            submit(run, started, OPTION_A)
+    assert error.value.code == "attempt_expired"
+
+
+def test_whole_boundary_second_is_accepted(run, started):
+    expires = tokens.verify(started.token).expires_at.replace(microsecond=0)
+    late = expires + timedelta(milliseconds=900)
+    with mock.patch("app.domain.attempts.timezone.now", return_value=late):
+        assert submit(run, started, OPTION_A).earned_points == 1
+
+
+def test_disabled_type_still_scores_stored_revision(run, started):
+    PluginInstallation.objects.update_or_create(
+        pk="question.choice_single",
+        defaults={"version": "1.0.0", "manifest_json": {}, "enabled": False},
+    )
+    assert submit(run, started, OPTION_A).earned_points == 1
+
+
+def test_uninstalled_type_gives_revision_unavailable(run, started):
+    revision = run.current_revision
+    snapshot = revision.snapshot_json
+    snapshot["questions"][0]["type"] = "gone.type"
+    QuizRevision.objects.filter(pk=revision.pk).update(snapshot_json=snapshot)
+    with pytest.raises(attempts.AttemptError) as error:
+        submit(run, started, OPTION_A)
+    assert error.value.code == "revision_unavailable"
+
+
+def test_submit_emits_attempt_submitted_without_answers(run, started):
+    with mock.patch("app.domain.attempts.events.emit") as emit:
+        submit(run, started, OPTION_A)
+    emit.assert_called_once()
+    name, payload = emit.call_args.args
+    assert name == "attempt.submitted"
+    assert set(payload) == {"attempt_id", "run_id", "score", "max_score"}
+
+
+def locked():
+    return OperationalError("database is locked")
+
+
+def test_with_retry_retries_locked_then_succeeds():
+    function = mock.Mock(side_effect=[locked(), locked(), "done"])
+    with mock.patch("app.domain.attempts.time.sleep") as sleep:
+        assert attempts.with_retry(function) == "done"
+    assert [call.args[0] for call in sleep.call_args_list] == [0.05, 0.1]
+
+
+def test_with_retry_does_not_retry_other_errors():
+    function = mock.Mock(side_effect=OperationalError("no such table"))
+    with pytest.raises(OperationalError):
+        attempts.with_retry(function)
+    assert function.call_count == 1
+
+
+def test_with_retry_gives_up_after_three_tries():
+    function = mock.Mock(side_effect=locked())
+    with mock.patch("app.domain.attempts.time.sleep"), pytest.raises(OperationalError):
+        attempts.with_retry(function)
+    assert function.call_count == 3

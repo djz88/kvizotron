@@ -1,0 +1,12 @@
+# Konfigurace pre-commit. Hook gitleaks hledá tajné údaje jen ve staged změnách.
+# Hook gitleaks-history prochází celou historii gitu; spouští ho make secrets.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e
+    hooks:
+      - id: gitleaks
+      - id: gitleaks
+        alias: gitleaks-history
+        name: Detect hardcoded secrets in git history
+        entry: gitleaks git --redact --verbose
+        stages: [manual]

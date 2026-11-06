@@ -1,0 +1,18 @@
+{% extends theme.layout_template() %}
+{% block title %}{{ title }} · Kvízotron{% endblock %}
+{% block content %}
+{% include "public/_languages.html" %}
+<h1>{{ title }}</h1>
+{% if is_open %}
+<p>{{ _("Questions: %(count)s", count=question_count) }}</p>
+<div id="play">
+  <form method="post" action="{{ url('start', args=[run.id]) }}" hx-post="{{ url('start', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+    <input type="hidden" name="lang" value="{{ locale }}">
+    <button type="submit">{{ _("Start") }}</button>
+  </form>
+</div>
+{% include "public/_message.html" %}
+{% else %}
+<p>{{ _("This round is closed.") }}</p>
+{% endif %}
+{% endblock %}

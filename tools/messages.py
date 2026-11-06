@@ -1,0 +1,56 @@
+"""Extracts translatable strings and compiles catalogues, with no system gettext (make messages).
+
+Source strings are English, so there is no `en` catalogue.
+"""
+
+from pathlib import Path
+
+from babel.messages.catalog import Catalog
+from babel.messages.extract import DEFAULT_KEYWORDS, extract_from_dir
+from babel.messages.mofile import write_mo
+from babel.messages.pofile import read_po, write_po
+
+REPO = Path(__file__).resolve().parents[1]
+LOCALES = ("cs", "uk")
+ROOTS = (
+    REPO / "app" / "api",
+    REPO / "app" / "plugins" / "questions" / "choice_single",
+    REPO / "app" / "plugins" / "theme_default",
+)
+METHODS = [("**.py", "python"), ("**/jinja2/**.html", "jinja2")]
+OPTIONS = {"**/jinja2/**.html": {"extensions": "jinja2.ext.i18n", "newstyle_gettext": "true"}}
+KEYWORDS = {**DEFAULT_KEYWORDS, "gettext_lazy": None}
+
+
+def extract(root: Path) -> Catalog:
+    catalog = Catalog()
+    found = extract_from_dir(root, METHODS, OPTIONS, keywords=KEYWORDS)
+    for filename, lineno, message, comments, context in found:
+        catalog.add(message, None, [(filename, lineno)], auto_comments=comments, context=context)
+    return catalog
+
+
+def build(root: Path, locale: str) -> None:
+    directory = root / "locale" / locale / "LC_MESSAGES"
+    directory.mkdir(parents=True, exist_ok=True)
+    po_path = directory / "django.po"
+    if po_path.exists():
+        with po_path.open("rb") as file:
+            catalog = read_po(file, locale=locale)
+    else:
+        catalog = Catalog(locale=locale, project="Kvízotron")
+    catalog.update(extract(root), no_fuzzy_matching=True)
+    with po_path.open("wb") as file:
+        write_po(file, catalog, width=0, omit_header=True, ignore_obsolete=True)
+    with (directory / "django.mo").open("wb") as file:
+        write_mo(file, catalog)
+
+
+def main() -> None:
+    for root in ROOTS:
+        for locale in LOCALES:
+            build(root, locale)
+
+
+if __name__ == "__main__":
+    main()

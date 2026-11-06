@@ -1,0 +1,12 @@
+{% extends theme.layout_template() %}
+{% block content %}
+{% include "public/_languages.html" %}
+<h1>{{ _("Quizzes") }}</h1>
+{% for quiz in quizzes %}
+<article{% if quiz.featured %} class="is-featured"{% endif %}>
+  <a href="/q/{{ quiz.slug }}?lang={{ locale }}">{{ quiz.title }}</a>
+</article>
+{% else %}
+<p>{{ _("No quiz is running right now.") }}</p>
+{% endfor %}
+{% endblock %}

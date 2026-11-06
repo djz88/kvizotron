@@ -1,0 +1,28 @@
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Options") }}</legend>
+  <p><small>{{ _("Choose the correct option. Leave unused rows empty.") }}</small></p>
+  {% for row in rows %}
+  <article>
+    <input type="hidden" name="option_{{ row.index }}_id" value="{{ row.id }}">
+    <label>
+      <input type="radio" name="correct" value="{{ row.index }}"{% if row.correct %} checked{% endif %}>
+      {{ _("Correct") }}
+    </label>
+    {% for locale in locales %}
+    <label>
+      {{ locale }}
+      <input type="text" name="option_{{ row.index }}_{{ locale }}" value="{{ row.text.get(locale, '') }}" maxlength="300">
+    </label>
+    {% endfor %}
+  </article>
+  {% endfor %}
+</fieldset>

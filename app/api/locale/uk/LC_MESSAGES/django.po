@@ -1,0 +1,284 @@
+#: admin_auth.py:53
+msgid "Wrong login or password."
+msgstr ""
+
+#: admin_forms.py:17 admin_forms.py:95
+msgid "Login"
+msgstr ""
+
+#: admin_forms.py:19 admin_forms.py:97
+msgid "Password"
+msgstr ""
+
+#: admin_forms.py:25
+msgid "URL identifier"
+msgstr ""
+
+#: admin_forms.py:28
+msgid "Locked after the first publication, so that printed QR codes work."
+msgstr ""
+
+#: admin_forms.py:32
+msgid "Languages"
+msgstr ""
+
+#: admin_forms.py:37
+msgid "Default language"
+msgstr ""
+
+#: admin_forms.py:39
+msgid "Highlight on the home page"
+msgstr ""
+
+#: admin_forms.py:57
+msgid "Title"
+msgstr ""
+
+#: admin_forms.py:68
+msgid "Another quiz already uses this identifier."
+msgstr ""
+
+#: admin_forms.py:77
+msgid "The default language must be among the selected languages."
+msgstr ""
+
+#: admin_forms.py:103 admin_users.py:33
+msgid "This login already exists."
+msgstr ""
+
+#: admin_quizzes.py:189
+msgid "The quiz has no questions."
+msgstr ""
+
+#: admin_quizzes.py:191
+msgid "There is nothing new to publish."
+msgstr ""
+
+#: admin_quizzes.py:193
+#, python-format
+msgid "The title is missing in language %(locale)s."
+msgstr ""
+
+#: admin_quizzes.py:195
+#, python-format
+msgid "Question %(number)s: its question type is not available."
+msgstr ""
+
+#: admin_quizzes.py:198
+#, python-format
+msgid "Question %(number)s, language %(locale)s: %(detail)s"
+msgstr ""
+
+#: admin_quizzes.py:223
+msgid "Publish the quiz first."
+msgstr ""
+
+#: admin_quizzes.py:225
+msgid "This quiz already has an open round."
+msgstr ""
+
+#: play.py:36
+msgid "The form could not be read. Please try again."
+msgstr "Не вдалося прочитати форму. Спробуйте ще раз."
+
+#: play.py:37
+msgid "An answer could not be read. Please check your answers."
+msgstr "Не вдалося прочитати відповідь. Перевірте свої відповіді."
+
+#: play.py:38
+msgid "This attempt is not valid. Please start again."
+msgstr "Ця спроба недійсна. Почніть знову."
+
+#: play.py:39
+msgid "This attempt does not exist."
+msgstr "Цієї спроби не існує."
+
+#: jinja2/public/quiz.html:16 play.py:40
+msgid "This round is closed."
+msgstr "Цей раунд закрито."
+
+#: play.py:41 play.py:42
+msgid "This attempt has already been submitted."
+msgstr "Цю спробу вже надіслано."
+
+#: play.py:43
+msgid "The time for this attempt has run out."
+msgstr "Час на цю спробу вичерпано."
+
+#: play.py:44
+msgid "This quiz is temporarily unavailable."
+msgstr "Ця вікторина тимчасово недоступна."
+
+#: public.py:54 public.py:68
+msgid "This quiz does not exist."
+msgstr "Цієї вікторини не існує."
+
+#: public.py:57
+msgid "This quiz is not running right now."
+msgstr "Ця вікторина зараз не проходить."
+
+#: jinja2/admin/base.html:3
+msgid "Administration"
+msgstr ""
+
+#: jinja2/admin/base.html:5 jinja2/admin/quiz_list.html:3
+#: jinja2/public/landing.html:4
+msgid "Quizzes"
+msgstr "Вікторини"
+
+#: jinja2/admin/base.html:6 jinja2/admin/users.html:3
+msgid "Admins"
+msgstr ""
+
+#: jinja2/admin/base.html:14
+msgid "Log out"
+msgstr ""
+
+#: jinja2/admin/login.html:3 jinja2/public/_languages.html:1
+msgid "Language"
+msgstr "Мова"
+
+#: jinja2/admin/login.html:9 jinja2/admin/login.html:15
+msgid "Log in"
+msgstr ""
+
+#: jinja2/admin/question_form.html:8 jinja2/admin/quiz_edit.html:54
+msgid "Save"
+msgstr ""
+
+#: jinja2/admin/question_form.html:9 jinja2/admin/run.html:14
+msgid "Back"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:5 jinja2/admin/quiz_list.html:10
+#, python-format
+msgid "Published revision: %(no)s"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:5 jinja2/admin/quiz_list.html:10
+msgid "Not published"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:6 jinja2/admin/quiz_list.html:11
+msgid "Unpublished changes"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:11
+msgid "The quiz cannot be published yet"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:18
+msgid "Questions"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:24
+msgid "Delete"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:28
+msgid "There are no questions yet."
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:31
+msgid "Add question"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:34
+msgid "Publication and rounds"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:37
+msgid "Publish"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:41 jinja2/admin/quiz_list.html:12
+msgid "Open round"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:42
+msgid "A round stays on the revision it was opened with. To use a newer revision, close it and open a new one."
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:46
+msgid "Open a new round"
+msgstr ""
+
+#: jinja2/admin/quiz_edit.html:50
+msgid "Quiz settings"
+msgstr ""
+
+#: jinja2/admin/quiz_form.html:3 jinja2/admin/quiz_list.html:4
+msgid "New quiz"
+msgstr ""
+
+#: jinja2/admin/quiz_form.html:7 jinja2/admin/users.html:11
+msgid "Create"
+msgstr ""
+
+#: jinja2/admin/quiz_list.html:16
+msgid "There are no quizzes yet."
+msgstr ""
+
+#: jinja2/admin/run.html:3
+#, python-format
+msgid "Round %(no)s"
+msgstr ""
+
+#: jinja2/admin/run.html:4
+msgid "Open"
+msgstr ""
+
+#: jinja2/admin/run.html:4
+msgid "Closed"
+msgstr ""
+
+#: jinja2/admin/run.html:5
+msgid "Public address"
+msgstr ""
+
+#: jinja2/admin/run.html:6
+msgid "QR code of the public address"
+msgstr ""
+
+#: jinja2/admin/run.html:7
+#, python-format
+msgid "Attempts submitted: %(count)s"
+msgstr ""
+
+#: jinja2/admin/run.html:11
+msgid "Close the round"
+msgstr ""
+
+#: jinja2/admin/users.html:7
+msgid "New admin"
+msgstr ""
+
+#: jinja2/public/_message.html:1
+msgid "The connection failed. Your answers are still here, please try again."
+msgstr "Не вдалося з'єднатися. Ваші відповіді збережено на сторінці, спробуйте ще раз."
+
+#: jinja2/public/_questions.html:8
+msgid "Submit answers"
+msgstr "Надіслати відповіді"
+
+#: jinja2/public/_result.html:2
+msgid "Your score"
+msgstr "Ваш результат"
+
+#: jinja2/public/_result.html:4 jinja2/public/unavailable.html:4
+msgid "Back to quizzes"
+msgstr "Назад до вікторин"
+
+#: jinja2/public/landing.html:10
+msgid "No quiz is running right now."
+msgstr "Зараз не проходить жодна вікторина."
+
+#: jinja2/public/quiz.html:7
+#, python-format
+msgid "Questions: %(count)s"
+msgstr "Кількість запитань: %(count)s"
+
+#: jinja2/public/quiz.html:11
+msgid "Start"
+msgstr "Почати"
+

@@ -1,0 +1,56 @@
+name: kvizotron
+
+x-app: &app
+  image: kvizotron:local
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  environment:
+    KVZ_SECRET_KEY: ${KVZ_SECRET_KEY:?KVZ_SECRET_KEY must be set, see deploy/.env.example}
+    KVZ_DOMAIN: ${KVZ_DOMAIN:?KVZ_DOMAIN must be set, see deploy/.env.example}
+  volumes:
+    - db:/data/db
+    - media:/data/media
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  app:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine@sha256:f6228111e5fafa1a5238258d0858e103f10599b8d1659a146e7726681a002bb9
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      KVZ_DOMAIN: ${KVZ_DOMAIN:?KVZ_DOMAIN must be set, see deploy/.env.example}
+    ports:
+      - "${KVZ_HTTP_PORT:-80}:80"
+      - "${KVZ_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  db:
+  media:
+  caddy_data:
+  caddy_config:

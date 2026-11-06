@@ -1,0 +1,2 @@
+[kvizotron.modules]
+question.demo = kvz_demo_question.manifest:MANIFEST
