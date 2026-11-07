@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% block admin %}
+{% block content %}
 <h1>{{ _("Admins") }}</h1>
 <ul>
   {% for admin in admins %}<li>{{ admin.login }}</li>{% endfor %}

@@ -19,7 +19,7 @@
 
 Layout on vendored Pico CSS, responsive, with a skip link and keyboard-reachable controls. A theme
 template with the name of a page template replaces that page, because themes load before `app.api`.
-Animations and a progress indicator of FR-05 come with navigation modes in B3.
+Colours are token blocks per palette in `assets/theme.css`, selected by `data-palette` on `<html>`, and `tests/test_palettes.py` reads them to check contrast. The progress indicator of FR-05 came with navigation modes in B3; the rest of FR-05 is finished in D1.
 
 ## Data owned
 

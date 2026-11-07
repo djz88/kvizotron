@@ -2,7 +2,3 @@
 msgid "Skip to content"
 msgstr "Перейти до вмісту"
 
-#: jinja2/theme_default/layout.html:20
-msgid "Turn on your brain. Start Kvízotron."
-msgstr "Увімкни мозок. Запусти Kvízotron."
-

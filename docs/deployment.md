@@ -18,8 +18,10 @@ cp deploy/.env.example deploy/.env    # then fill in the values
 docker compose -f deploy/compose.yaml up -d --build
 ```
 
+Caddy refuses request bodies over 16 MB, or 101 MB on an import and a public submit (`deploy/Caddyfile`), and the application refuses multipart requests except where a file is expected.
+
 A one-shot `migrate` service applies database migrations before `app` starts; Caddy starts when `app` is
-healthy. The application serves its few static files itself, so no collect step is needed. Errors and warnings go to the container log (`docker compose logs app`).
+healthy. The application serves its few static files itself, so no collect step is needed. Errors and warnings go to the container log (`docker compose logs app`). Neither gunicorn nor Caddy writes request paths there, and keeping it so protects the tokens in test links ([ADR-0044](_architecture/adr/0044-preview-and-test-links.md)). Caddy accepts up to 101 MB on `/admin/import/*` for ZIP imports and 16 MB elsewhere. A changed `deploy/Caddyfile` reaches a running proxy only after `docker compose -f deploy/compose.yaml up -d --force-recreate caddy`.
 
 `make smoke` runs the whole topology under a separate project name and removes only that project afterwards.
 
@@ -27,9 +29,10 @@ healthy. The application serves its few static files itself, so no collect step 
 
 | Variable | Required | Meaning |
 |---|---|---|
-| `KVZ_DOMAIN` | yes | Public domain; Caddy obtains its certificate |
+| `KVZ_DOMAIN` | yes | Public domain; Caddy obtains its certificate. A LAN IP address also works, with a certificate from Caddy's own local authority, so a browser warns until that authority is trusted |
 | `KVZ_SECRET_KEY` | yes | Django `SECRET_KEY`; generate with `openssl rand -hex 32`. Changing it: see [minimum operational elements](#minimum-operational-elements) |
 | `KVZ_DB_PATH` | set by the image | SQLite file on the `db` volume |
+| `KVZ_MEDIA_PATH` | no | Stored images, default `/data/media` on the `media` volume; include it in backups |
 | `KVZ_DEBUG` | no | `1` enables Django debug mode; never in production |
 | `KVZ_HTTP_PORT`, `KVZ_HTTPS_PORT` | no | Published ports, default 80 and 443 |
 

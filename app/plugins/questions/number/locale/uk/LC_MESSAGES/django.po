@@ -1,0 +1,109 @@
+#: plugin.py:68
+msgid "The correct value must be a number, such as 3,14."
+msgstr "Правильне значення має бути числом, наприклад 3,14."
+
+#: plugin.py:71
+msgid "This kind of tolerance is not known."
+msgstr "Цей вид допуску невідомий."
+
+#: plugin.py:77
+msgid "The tolerance must be a number, such as 0,5."
+msgstr "Допуск має бути числом, наприклад 0,5."
+
+#: plugin.py:79
+msgid "The tolerance cannot be negative."
+msgstr "Допуск не може бути від'ємним."
+
+#: plugin.py:81
+msgid "A tolerance in percent cannot be used when the correct value is 0."
+msgstr "Допуск у відсотках не можна використати, коли правильне значення дорівнює 0."
+
+#: plugin.py:86
+msgid "Image"
+msgstr "Зображення"
+
+#: plugin.py:86
+msgid "No copy"
+msgstr "Без копії"
+
+#: plugin.py:86
+msgid "Image address"
+msgstr "Адреса зображення"
+
+#: plugin.py:86
+msgid "Image description"
+msgstr "Опис зображення"
+
+#: jinja2/number/admin.html:20 plugin.py:90
+msgid "Exact value"
+msgstr "Точне значення"
+
+#: jinja2/number/admin.html:21 plugin.py:90
+msgid "Plus or minus"
+msgstr "Плюс-мінус"
+
+#: jinja2/number/admin.html:22 plugin.py:90
+msgid "Percent"
+msgstr "Відсотки"
+
+#: plugin.py:109
+msgid "Number"
+msgstr "Число"
+
+#: plugin.py:136
+msgid "An image has no description in this language."
+msgstr "Зображення не має опису цією мовою."
+
+#: plugin.py:214
+msgid "The question has no text in any language."
+msgstr "Запитання не має тексту жодною мовою."
+
+#: plugin.py:216
+msgid "The correct value is missing."
+msgstr "Бракує правильного значення."
+
+#: jinja2/number/admin.html:3 plugin.py:272
+msgid "Question"
+msgstr "Питання"
+
+#: jinja2/number/admin.html:15 plugin.py:274
+msgid "Correct value"
+msgstr "Правильне значення"
+
+#: jinja2/number/admin.html:19 plugin.py:275
+msgid "Tolerance"
+msgstr "Допуск"
+
+#: plugin.py:276
+msgid "Kind of tolerance"
+msgstr "Вид допуску"
+
+#: jinja2/number/admin.html:13
+msgid "Correct answer"
+msgstr "Правильна відповідь"
+
+#: jinja2/number/admin.html:17
+msgid "Write a unit in the question's text, not here."
+msgstr "Одиницю напишіть у тексті запитання, а не тут."
+
+#: jinja2/number/admin.html:24
+msgid "How much"
+msgstr "Скільки"
+
+#: jinja2/number/admin.html:26
+msgid "Both limits count as right: 1000 with 5 percent accepts 950 to 1050."
+msgstr "Обидві межі вважаються правильними: 1000 з 5 відсотками приймає від 950 до 1050."
+
+#: jinja2/number/public.html:5
+msgid "Your answer"
+msgstr "Ваша відповідь"
+
+#: jinja2/number/public.html:7
+msgid "Write digits only, with a comma or dot for decimals."
+msgstr "Пишіть лише цифри, десяткову частину відокремлюйте комою або крапкою."
+
+#: jinja2/number/solution.html:3
+#, python-format
+msgid "your answer: %(answer)s"
+msgstr "ваша відповідь: %(answer)s"
+

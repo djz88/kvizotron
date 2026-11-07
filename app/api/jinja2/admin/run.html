@@ -1,15 +1,20 @@
 {% extends "admin/base.html" %}
-{% block admin %}
-<h1>{{ _("Round %(no)s", no=run.run_no) }}</h1>
-<p>{% if is_open %}{{ _("Open") }}{% else %}{{ _("Closed") }}{% endif %}</p>
-<p>{{ _("Public address") }}: <a href="{{ public_url }}">{{ public_url }}</a></p>
-<img class="qr-code" src="{{ url('admin_quiz_qr', args=[quiz.id]) }}" alt="{{ _('QR code of the public address') }}">
-<p>{{ _("Attempts submitted: %(count)s", count=submitted) }}</p>
-{% if is_open %}
-<form method="post" action="{{ url('admin_run_close', args=[run.id]) }}">
-  {{ csrf_input }}
-  <button type="submit">{{ _("Close the round") }}</button>
-</form>
-{% endif %}
-<a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}">{{ _("Back") }}</a>
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<div class="panel">
+  <img class="qr-code" src="{{ url('admin_quiz_qr', args=[quiz.id]) }}" alt="{{ _('QR code of the public address') }}">
+  <div>
+    <h2>{{ _("Run %(no)s", no=run.run_no) }}</h2>
+    <p><span class="chip{% if is_open %} chip-live{% endif %}">{{ _("Running") if is_open else _("Ended") }}</span></p>
+    <p>{{ _("Public address") }}: <a href="{{ public_url }}">{{ public_url }}</a></p>
+    <p>{{ _("Attempts submitted: %(count)s", count=submitted) }}</p>
+    {% if walkthrough_url %}<p><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+    {% if is_open %}
+    <form method="post" action="{{ url('admin_run_close', args=[run.id]) }}">
+      {{ csrf_input }}
+      <button type="submit" class="secondary outline">{{ _("End the run") }}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

@@ -34,7 +34,6 @@ def test_layout_is_in_the_active_language():
         )
     assert '<html lang="cs"' in html
     assert "Kvízotron" in html
-    assert "Zapni mozek. Spusť Kvízotron." in html
     assert "style=" not in html
 
 

@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Question banks") }}</h1>
+<p>{{ _("A bank holds questions that quizzes can draw from. All administrators share them.") }}</p>
+{% if banks %}
+<ul class="rows">
+  {% for item in banks %}
+  <li>
+    <div class="row-main">
+      <a href="{{ url('admin_bank', args=[item.bank.id]) }}">{{ item.bank.name }}</a>
+      <small>{{ _("Questions: %(count)s", count=item.count) }}</small>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>{{ _("There are no banks yet.") }}</p>
+{% endif %}
+<section class="form-section">
+  <h2>{{ _("New bank") }}</h2>
+  <form method="post">
+    {{ csrf_input }}
+    {{ form.as_div() }}
+    <button type="submit">{{ _("Create the bank") }}</button>
+  </form>
+</section>
+{% endblock %}

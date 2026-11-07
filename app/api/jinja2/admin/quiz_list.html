@@ -1,18 +1,34 @@
 {% extends "admin/base.html" %}
-{% block admin %}
-<h1>{{ _("Quizzes") }}</h1>
-<a href="{{ url('admin_quiz_new') }}" role="button">{{ _("New quiz") }}</a>
-{% for quiz in quizzes %}
-<article>
-  <a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}">{{ quiz.title }}</a>
-  <small>/q/{{ quiz.slug }}</small>
-  <p>
-    {% if quiz.published_no %}{{ _("Published revision: %(no)s", no=quiz.published_no) }}{% else %}{{ _("Not published") }}{% endif %}
-    {% if quiz.has_draft %} · {{ _("Unpublished changes") }}{% endif %}
-    {% if quiz.open_run %} · <a href="{{ url('admin_run', args=[quiz.open_run.id]) }}">{{ _("Open round") }}</a>{% endif %}
-  </p>
-</article>
+{% from "admin/_chips.html" import content_chips %}
+{% block content %}
+<div class="page-title">
+  <h1>{{ _("Archived quizzes") if show_archived else _("Quizzes") }}</h1>
+  <a href="{{ url('admin_quiz_new') }}" role="button">{{ _("New quiz") }}</a>
+  {% if can_import %}<a href="{{ url('admin_import_new') }}?target=new_quiz" role="button" class="secondary">{{ _("Import") }}</a>{% endif %}
+</div>
+{% if quizzes %}
+<ul class="rows rows-plain">
+  {% for quiz in quizzes %}
+  <li>
+    <div class="row-main">
+      <a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}"><strong>{{ quiz.title }}</strong></a>
+      <small>/q/{{ quiz.slug }}</small>
+    </div>
+    <ul class="chips">
+      {{ content_chips(quiz.state) }}
+      {% if quiz.state.open_run %}<li class="chip chip-live"><a href="{{ url('admin_run', args=[quiz.state.open_run.id]) }}">{{ _("Run %(no)s is running", no=quiz.state.open_run.run_no) }}</a></li>{% endif %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
 {% else %}
 <p>{{ _("There are no quizzes yet.") }}</p>
-{% endfor %}
+{% endif %}
+<p>
+  {% if show_archived %}
+  <a href="{{ url('admin_quizzes') }}">{{ _("Back to quizzes") }}</a>
+  {% else %}
+  <a href="{{ url('admin_quizzes') }}?archived=1">{{ _("Show archived quizzes") }}</a>
+  {% endif %}
+</p>
 {% endblock %}

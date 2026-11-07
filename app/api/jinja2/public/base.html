@@ -1,0 +1,15 @@
+{% extends theme.layout_template() %}
+{% block bar %}
+<details class="site-nav" open>
+  <summary aria-label="{{ _('Menu') }}">☰</summary>
+  <nav aria-label="{{ _('Menu') }}">
+    <ul>
+      <li><a href="/?lang={{ locale }}">{{ _("Quizzes") }}</a></li>
+      <li><a href="{{ url('how_it_works') }}?lang={{ locale }}">{{ _("How it works") }}</a></li>
+      <li><a href="{{ url('about') }}?lang={{ locale }}">{{ _("About") }}</a></li>
+      <li><a href="{{ url('privacy') }}?lang={{ locale }}">{{ _("Privacy") }}</a></li>
+    </ul>
+  </nav>
+</details>
+{% include "public/_languages.html" %}
+{% endblock %}

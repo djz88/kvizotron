@@ -1,0 +1,35 @@
+{% set row = photo.row %}
+{% set shown_error = error if error is defined and error else (errors.get(row.id|string, {}).get("message") if errors is defined else None) %}
+{% set shown_value = errors.get(row.id|string, {}).get("value", photo.value) if errors is defined else photo.value %}
+<article id="answer-{{ row.id }}" class="grading-photo">
+  <p><strong>{{ _("Attempt %(number)s", number=photo.number) }}</strong>{% if photo.waiting %} <span class="chip chip-draft">{{ _("Waiting") }}</span>{% endif %}</p>
+  {% if row.removed %}
+  <p role="note">{{ _("The photo was removed.") }}</p>
+  {% else %}
+  <a href="{{ url('admin_answer_photo', args=[row.id]) }}" rel="noreferrer"><img src="{{ url('admin_answer_photo', args=[row.id]) }}" alt="{{ _('Photo of attempt %(number)s', number=photo.number) }}" loading="lazy" class="photo-thumb"></a>
+  <form method="post" action="{{ url('admin_answer_points', args=[row.id]) }}" hx-post="{{ url('admin_answer_points', args=[row.id]) }}" hx-target="#answer-{{ row.id }}" hx-swap="outerHTML">
+    {{ csrf_input }}
+    <input type="hidden" name="run" value="{{ run.id }}">
+    <input type="hidden" name="question" value="{{ question_id|default('') }}">
+    <input type="hidden" name="page" value="{{ page_number|default('') }}">
+    <label>
+      {{ _("Points for attempt %(number)s, from 0 to %(maximum)s", number=photo.number, maximum=photo.maximum) }}
+      <input type="text" inputmode="decimal" name="points" value="{{ shown_value }}" autocomplete="off"{% if shown_error %} aria-invalid="true"{% endif %}>
+    </label>
+    {% if shown_error %}<p class="notice" role="alert">{{ shown_error }}</p>{% endif %}
+    <p><small>{{ _("Automatic points: %(points)s", points=photo.auto) }}</small></p>
+    <button type="submit">{{ _("Save points") }}</button>
+  </form>
+  {% if photo.approvable %}
+  <form method="post" action="{{ url('admin_answer_approve', args=[row.id]) }}" hx-post="{{ url('admin_answer_approve', args=[row.id]) }}" hx-target="#answer-{{ row.id }}" hx-swap="outerHTML">
+    {{ csrf_input }}
+    <input type="hidden" name="run" value="{{ run.id }}">
+    <input type="hidden" name="question" value="{{ question_id|default('') }}">
+    <input type="hidden" name="page" value="{{ page_number|default('') }}">
+    <input type="hidden" name="approved" value="{{ '' if row.approved else '1' }}">
+    <button type="submit" class="secondary outline">{% if row.approved %}{{ _("Stop showing publicly") }}{% else %}{{ _("Approve for the public walkthrough") }}{% endif %}</button>
+  </form>
+  {% endif %}
+  <a href="{{ url('admin_answer_delete', args=[row.id]) }}?run={{ run.id }}&amp;question={{ question_id|default('') }}&amp;page={{ page_number|default('') }}">{{ _("Delete the photo") }}</a>
+  {% endif %}
+</article>

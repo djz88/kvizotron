@@ -4,7 +4,7 @@
 |---|---|
 | Contract | `ScoringStrategyPlugin` |
 | Package | `app/plugins/scoring/` |
-| Stage | A (basic), B (partial and others) |
+| Stage | A (all or nothing), B2 (partial) |
 
 ## Requirements
 
@@ -18,12 +18,15 @@
 
 ## Behaviour
 
-- `evaluate()` is pure and server-side, over immutable definition + supplied answer
-  ([contracts](../modules/contracts.md) invariant 2). Client scores are never trusted.
+- The question type grades the answer against the immutable definition, and `evaluate(grade, settings)` only weighs the grade ([ADR-0040](../adr/0040-question-types-grade-and-strategies-weigh.md)). Both are pure and server-side ([contracts](../modules/contracts.md) invariant 2). Client scores are never trusted.
+- `all_or_nothing` pays the points when `right == total` and `wrong == 0`.
+- `partial` pays `points * max(0, right - wrong) / total`, computed once with `Fraction` and rounded to 4 places at the end. Ticking everything does not pay. Trick and yes/no questions have `total = 1`, so they behave as all or nothing.
+- Points are whole numbers from 1 to 100 per question, default 1.
 - Strategy settings that affect evaluation are snapshotted into the revision/run.
 - Mixed scoring ([ADR-0033](../adr/0033-image-answer-question-type.md)): `evaluate()` returns only the
   automatic points; `max_points` also includes the manual part. Manual points are stored separately
-  and only an authenticated admin can set them.
+  and only an authenticated admin can set them. The image answer carries its automatic share through
+  `ItemGrade`, so `partial` pays it ([ADR-0047](../adr/0047-image-answer-photo-visibility.md)).
 
 ## Acceptance
 

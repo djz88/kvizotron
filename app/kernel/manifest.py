@@ -1,9 +1,53 @@
 """Module manifest. Read while settings load, so it must not import Django."""
 
-from typing import Any, Literal
+from typing import Literal
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+
+Scope = Literal["global", "quiz", "question"]
+ALL_SCOPES: list[Scope] = ["global", "quiz", "question"]
+
+
+class SettingDeclaration(BaseModel):
+    """A setting a module owns. Inherited along the whole chain unless a reason says otherwise."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    key: str
+    choices: list[str]
+    default: str
+    scopes: list[Scope] = ALL_SCOPES
+    scope_reason: str | None = None
+    label: str  # msgids in the module's own catalogue
+    value_labels: dict[str, str]
+    help: str | None = None
+
+    @model_validator(mode="after")
+    def _consistent(self) -> SettingDeclaration:
+        if self.default not in self.choices:
+            raise ValueError(f"{self.key}: the default is not among the choices")
+        if set(self.value_labels) != set(self.choices):
+            raise ValueError(f"{self.key}: each choice needs one label")
+        if set(self.scopes) != set(ALL_SCOPES) and not self.scope_reason:
+            raise ValueError(f"{self.key}: a narrower scope needs a reason (ADR-0042)")
+        return self
+
+
+class SettingRequirement(BaseModel):
+    """A value a module cannot work with, and the one it offers instead (ADR-0034)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    refuse: list[str]
+    use: str
+    reason: str  # a msgid in the module's own catalogue
+
+    @model_validator(mode="after")
+    def _use_is_allowed(self) -> SettingRequirement:
+        if self.use in self.refuse:
+            raise ValueError(f"{self.use} is both offered and refused")
+        return self
 
 
 class Manifest(BaseModel):
@@ -22,7 +66,8 @@ class Manifest(BaseModel):
     optional: list[str] = []
     activation_scope: list[Literal["global", "quiz"]] = ["global"]
     config_schema_version: int = 1
-    settings_requirements: dict[str, Any] = {}
+    settings: list[SettingDeclaration]  # required: a module with none states an empty list
+    settings_requirements: dict[str, SettingRequirement] = {}
     assets: dict[str, str] = {}
 
     @field_validator("api_compatibility")

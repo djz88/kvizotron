@@ -1,0 +1,32 @@
+{% from "admin/_chips.html" import content_chips, run_status %}
+{% set tabs = [("edit", "admin_quiz_edit", _("Questions")), ("runs", "admin_run_open", _("Runs")), ("grading", "admin_quiz_grading", _("Grading")), ("tests", "admin_quiz_tests", _("Test links")), ("revisions", "admin_revisions", _("Revisions")), ("settings", "admin_quiz_settings", _("Settings"))] %}
+<div class="quiz-head">
+  <details class="quiz-fold" open>
+    <summary><strong>{{ title }}</strong><span>{% for key, name, label in tabs %}{% if key == tab %}{{ label }}{% endif %}{% endfor %}</span></summary>
+    <div class="quiz-title">
+      <h1>{{ title }}</h1>
+      <ul class="chips">{{ content_chips(state) }}</ul>
+      {% include "admin/_actions.html" %}
+    </div>
+    {% if image_check.addresses %}
+    <div id="image-check">
+      {% include "admin/_image_warning.html" %}
+      <form method="post" hx-post="{{ url('admin_image_check', args=[quiz.id]) }}" hx-trigger="load" hx-target="#image-check" hx-swap="innerHTML">{{ csrf_input }}</form>
+    </div>
+    {% endif %}
+    <div class="quiz-meta">
+      <span>{{ _("Public address") }}: <a href="{{ url('quiz', args=[quiz.slug]) }}">/q/{{ quiz.slug }}</a> · {{ _("Languages") }}: {{ quiz.supported_locales|join(", ") }}</span>
+      <span class="status-area">{{ run_status(state) }}</span>
+      <a href="{{ url('admin_preview', args=[quiz.id]) }}">{{ _("Preview") }}</a>
+    </div>
+    <nav class="tabs" aria-label="{{ _('Parts of this quiz') }}">
+      <ul>
+        {% for key, name, label in tabs %}
+        <li><a href="{{ url(name, args=[quiz.id]) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "grading" and waiting %} <span class="chip chip-count">{{ waiting }}</span>{% endif %}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </details>
+  {% if run_error %}<p class="notice" role="alert">{{ run_error }}</p>{% endif %}
+  {% include "admin/_requirements.html" %}
+</div>

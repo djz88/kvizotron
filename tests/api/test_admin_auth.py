@@ -2,9 +2,9 @@ from uuid import uuid7
 
 import pytest
 from django.conf import settings
-from django.test import Client
 
 from tests.api.conftest import PASSWORD
+from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
 ID = uuid7()
@@ -89,7 +89,7 @@ def test_login_page_redirects_logged_in_admin(logged_in):
 
 
 def test_login_post_without_csrf_token_is_403(admin_user):
-    assert login(Client(enforce_csrf_checks=True)).status_code == 403
+    assert login(FormClient(enforce_csrf_checks=True)).status_code == 403
 
 
 def test_logout_is_post_only_and_ends_session(logged_in):

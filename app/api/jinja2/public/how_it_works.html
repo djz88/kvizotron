@@ -1,0 +1,14 @@
+{% extends "public/base.html" %}
+{% block title %}{{ _("How it works") }} · Kvízotron{% endblock %}
+{% block content %}
+<div class="hero"><h1>{{ _("How it works") }}</h1></div>
+<div class="card prose">
+  <ol>
+    <li>{{ _("Choose a quiz on the home page, or open its link or QR code.") }}</li>
+    <li>{{ _("Choose your language and start.") }}</li>
+    <li>{{ _("Answer the questions and send your answers.") }}</li>
+    <li>{{ _("You see your score straight away.") }}</li>
+  </ol>
+  <p>{{ _("You do not need to register or install anything.") }}</p>
+</div>
+{% endblock %}

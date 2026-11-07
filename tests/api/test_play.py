@@ -5,11 +5,20 @@ from unittest import mock
 from uuid import uuid7
 
 import pytest
-from django.test import Client, override_settings
+from django.test import override_settings
 
-from app.domain import authoring, tokens
+from app.domain import authoring, settings, tokens
 from app.domain.models import Attempt, QuizRevision
-from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B, add_question, open_quiz_run
+from tests.domain.helpers import (
+    ADMIN_ID,
+    OPTION_A,
+    OPTION_B,
+    add_question,
+    definition,
+    make_quiz,
+    open_quiz_run,
+)
+from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
 HTMX = {"HX-Request": "true"}
@@ -37,7 +46,7 @@ class Play:
         self.question_ids = [q["id"] for q in run.current_revision.snapshot_json["questions"]]
 
     def submit(self, option=OPTION_A, headers=HTMX, **extra):
-        answers = {f"{qid}:option": option for qid in self.question_ids} if option else {}
+        answers = {f"{qid}:options[]": option for qid in self.question_ids} if option else {}
         return self.client.post(self.action, self.fields | answers | extra, headers=headers)
 
 
@@ -57,11 +66,11 @@ def test_start_returns_questions_in_language_with_token_and_key(client, run):
     assert tokens.verify(hidden(html, "attempt_token")).run_id == run.id
     assert hidden(html, "submission_key")
     assert hidden(html, "lang") == "uk"
-    assert re.search(r'name="[^"]+:option"', html)
+    assert re.search(r'name="[^"]+:options\[\]"', html)
 
 
 def test_start_needs_no_csrf_token(run):
-    response = Client(enforce_csrf_checks=True).post(f"/r/{run.id}/start", {"lang": "cs"})
+    response = FormClient(enforce_csrf_checks=True).post(f"/r/{run.id}/start", {"lang": "cs"})
     assert response.status_code == 200
 
 
@@ -69,13 +78,13 @@ def test_start_html_has_no_answer_key(client, run):
     def normalised(current):
         html = text(Play(client, current).start_response)
         html = re.sub(r'name="(attempt_token|submission_key)" value="[^"]*"', "", html)
-        return re.sub(r"/a/[^/]+/submit", "", html)
+        return re.sub(r"/a/[^/]+/(submit|revision-status)", "", html)
 
     first = normalised(run)
     question_id = run.current_revision.snapshot_json["questions"][0]["id"]
     authoring.close_run(run, admin_id=ADMIN_ID)
     add_question(run.quiz, OPTION_B, question_id=question_id)
-    authoring.publish(run.quiz, admin_id=ADMIN_ID)
+    authoring.publish(run.quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
     second = authoring.open_run(run.quiz, admin_id=ADMIN_ID)
     assert first == normalised(second)
     assert "correct" not in first
@@ -95,7 +104,7 @@ def test_start_on_closed_run_is_409_with_translated_message(client, run):
     authoring.close_run(run, admin_id=ADMIN_ID)
     response = client.post(f"/r/{run.id}/start", {"lang": "uk"}, headers=HTMX)
     assert response.status_code == 409
-    assert "Цей раунд закрито." in text(response)
+    assert "Цей запуск завершився." in text(response)
     assert not Attempt.objects.exists()
 
 
@@ -131,7 +140,7 @@ def test_blank_answers_show_zero(client, run):
 
 
 def test_submit_needs_no_csrf_token(run):
-    play = Play(Client(enforce_csrf_checks=True), run)
+    play = Play(FormClient(enforce_csrf_checks=True), run)
     assert play.submit().status_code == 200
 
 
@@ -209,7 +218,7 @@ def test_malformed_answer_is_400_and_attempt_can_still_submit(client, run):
 
 def test_field_names_without_colon_are_ignored(client, run):
     play = Play(client, run)
-    assert "1 / 1" in text(play.submit(**{"nonsense": "x", ":option": "y", "x:": "z"}))
+    assert "1 / 1" in text(play.submit(**{"nonsense": "x", ":options[]": "y", "x:": "z"}))
 
 
 def test_oversized_body_is_400(client, run):
@@ -248,7 +257,7 @@ def test_submit_after_close_is_409_with_translated_message(client, run):
     authoring.close_run(run, admin_id=ADMIN_ID)
     response = play.submit()
     assert response.status_code == 409
-    assert "Цей раунд закрито." in text(response)
+    assert "Цей запуск завершився." in text(response)
 
 
 def test_expired_attempt_is_410_with_translated_message(client, run):
@@ -278,3 +287,104 @@ def test_uninstalled_type_is_503_at_start(client, run):
 @pytest.mark.parametrize("path", ["/r/{}/start", "/a/{}/submit"])
 def test_get_is_405(client, path):
     assert client.get(path.format(uuid7())).status_code == 405
+
+
+def test_two_ticks_reach_the_plugin_as_a_list(client):
+    quiz = make_quiz(slug="dvakrat")
+    config = definition(quiz.supported_locales)
+    config["correct"] = [OPTION_A, OPTION_B]
+    config["allow_multiple"] = True
+    question = authoring.save_question(quiz, None, "choice", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    play = Play(client, authoring.open_run(quiz, admin_id=ADMIN_ID))
+    fields = play.fields | {f"{question}:options[]": [OPTION_A, OPTION_B]}
+    assert "1 / 1" in text(client.post(play.action, fields, headers=HTMX))
+
+
+def order_quiz(client):
+    quiz = make_quiz(slug="poradi")
+    config = {
+        "prompt": {"cs": "Seřaďte"},
+        "mode": "order",
+        "direction": "top_down",
+        "items": [
+            {"id": "aaaa1111", "text": {"cs": "První"}},
+            {"id": "bbbb2222", "text": {"cs": "Druhá"}},
+        ],
+    }
+    question = authoring.save_question(quiz, None, "matching", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    return Play(client, authoring.open_run(quiz, admin_id=ADMIN_ID)), question
+
+
+def test_order_list_reaches_the_plugin_and_scores(client):
+    play, question = order_quiz(client)
+    fields = play.fields | {f"{question}:order[]": ["aaaa1111", "bbbb2222"]}
+    assert "1 / 1" in text(client.post(play.action, fields, headers=HTMX))
+
+
+def test_repeated_position_without_a_script_keeps_the_answers(client):
+    play, question = order_quiz(client)
+    positions = {f"{question}:pos_aaaa1111": "2", f"{question}:pos_bbbb2222": "2"}
+    response = client.post(play.action, play.fields | positions)
+    assert response.status_code == 400
+    html = text(response)
+    assert html.count('value="2" selected') == 2
+    assert hidden(html, "attempt_token") == play.fields["attempt_token"]
+    assert hidden(html, "submission_key") == play.fields["submission_key"]
+    assert 'id="play-message"' in html
+    fixed = {f"{question}:pos_aaaa1111": "1", f"{question}:pos_bbbb2222": "2"}
+    assert "1 / 1" in text(client.post(play.action, play.fields | fixed))
+
+
+def test_two_answers_on_a_one_answer_question_are_refused(client, run):
+    play = Play(client, run)
+    question = play.question_ids[0]
+    fields = play.fields | {f"{question}:options[]": [OPTION_A, OPTION_B]}
+    assert client.post(play.action, fields, headers=HTMX).status_code == 400
+
+
+def pairs_quiz(client):
+    quiz = make_quiz(slug="dvojice")
+    config = {
+        "prompt": {"cs": "Spojte"},
+        "mode": "pairs",
+        "items": [
+            {"id": "aaaa1111", "match_id": "cccc3333", "text": {"cs": "A"}, "match": {"cs": "1"}},
+            {"id": "bbbb2222", "match_id": "dddd4444", "text": {"cs": "B"}, "match": {"cs": "2"}},
+        ],
+    }
+    question = authoring.save_question(quiz, None, "matching", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    return Play(client, authoring.open_run(quiz, admin_id=ADMIN_ID)), question
+
+
+def test_one_year_for_two_events_without_a_script_keeps_the_answers(client):
+    play, question = pairs_quiz(client)
+    same = {f"{question}:pair_aaaa1111": "cccc3333", f"{question}:pair_bbbb2222": "cccc3333"}
+    response = client.post(play.action, play.fields | same)
+    assert response.status_code == 400
+    assert text(response).count('value="cccc3333" selected') == 2
+    fixed = same | {f"{question}:pair_bbbb2222": "dddd4444"}
+    assert "1 / 1" in text(client.post(play.action, play.fields | fixed))
+
+
+def _options_in(html):
+    return re.findall(r'value="(opt\d)"', html)
+
+
+def test_rerender_after_a_refused_form_keeps_the_option_order(client):
+    quiz = make_quiz()
+    config = definition(["cs"])
+    config["options"] = [{"id": f"opt{n}", "text": {"cs": f"T{n}"}} for n in range(6)]
+    config["correct"] = ["opt0"]
+    question = authoring.save_question(quiz, None, "choice", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    settings.set_override(settings.SHUFFLE_OPTIONS, quiz, "on", admin_id=None)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    play = Play(client, run)
+    first = _options_in(play.start_response.content.decode())
+    assert sorted(first) == [f"opt{n}" for n in range(6)]
+    refused = client.post(play.action, play.fields | {f"{question}:options[]": "forged"})
+    assert refused.status_code == 400
+    assert _options_in(refused.content.decode()) == first

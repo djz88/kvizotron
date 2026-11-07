@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ locale }}">
+<html lang="{{ locale }}" data-palette="{{ palette }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,13 +13,13 @@
   <script src="{{ url }}" defer></script>
   {% endfor %}
 </head>
-<body>
+<body class="{% block body_class %}public{% endblock %}">
   <a class="skip-link" href="#content">{{ _("Skip to content") }}</a>
-  <header class="site-header container">
+  <header class="site-bar">
     <a class="site-name" href="/">Kvízotron</a>
-    <p>{{ _("Turn on your brain. Start Kvízotron.") }}</p>
+    {% block bar %}{% endblock %}
   </header>
-  <main id="content" class="container">
+  <main id="content" class="{% block main_class %}page{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 </body>

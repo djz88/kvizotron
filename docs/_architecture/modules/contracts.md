@@ -15,7 +15,7 @@ Selected by the operator; changed by a controlled restart and, if needed, a data
 |---|---|---|---|
 | `AuthenticationProvider` | Admin identity and login | exactly one | [`local-auth`](../providers/auth-local.md) |
 | `PersistenceProvider` | Database settings and health check | exactly one | [`sqlite`](../providers/persistence-sqlite.md) |
-| `MediaStorageProvider` | Upload, URL, MIME/limits, serving | exactly one | [`local-media`](../providers/media-local.md) |
+| `MediaStorageProvider` | Upload, fetching an address, checking addresses, MIME/limits, serving | exactly one | [`local-media`](../providers/media-local.md) |
 | `RetentionProvider` | Deletion, anonymisation, jobs | exactly one | [`local-retention`](../providers/retention.md) |
 | `ImporterProvider` / `ExporterProvider` | Data formats, validation, mapping | one per format | [CSV](../providers/csv-io.md) |
 
@@ -26,9 +26,9 @@ manifest allows it.
 
 | Contract | Responsibility | v1.0 reference implementation |
 |---|---|---|
-| `QuestionTypePlugin` | Configuration, admin editor, public rendering, answer validation | [eight base types + image answer](../plugins/question-types.md) |
-| `ScoringStrategyPlugin` | Evaluation of supported type, breakdown, max points | [basic and partial](../plugins/scoring.md) |
-| `QuizFlowPlugin` | Navigation, back-navigation control, progress | [all-at-once / step](../plugins/quiz-flow.md) |
+| `QuestionTypePlugin` | Configuration, admin editor, public rendering incl. a given answer, the solution for a reveal, answer validation, readable description for comparing revisions | [eight base types + image answer](../plugins/question-types.md) |
+| `ScoringStrategyPlugin` | Weighing a type's grade, breakdown, max points | [basic and partial](../plugins/scoring.md) |
+| `QuizFlowPlugin` | Navigation modes and what the page offers | [all-at-once / step](../plugins/quiz-flow.md) |
 | `ParticipantPolicyPlugin` | Attempts, cookie identity, repetition rules | [browser-anonymous](../plugins/participants.md) |
 | `ResultViewPlugin` | Result projections, scoreboard, statistics and dashboards; storage stays in the domain | [local-results](../plugins/results-scoreboard.md) |
 | `RewardPlugin` | Performance thresholds and entitlement records | [threshold-rewards](../plugins/rewards.md) |

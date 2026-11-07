@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<p class="crumb"><a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}">{{ _("Back to the editor") }}</a></p>
+<h1>{{ _("Draw from a bank") }}</h1>
+{% if has_banks %}
+<p>{{ _("Each participant gets this many questions at random. Only questions complete in all languages of the quiz are drawn.") }}</p>
+<form method="post" class="watch-changes">
+  {{ csrf_input }}
+  {{ form.as_div() }}
+  <datalist id="bank-tags">
+    {% for tag in form.tag_options %}<option value="{{ tag }}"></option>{% endfor %}
+  </datalist>
+  <button type="submit">{{ _("Save") }}</button>
+</form>
+{% else %}
+<p>{{ _("There is no bank to draw from yet.") }} <a href="{{ url('admin_banks') }}">{{ _("Create a bank") }}</a></p>
+{% endif %}
+{% endblock %}

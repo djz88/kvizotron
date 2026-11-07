@@ -1,0 +1,127 @@
+#: plugin.py:85
+msgid "Each blank can stand only once in the question's text."
+msgstr "Každá mezera smí být v textu otázky jen jednou."
+
+#: plugin.py:121
+msgid "Image"
+msgstr "Obrázek"
+
+#: plugin.py:121
+msgid "No copy"
+msgstr "Bez kopie"
+
+#: plugin.py:121
+msgid "Image address"
+msgstr "Adresa obrázku"
+
+#: plugin.py:121
+msgid "Image description"
+msgstr "Popis obrázku"
+
+#: plugin.py:126
+#, python-format
+msgid "A question can have at most %(count)s blanks."
+msgstr "Otázka může mít nejvýše %(count)s mezer."
+
+#: plugin.py:128
+#, python-brace-format
+msgid "Number the blanks in order from {1}, without a gap."
+msgstr "Mezery číslujte popořadě od {1}, bez vynechání."
+
+#: plugin.py:142
+msgid "Text"
+msgstr "Text"
+
+#: plugin.py:173
+msgid "Every language must use the same blanks."
+msgstr "Každý jazyk musí používat stejné mezery."
+
+#: plugin.py:176 plugin.py:178 plugin.py:304
+msgid "Every blank needs its accepted answers."
+msgstr "Každá mezera potřebuje přijímané odpovědi."
+
+#: plugin.py:180
+msgid "An image has no description in this language."
+msgstr "Obrázek nemá v tomto jazyce popis."
+
+#: jinja2/text/admin.html:20 jinja2/text/admin.html:30
+#: jinja2/text/public.html:7 jinja2/text/solution.html:4 plugin.py:221
+#, python-format
+msgid "Blank %(number)s"
+msgstr "Mezera %(number)s"
+
+#: plugin.py:263
+msgid "A row of answers has no blank in the question's text."
+msgstr "Řádek odpovědí nemá mezeru v textu otázky."
+
+#: plugin.py:286
+msgid "The question has no text in any language."
+msgstr "Otázka nemá text v žádném jazyce."
+
+#: plugin.py:295
+msgid "Write true or false here."
+msgstr "Sem patří true nebo false."
+
+#: jinja2/text/admin.html:3 plugin.py:366
+msgid "Question"
+msgstr "Otázka"
+
+#: plugin.py:369
+#, python-format
+msgid "Accepted answers for blank %(number)s"
+msgstr "Přijímané odpovědi pro mezeru %(number)s"
+
+#: jinja2/text/admin.html:44 plugin.py:377
+msgid "Ignore letter case"
+msgstr "Nerozlišovat velikost písmen"
+
+#: jinja2/text/admin.html:45 plugin.py:378
+msgid "Ignore extra spaces"
+msgstr "Nerozlišovat mezery navíc"
+
+#: jinja2/text/admin.html:46 plugin.py:379
+msgid "Ignore diacritics"
+msgstr "Nerozlišovat diakritiku"
+
+#: plugin.py:382
+msgid "Yes"
+msgstr "Ano"
+
+#: plugin.py:382
+msgid "No"
+msgstr "Ne"
+
+#: jinja2/text/admin.html:4
+#, python-brace-format
+msgid "For blanks inside the sentence, write {1}, {2} where each one belongs, in any order per language. Without them, the participant gets one field under the question. To show a brace, write {{."
+msgstr "Pro mezery ve větě napište {1}, {2} tam, kam patří, v každém jazyce v libovolném pořadí. Bez nich dostane účastník jedno pole pod otázkou. Složenou závorku zapíšete jako {{."
+
+#: jinja2/text/admin.html:14
+msgid "Accepted answers"
+msgstr "Přijímané odpovědi"
+
+#: jinja2/text/admin.html:15
+msgid "One per line. An answer counts if it matches any of them, in any language."
+msgstr "Každou na řádek. Odpověď platí, když odpovídá kterékoli z nich v kterémkoli jazyce."
+
+#: jinja2/text/admin.html:43
+msgid "How answers are compared"
+msgstr "Jak se odpovědi porovnávají"
+
+#: jinja2/text/admin.html:47
+msgid "Ignoring diacritics applies to Latin letters only, so Plzen matches Plzeň, while Cyrillic letters stay as they are."
+msgstr "Nerozlišování diakritiky platí jen pro latinku, takže Plzen odpovídá Plzeň, zatímco cyrilice zůstává beze změny."
+
+#: jinja2/text/public.html:3
+msgid "Fill in the blanks"
+msgstr "Doplňte mezery"
+
+#: jinja2/text/public.html:15
+msgid "Your answer"
+msgstr "Vaše odpověď"
+
+#: jinja2/text/solution.html:5
+#, python-format
+msgid "your answer: %(answer)s"
+msgstr "vaše odpověď: %(answer)s"
+

@@ -1,4 +1,322 @@
-/* Only what Pico CSS does not supply. */
+/* Kvízotron's look. Pico gives the base; this file gives the colours and the layout.
+   Colours come from the palette in `data-palette` (settings.Palette, FR-53). The marked blocks are
+   read by tests/test_palettes.py, which checks their contrast. Blocks marked `default` apply when
+   the value is unknown, and must equal the default palette. */
+
+/* palette: default light */
+:root {
+  --kvz-main: #1769e0;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #1769e0;
+  --kvz-page-to: #0e7c7c;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #0f2a52;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #ffb020;
+  --kvz-on-accent: #0f2a52;
+  --kvz-card: #ffffff;
+  --kvz-text: #0f2a52;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #eef3fc;
+  --kvz-link: #1769e0;
+  --kvz-line: #d6ddea;
+  --kvz-surface: #f4f6fb;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: default dark */
+  :root {
+    --kvz-main: #1769e0;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #0f2a52;
+    --kvz-page-to: #1769e0;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #0f2a52;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffb020;
+    --kvz-on-accent: #0f2a52;
+    --kvz-card: #16213a;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #24324f;
+    --kvz-link: #8fbcff;
+    --kvz-line: #33415f;
+    --kvz-surface: #0f1830;
+  }
+  /* end */
+}
+
+/* palette: blue_teal light */
+:root[data-palette="blue_teal"] {
+  --kvz-main: #1769e0;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #1769e0;
+  --kvz-page-to: #0e7c7c;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #0f2a52;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #ffb020;
+  --kvz-on-accent: #0f2a52;
+  --kvz-card: #ffffff;
+  --kvz-text: #0f2a52;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #eef3fc;
+  --kvz-link: #1769e0;
+  --kvz-line: #d6ddea;
+  --kvz-surface: #f4f6fb;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: blue_teal dark */
+  :root[data-palette="blue_teal"] {
+    --kvz-main: #1769e0;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #0f2a52;
+    --kvz-page-to: #1769e0;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #0f2a52;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffb020;
+    --kvz-on-accent: #0f2a52;
+    --kvz-card: #16213a;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #24324f;
+    --kvz-link: #8fbcff;
+    --kvz-line: #33415f;
+    --kvz-surface: #0f1830;
+  }
+  /* end */
+}
+
+/* palette: indigo_pink light */
+:root[data-palette="indigo_pink"] {
+  --kvz-main: #4b3fe4;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #4b3fe4;
+  --kvz-page-to: #cf2f6e;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #1e1b5e;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #ffc400;
+  --kvz-on-accent: #1e1b5e;
+  --kvz-card: #ffffff;
+  --kvz-text: #1e1b5e;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #f0effb;
+  --kvz-link: #4b3fe4;
+  --kvz-line: #dcdbee;
+  --kvz-surface: #f5f5fc;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: indigo_pink dark */
+  :root[data-palette="indigo_pink"] {
+    --kvz-main: #4b3fe4;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #1e1b5e;
+    --kvz-page-to: #4b3fe4;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #1e1b5e;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffc400;
+    --kvz-on-accent: #1e1b5e;
+    --kvz-card: #1d1c44;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #2e2c63;
+    --kvz-link: #b3aeff;
+    --kvz-line: #3b3970;
+    --kvz-surface: #141338;
+  }
+  /* end */
+}
+
+/* palette: violet_white light */
+:root[data-palette="violet_white"] {
+  --kvz-main: #6a2bd9;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #6a2bd9;
+  --kvz-page-to: #4a1d9e;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #2c1457;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #4a1d9e;
+  --kvz-on-accent: #ffffff;
+  --kvz-card: #ffffff;
+  --kvz-text: #2c1457;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #f3eefb;
+  --kvz-link: #6a2bd9;
+  --kvz-line: #e0d8ee;
+  --kvz-surface: #f6f3fc;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: violet_white dark */
+  :root[data-palette="violet_white"] {
+    --kvz-main: #6a2bd9;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #2c1457;
+    --kvz-page-to: #6a2bd9;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #2c1457;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffffff;
+    --kvz-on-accent: #2c1457;
+    --kvz-card: #241545;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #362360;
+    --kvz-link: #c9aeff;
+    --kvz-line: #463268;
+    --kvz-surface: #1a0e34;
+  }
+  /* end */
+}
+
+/* palette: green_blue light */
+:root[data-palette="green_blue"] {
+  --kvz-main: #0e7c5a;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #0e7c5a;
+  --kvz-page-to: #1769a8;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #0c2f2a;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #ffc400;
+  --kvz-on-accent: #0c2f2a;
+  --kvz-card: #ffffff;
+  --kvz-text: #0c2f2a;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #ebf6f2;
+  --kvz-link: #0e7c5a;
+  --kvz-line: #d3e4de;
+  --kvz-surface: #f2f8f6;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: green_blue dark */
+  :root[data-palette="green_blue"] {
+    --kvz-main: #0e7c5a;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #0c2f2a;
+    --kvz-page-to: #0e7c5a;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #0c2f2a;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffc400;
+    --kvz-on-accent: #0c2f2a;
+    --kvz-card: #12302b;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #1e433c;
+    --kvz-link: #7fd8b8;
+    --kvz-line: #2c524a;
+    --kvz-surface: #0b221e;
+  }
+  /* end */
+}
+
+/* palette: red_plum light */
+:root[data-palette="red_plum"] {
+  --kvz-main: #c2263f;
+  --kvz-on-main: #ffffff;
+  --kvz-page-from: #c2263f;
+  --kvz-page-to: #6d2a78;
+  --kvz-on-page: #ffffff;
+  --kvz-bar: #35142f;
+  --kvz-on-bar: #ffffff;
+  --kvz-accent: #ffc400;
+  --kvz-on-accent: #35142f;
+  --kvz-card: #ffffff;
+  --kvz-text: #35142f;
+  --kvz-muted: #5a5f73;
+  --kvz-tile: #f9eef1;
+  --kvz-link: #c2263f;
+  --kvz-line: #eed9df;
+  --kvz-surface: #fbf4f6;
+}
+/* end */
+
+@media (prefers-color-scheme: dark) {
+  /* palette: red_plum dark */
+  :root[data-palette="red_plum"] {
+    --kvz-main: #c2263f;
+    --kvz-on-main: #ffffff;
+    --kvz-page-from: #35142f;
+    --kvz-page-to: #c2263f;
+    --kvz-on-page: #ffffff;
+    --kvz-bar: #35142f;
+    --kvz-on-bar: #ffffff;
+    --kvz-accent: #ffc400;
+    --kvz-on-accent: #35142f;
+    --kvz-card: #2e1428;
+    --kvz-text: #eef0fa;
+    --kvz-muted: #b9bdd0;
+    --kvz-tile: #44213c;
+    --kvz-link: #f5a3b4;
+    --kvz-line: #563150;
+    --kvz-surface: #220e1d;
+  }
+  /* end */
+}
+
+/* Pico's variables, from the tokens above. The selector matches Pico's own specificity. */
+:root[data-palette],
+:root[data-palette]:not([data-theme]) {
+  --pico-background-color: var(--kvz-surface);
+  --pico-color: var(--kvz-text);
+  --pico-muted-color: var(--kvz-muted);
+  --pico-muted-border-color: var(--kvz-line);
+  --pico-h1-color: var(--kvz-text);
+  --pico-h2-color: var(--kvz-text);
+  --pico-h3-color: var(--kvz-text);
+  --pico-card-background-color: var(--kvz-card);
+  --pico-card-sectioning-background-color: var(--kvz-card);
+  --pico-primary: var(--kvz-link);
+  --pico-primary-hover: var(--kvz-link);
+  --pico-primary-underline: var(--kvz-link);
+  --pico-primary-background: var(--kvz-main);
+  --pico-primary-hover-background: var(--kvz-main);
+  --pico-primary-border: var(--kvz-main);
+  --pico-primary-hover-border: var(--kvz-main);
+  --pico-primary-inverse: var(--kvz-on-main);
+  --pico-secondary: var(--kvz-link);
+  --pico-secondary-hover: var(--kvz-link);
+  --pico-secondary-border: var(--kvz-link);
+  --pico-secondary-hover-border: var(--kvz-link);
+  --pico-form-element-background-color: var(--kvz-card);
+  --pico-form-element-color: var(--kvz-text);
+  --pico-form-element-border-color: var(--kvz-line);
+  --pico-dropdown-background-color: var(--kvz-card);
+  --pico-dropdown-color: var(--kvz-text);
+  --pico-dropdown-hover-background-color: var(--kvz-tile);
+  --pico-table-border-color: var(--kvz-line);
+}
+
+h1 {
+  font-size: clamp(1.75rem, 1.4rem + 2vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+:focus-visible {
+  outline: 0.1875rem solid var(--kvz-accent);
+  outline-offset: 0.125rem;
+}
+
 .skip-link {
   position: absolute;
   left: -100vw;
@@ -8,35 +326,1012 @@
   left: 1rem;
   top: 1rem;
   z-index: 10;
+  padding: 0.5rem 1rem;
+  background: var(--kvz-accent);
+  color: var(--kvz-on-accent);
 }
 
-.site-header {
-  padding-block: 1rem;
+.flag {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1rem;
+  vertical-align: -0.125rem;
+  border-radius: 2px;
 }
 
-.site-header p {
-  margin: 0;
-  color: var(--pico-muted-color);
+/* The bar: name on the left; on a phone the menu opens under it. */
+.site-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  color: var(--kvz-on-bar);
+}
+
+.admin .site-bar {
+  background: var(--kvz-bar);
 }
 
 .site-name {
-  font-weight: 700;
+  margin-right: auto;
+  color: inherit;
+  font-size: 1.125rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.site-bar {
+  --pico-accordion-close-summary-color: currentcolor;
+  --pico-accordion-open-summary-color: currentcolor;
+  --pico-accordion-active-summary-color: currentcolor;
+}
+
+.site-bar a:not(.site-name) {
+  color: inherit;
+}
+
+.site-nav {
+  margin: 0;
+}
+
+.site-nav > summary {
+  list-style: none;
+  padding: 0.125rem 0.5rem;
   font-size: 1.25rem;
+  line-height: 1.4;
+  cursor: pointer;
 }
 
-.qr-code {
-  max-width: 16rem;
-  background: #fff;
+.site-nav > summary::-webkit-details-marker,
+.site-nav > summary::after {
+  display: none;
 }
 
-.is-featured {
-  border-left: 0.25rem solid var(--pico-primary);
+/* Without JavaScript the menu stays open, so it is part of the page and covers nothing. */
+:root:not(.js) .site-bar {
+  flex-wrap: wrap;
+}
+
+:root:not(.js) .site-nav {
+  order: 3;
+  flex-basis: 100%;
+}
+
+.js .site-nav[open] > nav {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0.5rem;
+  right: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-card);
+  color: var(--kvz-text);
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 25%);
+}
+
+.site-nav nav ul,
+.site-nav nav ul:first-of-type,
+.site-nav nav ul:last-of-type {
+  display: block;
+  margin: 0;
+  padding: 0;
+  color: inherit; /* Pico colours every list */
+}
+
+.site-nav li {
+  display: block;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+
+.site-nav nav > ul > li > a {
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-nav form {
+  margin: 0;
+}
+
+.site-nav button {
+  width: auto;
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.site-nav nav > ul > li > a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* Dropdowns: Pico's details.dropdown, made compact. */
+details.dropdown {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+}
+
+details.dropdown > summary:not([role]) {
+  width: auto;
+  height: auto;
+  padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+  border-color: var(--kvz-line);
+  background-color: transparent;
+  color: inherit;
+  line-height: 1.4;
+}
+
+details.dropdown > summary + ul {
+  position: absolute;
+  z-index: 30;
+  width: auto;
+  min-width: max-content;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+details.dropdown > summary + ul li {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+details.dropdown > summary + ul li a,
+details.dropdown > summary + ul li button {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  white-space: nowrap;
+  text-overflow: clip;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--kvz-text);
+  font-size: 1rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+details.dropdown > summary + ul li a[aria-current] {
+  font-weight: 700;
+  background: var(--kvz-tile);
+}
+
+details.dropdown > summary + ul li a:hover,
+details.dropdown > summary + ul li button:hover {
+  background: var(--kvz-tile);
+}
+
+details.dropdown > summary + ul form {
+  margin: 0;
+}
+
+.language {
+  flex: none;
+}
+
+details.language > summary + ul {
+  right: 0;
+  left: auto;
+  width: auto;
+}
+
+.site-nav details.language > summary + ul {
+  right: auto;
+  left: 0;
+}
+
+/* The arrow of the main button and the menu of a row. */
+details.more > summary:not([role]) {
+  padding: 0.25rem 0.625rem;
+}
+
+details.more > summary:not([role])::after {
+  display: none;
+}
+
+details.more > summary + ul {
+  right: 0;
+  left: auto;
+  width: auto;
+}
+
+/* Public side: colour across the whole page, content on a card. */
+body.public {
+  min-height: 100vh;
+  background: linear-gradient(160deg, var(--kvz-page-from), var(--kvz-page-to)) fixed;
+  color: var(--kvz-text);
+}
+
+.public .site-bar {
+  color: var(--kvz-on-page);
+}
+
+.public .site-bar > .language > summary:not([role]) {
+  border-color: var(--kvz-on-page);
+}
+
+.page {
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: 0.5rem 0.75rem 2rem;
+}
+
+.hero {
+  padding: 0.5rem 0.25rem 1rem;
+  color: var(--kvz-on-page);
+}
+
+.hero h1 {
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.hero p {
+  margin: 0;
+  color: inherit;
+}
+
+.card {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--kvz-card);
+  color: var(--kvz-text);
+  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 15%);
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+
+.quiz-list {
+  margin: 0;
+  padding: 0;
+}
+
+.quiz-list li {
+  margin: 0 0 0.5rem;
+  list-style: none;
+  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  background: var(--kvz-tile);
+}
+
+.quiz-list li:last-child {
+  margin-bottom: 0;
+}
+
+.quiz-list a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.quiz-list strong {
+  display: block;
+  font-size: 1.125rem;
+}
+
+.quiz-list span {
+  color: var(--kvz-muted);
+}
+
+.quiz-list li:hover {
+  border-color: var(--kvz-link);
+}
+
+.is-featured,
+.quiz-list li.is-featured {
+  border-color: var(--kvz-main);
+}
+
+#play button[type="submit"] {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+#play fieldset {
+  margin-bottom: 1.5rem;
+}
+
+#play legend {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+#play fieldset label:has(input[type="checkbox"]),
+#play fieldset label:has(input[type="radio"]) {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-tile);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#play fieldset label:has(input[type="checkbox"]) input,
+#play fieldset label:has(input[type="radio"]) input {
+  flex: none;
+  margin: 0;
+}
+
+#play fieldset label:has(input:checked) {
+  background: var(--kvz-accent);
+  color: var(--kvz-on-accent);
+}
+
+#play fieldset label:has(input:focus-visible) {
+  outline: 0.1875rem solid var(--kvz-link);
+  outline-offset: 0.125rem;
+}
+
+.admin-link {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.admin-link a {
+  color: var(--kvz-on-page);
+}
+
+.sources {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--kvz-line);
+}
+
+.sources-question {
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.sources li {
+  overflow-wrap: anywhere;
+}
+
+.question-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.option-image {
+  flex: none;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 0.25rem;
+  background: var(--kvz-surface, transparent);
+  object-fit: contain;
+}
+
+.image-preview {
+  display: block;
+  max-width: 10rem;
+  max-height: 10rem;
+  margin-bottom: 0.5rem;
+}
+
+.image-fields {
+  margin-top: 0.5rem;
+}
+
+#play .match-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+#play .match-row select {
+  margin-bottom: 0;
+}
+
+@media (min-width: 48rem) {
+  #play .match-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+}
+
+.match-direction {
+  margin-bottom: 0.5rem;
+}
+
+.sortable {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.sortable li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-tile);
+  font-weight: 600;
+  list-style: none;
+}
+
+.sortable-text {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sortable li select {
+  width: auto;
+  margin: 0;
+}
+
+.sortable-handle {
+  flex: none;
+  padding: 0.25rem 0.5rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sortable-move {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+}
+
+.sortable-dragged {
+  outline: 0.1875rem solid var(--kvz-link);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.editor:has(input[name="allow_multiple"]:not(:checked)) .several-only,
+.editor:has(input[name="mode"][value="pairs"]:checked) .order-only,
+.editor:has(input[name="mode"][value="order"]:checked) .pairs-only {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .editor:has(input[name="mode"][value="pairs"]:checked) .match-admin-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
 }
 
 #play-message:not(:empty) {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-card);
   color: var(--pico-del-color);
 }
 
-main > nav {
-  flex-wrap: wrap;
+#revision-notice:not(:empty),
+.notice {
+  padding: 0.75rem 1rem;
+  border-left: 0.375rem solid var(--kvz-accent);
+  background: var(--kvz-tile);
+  color: var(--kvz-text);
 }
+
+.score strong {
+  display: block;
+  font-size: clamp(3rem, 2rem + 8vw, 5rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.score span {
+  color: var(--kvz-muted);
+  font-size: 1.25rem;
+}
+
+/* Administration */
+.admin-main,
+main:not(.page) {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding: 0 1rem 3rem;
+}
+
+.admin main.page {
+  max-width: 76rem;
+  padding: 1rem 1rem 3rem;
+}
+
+.narrow {
+  max-width: 24rem;
+  margin-inline: auto;
+}
+
+.page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.page-title h1 {
+  margin: 0;
+}
+
+.crumb {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.quiz-head {
+  margin-bottom: 1.5rem;
+}
+
+.quiz-fold {
+  margin: 0;
+  border: 0;
+}
+
+.quiz-fold > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-tile);
+  color: var(--kvz-text);
+  list-style: none;
+}
+
+.quiz-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.quiz-fold > summary::after {
+  float: none;
+  flex: none;
+  margin: 0;
+}
+
+.quiz-fold > summary span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.quiz-title h1 {
+  display: none;
+}
+
+.quiz-title,
+.quiz-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.main-action {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.main-action form {
+  margin: 0;
+}
+
+.main-action button,
+.main-action [role="button"] {
+  width: auto;
+  margin: 0;
+  padding: 0.375rem 0.875rem;
+}
+
+.status-area {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--kvz-line);
+  color: var(--kvz-text);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+}
+
+.chip,
+.chips li.chip {
+  display: inline-block;
+  margin: 0;
+  padding: 0.0625rem 0.625rem;
+  border-radius: 1rem;
+  background: var(--kvz-line);
+  color: var(--kvz-text);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.chip-live,
+.chips li.chip-live {
+  background: var(--kvz-tile);
+  box-shadow: inset 0 0 0 1px var(--kvz-link);
+}
+
+.chip-draft,
+.chips li.chip-draft {
+  background: var(--kvz-accent);
+  color: var(--kvz-on-accent);
+}
+
+.chip a {
+  color: inherit;
+}
+
+.tabs {
+  margin-top: 0.75rem;
+  border-bottom: 2px solid var(--kvz-line);
+  overflow: auto hidden;
+  scrollbar-width: none;
+}
+
+.tabs ul,
+.tabs ul:first-of-type,
+.tabs ul:last-of-type {
+  display: flex;
+  flex-wrap: nowrap;
+  margin: 0;
+  padding: 0;
+}
+
+.tabs li {
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.tabs a {
+  display: block;
+  margin: 0;
+  padding: 0.5rem 0.875rem;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--kvz-muted);
+  text-decoration: none;
+}
+
+.tabs a[aria-current] {
+  border-bottom-color: var(--kvz-link);
+  color: var(--kvz-link);
+  font-weight: 700;
+}
+
+.rows {
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.rows > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--kvz-line);
+  list-style-position: inside;
+}
+
+ul.rows > li,
+ul.rows-plain > li {
+  list-style: none;
+}
+
+.row-main {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.row-main small {
+  display: block;
+  color: var(--kvz-muted);
+}
+
+.form-section {
+  max-width: 40rem;
+  margin-bottom: 2.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actions form {
+  margin: 0;
+}
+
+.actions button,
+.actions [role="button"] {
+  width: auto;
+  margin: 0;
+}
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-tile);
+}
+
+.panel h2 {
+  margin-bottom: 0.5rem;
+}
+
+.panel a {
+  overflow-wrap: anywhere;
+}
+
+.qr-code {
+  width: 10rem;
+  max-width: 100%;
+  background: #fff;
+}
+
+.editor {
+  max-width: 44rem;
+}
+
+.editor article {
+  box-shadow: none;
+  border: 1px solid var(--kvz-line);
+  background: transparent;
+}
+
+/* A table is rows of label and value on a phone. */
+@media (max-width: 47.99rem) {
+  table.stack thead {
+    display: none;
+  }
+
+  table.stack,
+  table.stack tbody,
+  table.stack tr,
+  table.stack td {
+    display: block;
+    width: 100%;
+  }
+
+  table.stack tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--kvz-line);
+  }
+
+  table.stack td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.125rem 0;
+    border: 0;
+    background: transparent;
+  }
+
+  table.stack td[data-label]::before {
+    content: attr(data-label);
+    color: var(--kvz-muted);
+  }
+}
+
+/* Wide screens: menus are open and their buttons are hidden. */
+@media (min-width: 48rem) {
+  .site-nav > summary,
+  .quiz-fold > summary {
+    display: none;
+  }
+
+  :root:not(.js) .site-nav {
+    order: 0;
+    flex-basis: auto;
+  }
+
+  .js .site-nav[open] > nav {
+    position: static;
+    padding: 0;
+    background: transparent;
+    color: var(--kvz-on-bar);
+    box-shadow: none;
+  }
+
+  .site-nav nav ul,
+  .site-nav nav ul:first-of-type,
+  .site-nav nav ul:last-of-type {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .site-nav li {
+    display: block;
+    padding: 0;
+  }
+
+  .site-nav button {
+    --pico-color: var(--kvz-on-bar);
+    border-color: var(--kvz-on-bar);
+    color: var(--kvz-on-bar);
+  }
+
+  .site-nav details.language > summary + ul {
+    right: 0;
+    left: auto;
+  }
+
+  .quiz-title {
+    margin-top: 0;
+  }
+
+  .quiz-title h1 {
+    display: block;
+    flex: 1 1 auto;
+    margin: 0;
+  }
+
+  .quiz-meta {
+    justify-content: space-between;
+  }
+}
+
+.flow-progress:not([hidden]) {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.flow-progress progress {
+  margin: 0.25rem 0 0;
+}
+
+.flow-question:focus {
+  outline: none;
+}
+
+.flow-nav:not([hidden]) {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.flow-nav button {
+  width: auto;
+}
+
+.flow-nav [data-flow-next] {
+  margin-left: auto;
+}
+
+.reveal-list h3 {
+  margin-top: 1.5rem;
+}
+
+.reveal {
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 0.25rem solid var(--pico-muted-border-color);
+}
+
+.reveal-right {
+  border-left-color: var(--pico-ins-color);
+}
+
+.reveal-wrong,
+.reveal-partial {
+  border-left-color: var(--pico-del-color);
+}
+
+.reveal-prompt,
+.reveal-state {
+  margin-bottom: 0.25rem;
+}
+
+.solution {
+  margin-bottom: 0.5rem;
+}
+
+.solution small {
+  margin-left: 0.25rem;
+  color: var(--pico-muted-color);
+}
+
+.solution .reveal-correct {
+  font-weight: 600;
+}
+
+.explanation {
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
+.flow-question [data-flow-check-button] {
+  width: auto;
+  margin-bottom: 1rem;
+}
+
+.flow-reveal:focus {
+  outline: none;
+}
+
+.flow-locked .sortable-handle {
+  visibility: hidden;
+}
+
+/* Blanks inside a sentence (question type text) */
+.fill-text { line-height: 2.6; }
+.fill-text input { display: inline-block; width: 11rem; max-width: 100%; margin: 0 .25rem; height: auto; padding: .15rem .5rem; }
+
+/* Question type image answer: a quiz asks for points, a bank for a share */
+.editor-quiz .bank-only, .editor-bank .quiz-only { display: none; }
+.photo-thumb { max-width: 100%; height: auto; border-radius: .25rem; }
+
+/* Grading */
+.grading-gallery { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.grading-photo { margin: 0 0 1rem; }
+.grading-run { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; }
+.grading-run label { flex: 1 1 14rem; margin: 0; }
+.grading-run button { width: auto; }
+.chip-count { margin-left: .25rem; }
+
+/* Public walkthrough */
+.walkthrough-counts { padding-left: 1.25rem; }
+.walkthrough-hidden { opacity: .55; text-decoration: line-through; }
+.inline-form { display: inline; }
+.inline-form button { display: inline-block; width: auto; padding: .1rem .5rem; margin: 0 0 0 .5rem; font-size: .85em; }
+.grading-photo .photo-thumb { display: block; max-height: 26rem; width: auto; }

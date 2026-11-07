@@ -1,0 +1,8 @@
+#: strategies.py:27
+msgid "All or nothing"
+msgstr "Усе або нічого"
+
+#: strategies.py:48
+msgid "Part by part"
+msgstr "Частина за частиною"
+

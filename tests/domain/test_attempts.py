@@ -8,17 +8,26 @@ import pytest
 from django.db import OperationalError
 from django.utils import timezone
 
-from app.domain import attempts, authoring, tokens
+from app.domain import attempts, authoring, settings, tokens
 from app.domain.models import Attempt, QuizRevision
+from app.kernel import registry
 from app.kernel.models import PluginInstallation
-from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B, add_question, open_quiz_run
+from tests.domain.helpers import (
+    ADMIN_ID,
+    OPTION_A,
+    OPTION_B,
+    add_question,
+    definition,
+    make_quiz,
+    open_quiz_run,
+)
 
 KEY = "key-00000001"
 
 
 def answers_for(run, *options):
     questions = run.current_revision.snapshot_json["questions"]
-    return {q["id"]: {"option": o} for q, o in zip(questions, options, strict=False)}
+    return {q["id"]: {"options": [o]} for q, o in zip(questions, options, strict=False)}
 
 
 def submit(run, started, *options, key=KEY):
@@ -49,7 +58,9 @@ def test_start_pins_revision_and_token_lifetime(run):
     claims = tokens.verify(started.token)
     assert started.attempt.revision_id == run.current_revision_id
     assert claims.expires_at - claims.started_at == timedelta(hours=24)
-    assert claims.manifest_hash == attempts.manifest_hash(run.current_revision.snapshot_json)
+    assert claims.manifest_hash == attempts.manifest_hash(
+        [q["id"] for q in run.current_revision.snapshot_json["questions"]]
+    )
 
 
 def test_submission_key_is_random_and_not_uuid(run):
@@ -97,7 +108,7 @@ def test_attempt_stays_on_revision_after_new_publication(run, started):
     quiz = run.quiz
     question_id = run.current_revision.snapshot_json["questions"][0]["id"]
     add_question(quiz, OPTION_B, question_id=question_id)
-    authoring.publish(quiz, admin_id=ADMIN_ID)
+    authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
     assert submit(run, started, OPTION_A).earned_points == 1
 
 
@@ -144,7 +155,9 @@ def test_lost_race_returns_the_winner_result(run, started):
     assert result.earned_points == 1
 
 
-@pytest.mark.parametrize("answer", [{"option": "nope"}, {"option": ""}, {}, {"other": OPTION_A}])
+@pytest.mark.parametrize(
+    "answer", [{"options": ["nope"]}, {"options": [""]}, {"options": OPTION_A}, {"none": "x"}]
+)
 def test_malformed_answer_is_refused_and_attempt_can_still_submit(run, started, answer):
     question_id = run.current_revision.snapshot_json["questions"][0]["id"]
     with pytest.raises(attempts.AttemptError) as error:
@@ -155,7 +168,7 @@ def test_malformed_answer_is_refused_and_attempt_can_still_submit(run, started, 
 
 
 def test_unknown_question_id_is_ignored(run, started):
-    answers = answers_for(run, OPTION_A) | {"no-such": {"option": "x"}}
+    answers = answers_for(run, OPTION_A) | {"no-such": {"options": ["x"]}}
     result = attempts.submit(started.attempt.id, started.token, answers, KEY)
     assert result.earned_points == 1
 
@@ -225,7 +238,7 @@ def test_whole_boundary_second_is_accepted(run, started):
 
 def test_disabled_type_still_scores_stored_revision(run, started):
     PluginInstallation.objects.update_or_create(
-        pk="question.choice_single",
+        pk="question.choice",
         defaults={"version": "1.0.0", "manifest_json": {}, "enabled": False},
     )
     assert submit(run, started, OPTION_A).earned_points == 1
@@ -273,3 +286,121 @@ def test_with_retry_gives_up_after_three_tries():
     with mock.patch("app.domain.attempts.time.sleep"), pytest.raises(OperationalError):
         attempts.with_retry(function)
     assert function.call_count == 3
+
+
+def test_start_freezes_selection_and_settings(db):
+    run = open_quiz_run(questions=2)
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=None)
+    attempt = attempts.start(run).attempt
+    attempt.refresh_from_db()
+    expected = [q["id"] for q in run.current_revision.snapshot_json["questions"]]
+    assert [item["id"] for item in attempt.selection_json["items"]] == expected
+    assert attempt.selection_json["seed"] is None
+    assert attempts.flow_of(attempt)["navigation"] == "step_back"
+    assert attempts.flow_of(attempt)["moment"] == "at_end"
+    assert attempts.flow_of(attempt)["level"] == "verdict"
+
+
+def test_a_seed_is_stored_only_with_shuffled_options(db):
+    run = open_quiz_run()
+    settings.set_override(settings.SHUFFLE_OPTIONS, run.quiz, "on", admin_id=None)
+    assert attempts.option_seed(attempts.start(run).attempt)
+
+
+def test_a_setting_change_does_not_touch_an_attempt_in_progress(db):
+    run = open_quiz_run()
+    attempt = attempts.start(run).attempt
+    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=None)
+    attempt.refresh_from_db()
+    assert attempts.flow_of(attempt)["moment"] == "never"
+
+
+def test_attempt_without_selection_plays_as_before(db):
+    """In progress at the upgrade: no selection and no settings were stored."""
+    run = open_quiz_run(questions=2)
+    started = attempts.start(run)
+    Attempt.objects.filter(pk=started.attempt.pk).update(selection_json=None, settings_json=None)
+    question_ids = [q["id"] for q in run.current_revision.snapshot_json["questions"]]
+    answers = {qid: {"options": [OPTION_A]} for qid in question_ids}
+    result = attempts.submit(started.attempt.id, started.token, answers, started.submission_key)
+    assert result.earned_points == 2
+    attempt = Attempt.objects.get(pk=started.attempt.pk)
+    assert attempts.flow_of(attempt)["moment"] == "never"
+    assert attempts.option_seed(attempt) is None
+
+
+def test_an_answer_to_a_question_not_given_changes_nothing(db):
+    run = open_quiz_run(questions=2)
+    started = attempts.start(run)
+    first, second = [q["id"] for q in run.current_revision.snapshot_json["questions"]]
+    Attempt.objects.filter(pk=started.attempt.pk).update(
+        selection_json={"items": [{"id": first, "draw": None}], "seed": None}
+    )
+    attempt = Attempt.objects.get(pk=started.attempt.pk)
+    token = attempts._issue(attempt, attempt.started_at + attempts.ATTEMPT_LIFETIME)
+    answers = {first: {"options": [OPTION_B]}, second: {"options": [OPTION_A]}}
+    result = attempts.submit(started.attempt.id, token, answers, started.submission_key)
+    assert result.earned_points == 0
+
+
+def test_start_with_a_missing_plugin_stores_no_attempt(db):
+    run = open_quiz_run()
+    with mock.patch.object(attempts.registry, "get", side_effect=registry.UnknownPort("gone")):
+        with pytest.raises(attempts.AttemptError) as error:
+            attempts.start(run)
+    assert error.value.code == "revision_unavailable"
+    assert not Attempt.objects.exists()
+
+
+def test_a_question_can_shuffle_when_the_quiz_does_not(db):
+    quiz = make_quiz()
+    config = definition(("cs",))
+    shuffled = authoring.save_question(
+        quiz, None, "choice", config, setting_values={settings.SHUFFLE_OPTIONS: "on"}
+    )
+    plain = authoring.save_question(quiz, None, "choice", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    attempt = attempts.start(authoring.open_run(quiz, admin_id=ADMIN_ID)).attempt
+    by_id = {q["id"]: q for q in attempts.questions_of(attempt)}
+    assert attempts.option_seed_for(attempt, by_id[shuffled])
+    assert attempts.option_seed_for(attempt, by_id[plain]) is None
+
+
+def test_a_question_can_keep_its_order_when_the_quiz_shuffles(db):
+    quiz = make_quiz()
+    settings.set_override(settings.SHUFFLE_OPTIONS, quiz, "on", admin_id=ADMIN_ID)
+    config = definition(("cs",))
+    kept = authoring.save_question(
+        quiz, None, "choice", config, setting_values={settings.SHUFFLE_OPTIONS: "off"}
+    )
+    plain = authoring.save_question(quiz, None, "choice", config)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    attempt = attempts.start(authoring.open_run(quiz, admin_id=ADMIN_ID)).attempt
+    by_id = {q["id"]: q for q in attempts.questions_of(attempt)}
+    assert attempts.option_seed_for(attempt, by_id[kept]) is None
+    assert attempts.option_seed_for(attempt, by_id[plain]) == attempts.option_seed(attempt)
+
+
+def test_the_same_attempt_keeps_its_seed_for_a_question(db):
+    quiz = make_quiz()
+    authoring.save_question(
+        quiz,
+        None,
+        "choice",
+        definition(("cs",)),
+        setting_values={settings.SHUFFLE_OPTIONS: "on"},
+    )
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    attempt = attempts.start(authoring.open_run(quiz, admin_id=ADMIN_ID)).attempt
+    question = attempts.questions_of(attempt)[0]
+    first = attempts.option_seed_for(attempt, question)
+    assert first and first == attempts.option_seed_for(attempt, question)
+
+
+def test_an_attempt_from_before_b4_keeps_its_options_in_order(db):
+    run = open_quiz_run()
+    attempt = attempts.start(run).attempt
+    attempt.selection_json = {**attempt.selection_json, "seed": None}
+    attempt.save()
+    assert attempts.option_seed_for(attempt, attempts.questions_of(attempt)[0]) is None

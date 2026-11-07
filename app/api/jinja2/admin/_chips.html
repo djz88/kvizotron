@@ -1,0 +1,13 @@
+{# Same tags in the quiz header and the quiz list. #}
+{% macro content_chips(state) %}
+{% if state.archived %}<li class="chip">{{ _("Archived") }}</li>
+{% elif state.published_no %}<li class="chip chip-live">{{ _("Published revision: %(no)s", no=state.published_no) }}</li>
+{% if state.has_changes %}<li class="chip chip-draft">{{ _("Unpublished changes") }}</li>{% endif %}
+{% else %}<li class="chip">{{ _("Not published") }}</li>{% endif %}
+{% endmacro %}
+{% macro run_status(state) %}
+{% if state.archived %}{{ _("Archived") }}
+{% elif state.open_run %}{{ _("Run %(no)s is running", no=state.open_run.run_no) }}
+{% elif state.last_run %}{{ _("Run %(no)s has ended", no=state.last_run.run_no) }}
+{% else %}{{ _("The quiz is not running") }}{% endif %}
+{% endmacro %}

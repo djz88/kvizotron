@@ -40,5 +40,8 @@ def run_manage(*args: str, **kwargs) -> subprocess.CompletedProcess[str]:
 
 
 def run_python(code: str, **kwargs) -> subprocess.CompletedProcess[str]:
-    prelude = "import django\ndjango.setup()\nfrom django.test import Client\nclient = Client()\n"
+    prelude = (
+        "import django\ndjango.setup()\n"
+        "from tests.support.client import FormClient\nclient = FormClient()\n"
+    )
     return run("-c", prelude + code, **kwargs)

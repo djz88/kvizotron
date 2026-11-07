@@ -12,7 +12,7 @@ def set_enabled(module, value):
     lifecycle.set_enabled(module, value, actor_type="admin", actor_id=ADMIN_ID)
 
 
-@pytest.mark.parametrize("module", ["question.choice_single", "scoring.basic"])
+@pytest.mark.parametrize("module", ["question.choice", "scoring.basic"])
 def test_plugin_used_by_open_run_cannot_be_disabled(module):
     open_quiz_run()
     with pytest.raises(lifecycle.ModuleInUse, match="kviz"):
@@ -21,8 +21,8 @@ def test_plugin_used_by_open_run_cannot_be_disabled(module):
 
 def test_question_plugin_can_be_disabled_after_run_closes():
     authoring.close_run(open_quiz_run(), admin_id=ADMIN_ID)
-    set_enabled("question.choice_single", False)
-    set_enabled("question.choice_single", True)
+    set_enabled("question.choice", False)
+    set_enabled("question.choice", True)
 
 
 def test_no_startup_problem_when_open_run_has_its_plugins():

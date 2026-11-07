@@ -1,34 +1,45 @@
 """Shared contract suite: every scoring strategy must pass it (contracts.md, invariant 2)."""
 
-from app.contracts import ScoreBreakdown, ScoringStrategyPlugin
+from decimal import Decimal
+
+from app.contracts import ItemGrade, ScoreBreakdown, ScoringStrategyPlugin
 
 
 class ScoringStrategyContract:
     plugin: ScoringStrategyPlugin
-    definition: dict
-    correct_answer: dict
-    wrong_answer: dict
     settings: dict = {}
+    complete = ItemGrade(right=2, wrong=0, total=2)
+    empty = ItemGrade(right=0, wrong=0, total=2)
 
     def test_satisfies_protocol(self):
         assert isinstance(self.plugin, ScoringStrategyPlugin)
 
+    def test_label_is_readable_text(self):
+        label = str(self.plugin.label())
+        assert label.strip() and label != self.plugin.id
+
     def test_returns_breakdown_within_max_points(self):
-        result = self.plugin.evaluate(self.definition, self.correct_answer, self.settings)
+        result = self.plugin.evaluate(self.complete, self.settings)
         assert isinstance(result, ScoreBreakdown)
         assert 0 <= result.earned_points <= result.max_points
-        assert result.max_points == self.plugin.max_score(self.definition, self.settings)
+        assert result.max_points == self.plugin.max_score(self.settings)
 
-    def test_wrong_answer_earns_less(self):
-        right = self.plugin.evaluate(self.definition, self.correct_answer, self.settings)
-        wrong = self.plugin.evaluate(self.definition, self.wrong_answer, self.settings)
-        assert wrong.earned_points < right.earned_points
+    def test_scores_are_decimal(self):
+        result = self.plugin.evaluate(self.complete, self.settings)
+        assert isinstance(result.earned_points, Decimal)
+        assert isinstance(result.max_points, Decimal)
+        assert isinstance(self.plugin.max_score(self.settings), Decimal)
 
-    def test_client_supplied_score_is_ignored(self):
-        forged = self.wrong_answer | {"score": 999, "earned_points": 999, "correct": True}
-        honest = self.plugin.evaluate(self.definition, self.wrong_answer, self.settings)
-        assert self.plugin.evaluate(self.definition, forged, self.settings) == honest
+    def test_complete_grade_pays_the_maximum(self):
+        result = self.plugin.evaluate(self.complete, self.settings)
+        assert result.earned_points == result.max_points
+        assert result.correct_count == 1
+
+    def test_empty_grade_earns_nothing(self):
+        result = self.plugin.evaluate(self.empty, self.settings)
+        assert result.earned_points == 0
+        assert result.correct_count == 0
 
     def test_is_repeatable(self):
-        first = self.plugin.evaluate(self.definition, self.correct_answer, self.settings)
-        assert self.plugin.evaluate(self.definition, self.correct_answer, self.settings) == first
+        first = self.plugin.evaluate(self.complete, self.settings)
+        assert self.plugin.evaluate(self.complete, self.settings) == first

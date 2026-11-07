@@ -1,5 +1,8 @@
+from decimal import Decimal
+
 from django.http import HttpRequest
 from django.urls import reverse
+from django.utils import formats
 from django.utils.translation import gettext, ngettext
 from jinja2 import Environment
 
@@ -13,9 +16,18 @@ def with_lang(request: HttpRequest, code: str) -> str:
     return f"?{query.urlencode()}"
 
 
+def number(value: Decimal | float | int) -> str:
+    """A number as the language writes it, without zeros that say nothing: 50, 12,5, 12.5."""
+    text = f"{Decimal(str(value)):f}"
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return formats.number_format(Decimal(text), use_l10n=True)
+
+
 def environment(**options: object) -> Environment:
     env = Environment(extensions=["jinja2.ext.i18n"], **options)  # type: ignore[arg-type]  # noqa: S701  # Django's backend turns autoescape on
     env.install_gettext_callables(gettext, ngettext, newstyle=True)  # type: ignore[attr-defined]
     env.globals["url"] = reverse
     env.globals["with_lang"] = with_lang
+    env.filters["number"] = number
     return env

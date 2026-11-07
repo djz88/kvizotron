@@ -1,0 +1,17 @@
+{% macro issues(rows, title) %}
+{% if rows %}
+<h2>{{ title }}</h2>
+<table class="stack">
+  <thead><tr><th>{{ _("Row") }}</th><th>{{ _("Column") }}</th><th>{{ _("Message") }}</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td data-label="{{ _('Row') }}">{{ row.row }}</td>
+      <td data-label="{{ _('Column') }}">{{ row.column }}</td>
+      <td data-label="{{ _('Message') }}">{{ row.message }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endmacro %}

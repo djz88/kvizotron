@@ -1,0 +1,8 @@
+#: strategies.py:27
+msgid "All or nothing"
+msgstr "Všechno, nebo nic"
+
+#: strategies.py:48
+msgid "Part by part"
+msgstr "Část za část"
+

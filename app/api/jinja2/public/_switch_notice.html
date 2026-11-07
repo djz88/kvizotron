@@ -1,0 +1,2 @@
+<p id="revision-notice" role="status">{{ _("A new version of this quiz is available. Your answers to unchanged questions stay.") }}</p>
+<button type="submit" id="play-submit" hx-swap-oob="true" formaction="{{ url('switch', args=[attempt.id]) }}" formenctype="application/x-www-form-urlencoded" hx-encoding="application/x-www-form-urlencoded" hx-post="{{ url('switch', args=[attempt.id]) }}" hx-target="#play" hx-disabled-elt="this">{{ _("Switch") }}</button>

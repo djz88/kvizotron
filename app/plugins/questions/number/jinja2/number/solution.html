@@ -1,0 +1,4 @@
+<p class="solution reveal-correct">
+  {{ value }}{% if kind == "absolute" %} ± {{ tolerance }}{% elif kind == "percent" %} ± {{ tolerance }} %{% endif %}
+  {% if theirs %}<small class="reveal-theirs">{{ _("your answer: %(answer)s", answer=theirs) }}</small>{% endif %}
+</p>

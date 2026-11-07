@@ -1,0 +1,5 @@
+{% include "public/_mode_bar.html" %}
+<div class="card">
+  {% if preview_message %}<p role="alert">{{ preview_message }}</p><p><a href="{{ restart_url }}?lang={{ locale }}">{{ _("Start the preview") }}</a></p>
+  {% else %}<p>{{ _("There are no questions to show.") }}</p>{% endif %}
+</div>

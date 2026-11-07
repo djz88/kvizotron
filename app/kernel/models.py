@@ -30,6 +30,7 @@ class AuditEvent(models.Model):
 
 class AdminUserManager(BaseUserManager):
     def create_admin(self, login: str, password: str) -> AdminUser:
+        """Callers validate the password: `AdminUserForm` and `passwords.read_password`."""
         limit = self.model._meta.get_field("login").max_length
         if not login.strip() or len(login) > limit:
             raise ValueError(f"An admin login must have 1 to {limit} characters")

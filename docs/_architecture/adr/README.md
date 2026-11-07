@@ -41,3 +41,13 @@ Format: [MADR 4](https://adr.github.io/madr/). Template: [0000-template.md](0000
 | [ADR-0035](0035-immediate-solutions-only-without-competition.md) | Immediate solutions only without competition | accepted |
 | [ADR-0036](0036-django-web-framework-and-orm.md) | Django as web framework and ORM | accepted |
 | [ADR-0037](0037-providers-and-plugins.md) | Providers and plugins are separate module kinds | accepted |
+| [ADR-0038](0038-revision-switch-policy-and-settings.md) | Policy for a new revision during an open round; settings with quiz override | accepted |
+| [ADR-0039](0039-installed-modules-are-trusted-code.md) | Installed modules are trusted code | accepted |
+| [ADR-0040](0040-question-types-grade-and-strategies-weigh.md) | Few question types with settings; types grade and strategies weigh | accepted |
+| [ADR-0041](0041-draw-rows-and-flow-settings.md) | Draw rows set points; flow settings apply immediately and freeze on the attempt | accepted |
+| [ADR-0042](0042-settings-inherited-and-declared.md) | Settings are inherited global → quiz → question, and every module declares its own | accepted |
+| [ADR-0043](0043-external-images.md) | External images are copied by default, and a mode decides what a participant gets | accepted |
+| [ADR-0044](0044-preview-and-test-links.md) | Preview stores nothing, and a test link is a hidden run fixed to one version | accepted |
+| [ADR-0045](0045-csv-one-file-and-failed-images.md) | One import file with a quiz row, question export in Stage B, and a failed image keeps its question | accepted |
+| [ADR-0046](0046-stored-answers-and-who-sees-them.md) | Stored answers, who sees them, a private link and a public walkthrough | accepted |
+| [ADR-0047](0047-image-answer-photo-visibility.md) | Photo visibility chosen by the admin, automatic points as a share, grading in Stage B | accepted |

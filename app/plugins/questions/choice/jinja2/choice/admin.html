@@ -1,0 +1,52 @@
+{% from "admin/_image_fields.html" import image_fields %}
+<input type="hidden" name="kind" value="{{ kind }}">
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+  {{ image_fields("image", image, locales) }}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Options") }}</legend>
+  {% if kind == "yes_no" %}
+  <p><small>{{ _("Mark the correct answer.") }}</small></p>
+  {% else %}
+  <p><small>{{ _("Mark every correct option. With none marked, this is a trick question: only the answer \"None of the answers\" scores. Leave unused rows empty.") }}</small></p>
+  {% endif %}
+  {% for row in rows %}
+  <article>
+    <input type="hidden" name="option_{{ row.index }}_id" value="{{ row.id }}">
+    <label>
+      <input type="checkbox" name="correct_{{ row.index }}"{% if row.correct %} checked{% endif %}>
+      {{ _("Correct") }}
+    </label>
+    {% for locale in locales %}
+    <label>
+      {{ locale }}
+      <input type="text" name="option_{{ row.index }}_{{ locale }}" value="{{ row.text.get(locale, '') }}" maxlength="300">
+    </label>
+    {% endfor %}
+    {{ image_fields("option_" ~ row.index ~ "_image", row.image, locales) }}
+  </article>
+  {% endfor %}
+</fieldset>
+{% if kind != "yes_no" %}
+<fieldset>
+  <label>
+    <input type="checkbox" name="allow_multiple"{% if allow_multiple %} checked{% endif %}>
+    {{ _("Participants may choose several answers") }}
+  </label>
+  <p><small>{{ _("Without this, a participant chooses one answer at most. It is needed when several options are correct.") }}</small></p>
+  <div class="several-only">
+  <label>
+    <input type="checkbox" name="reveal_count"{% if reveal_count %} checked{% endif %}>
+    {{ _("Show the number of correct answers") }}
+  </label>
+  <p><small>{{ _("A trick question shows no number, because that would give it away. In a quiz with trick questions, a missing number is a clue.") }}</small></p>
+  </div>
+</fieldset>
+{% endif %}

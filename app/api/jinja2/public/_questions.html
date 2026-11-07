@@ -1,9 +1,26 @@
-<form method="post" action="{{ url('submit', args=[attempt.id]) }}" hx-post="{{ url('submit', args=[attempt.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+{% include "public/_mode_bar.html" %}
+<div class="card">
+{% set submit_address = submit_url|default(url('submit', args=[attempt.id])) %}
+<form method="post" action="{{ submit_address }}" hx-post="{{ submit_address }}" hx-target="#play" hx-swap="innerHTML show:window:top" hx-disabled-elt="find button[type=submit]"{% if uploads|default(false) %} enctype="multipart/form-data" hx-encoding="multipart/form-data"{% endif %} data-flow data-progress-step="{{ _('Question %(current)s of %(total)s', current='{current}', total='{total}') }}" data-progress-all="{{ _('Answered %(current)s of %(total)s', current='{current}', total='{total}') }}"{% if flow.step %} data-flow-step{% endif %}{% if flow.back %} data-flow-back{% endif %}{% if flow.check %} data-flow-check{% endif %}>
+  {% if preview|default(false) %}{{ csrf_input }}{% endif %}
   <input type="hidden" name="attempt_token" value="{{ attempt_token }}">
   <input type="hidden" name="submission_key" value="{{ submission_key }}">
   <input type="hidden" name="lang" value="{{ locale }}">
+  <div class="flow-progress" role="status" hidden><span></span> <progress></progress></div>
   {% for question in questions %}
-  {{ question }}
+  <section class="flow-question" data-question="{{ question.id }}" tabindex="-1">
+    {% if question.notice %}<p class="notice" role="alert">{{ question.notice }}</p>{% else %}{{ question.html }}{% endif %}
+    {% if flow.check and not question.notice %}
+    <button type="button" class="secondary" name="check_question" value="{{ question.id }}" data-flow-check-button hx-encoding="application/x-www-form-urlencoded" hx-post="{{ check_url|default(url('check', args=[attempt.id])) }}" hx-target="next .flow-reveal" hx-swap="innerHTML" hx-disabled-elt="this" hidden>{{ _("Check the answer") }}</button>
+    <div class="flow-reveal" tabindex="-1"></div>
+    {% endif %}
+  </section>
   {% endfor %}
-  <button type="submit">{{ _("Submit answers") }}</button>
+  {% if not preview|default(false) %}<div id="revision-notice" hx-get="{{ url('revision_status', args=[attempt.id]) }}?lang={{ locale }}" hx-trigger="every 30s" hx-target="this" hx-disabled-elt="this" hx-swap="outerHTML"></div>{% endif %}
+  <div class="flow-nav" hidden>
+    <button type="button" class="secondary" data-flow-previous>{{ _("Back") }}</button>
+    <button type="button" data-flow-next>{{ _("Next") }}</button>
+  </div>
+  <button type="submit" id="play-submit">{{ _("Submit answers") }}</button>
 </form>
+</div>

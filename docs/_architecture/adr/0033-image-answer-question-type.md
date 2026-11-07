@@ -5,6 +5,8 @@ date: 2026-11-05
 
 # ADR-0033: Image answer question type with mixed scoring
 
+Who sees a photo, how automatic points are stored and when grading arrives were changed by [ADR-0047](0047-image-answer-photo-visibility.md).
+
 ## Context and Problem Statement
 
 The spec's eight question types are all scored automatically. Competitions also need answers where the

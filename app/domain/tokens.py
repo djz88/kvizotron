@@ -7,6 +7,7 @@ from uuid import UUID
 from django.core import signing
 
 SALT = "kvizotron.attempt"
+RESULT_SALT = "kvizotron.result"
 
 
 class InvalidToken(Exception):
@@ -49,4 +50,16 @@ def verify(token: str) -> AttemptClaims:
             manifest_hash=data["manifest_hash"],
         )
     except (signing.BadSignature, KeyError, TypeError, ValueError) as exc:
+        raise InvalidToken from exc
+
+
+def issue_result(attempt_id: UUID) -> str:
+    """A reference to a finished attempt. No end date until retention arrives in D3."""
+    return signing.dumps(str(attempt_id), salt=RESULT_SALT)
+
+
+def verify_result(token: str) -> UUID:
+    try:
+        return UUID(signing.loads(token, salt=RESULT_SALT))
+    except (signing.BadSignature, TypeError, ValueError) as exc:
         raise InvalidToken from exc

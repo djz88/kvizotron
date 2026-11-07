@@ -1,0 +1,31 @@
+{% extends "public/base.html" %}
+{% block title %}{{ title }} · Kvízotron{% endblock %}
+{% block content %}
+{% include "public/_mode_bar.html" %}
+<div class="hero"><h1>{{ title }}</h1></div>
+<section class="card result">
+  <h2>{{ _("Your score") }}</h2>
+  <p class="score"><strong>{{ earned|number }} / {{ maximum|number }}</strong> <span>{{ percentage|number }} %</span></p>
+  {% if pending %}
+  <p class="notice" role="status">{{ _("This score is provisional: part of the points is waiting for grading.") }}</p>
+  {% else %}
+  <p role="status">{{ _("This score is final.") }}</p>
+  {% endif %}
+  {% if answers %}
+  <div class="reveal-list">
+    <h3>{{ _("Your answers") }}</h3>
+    {% for answer in answers %}
+    <div class="own-answer">
+      <p class="reveal-prompt">{{ answer.prompt }}</p>
+      {% if answer.removed %}<p role="note">{{ _("The photo was removed.") }}</p>{% endif %}
+      {% if answer.photo %}<a href="{{ answer.photo }}" rel="noreferrer"><img src="{{ answer.photo }}" alt="{{ _('Your photo') }}" class="photo-thumb" referrerpolicy="no-referrer"></a>{% endif %}
+      {% if answer.points is defined %}<p>{{ _("Points: %(earned)s of %(maximum)s", earned=answer.points|number, maximum=answer.maximum|number) }}</p>{% endif %}
+      {% if answer.labels %}<ul>{% for label in answer.labels %}<li>{{ label }}</li>{% endfor %}</ul>{% endif %}
+      {% if answer.reveal %}{% set revealed = answer.reveal %}{% include "public/_reveal.html" %}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <a href="/">{{ _("Back to quizzes") }}</a>
+</section>
+{% endblock %}

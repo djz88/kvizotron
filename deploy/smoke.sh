@@ -121,11 +121,11 @@ quiz=$(compose exec -T app python manage.py shell -v 0 -c "
 from app.domain import authoring
 from app.domain.models import Quiz
 from app.kernel.models import AdminUser
-quiz = Quiz.objects.create(slug='smoke', title={'cs': 'Smoke'}, default_locale='cs', supported_locales=['cs'])
-authoring.save_question(quiz, None, 'choice.single', {
+quiz = Quiz.objects.create(slug='smoke', title={'cs': 'Smoke'}, description={'cs': 'Smoke'}, default_locale='cs', supported_locales=['cs'])
+authoring.save_question(quiz, None, 'choice', {
     'prompt': {'cs': 'Otázka'},
     'options': [{'id': 'aaaa1111', 'text': {'cs': 'A'}}, {'id': 'bbbb2222', 'text': {'cs': 'B'}}],
-    'correct': 'bbbb2222',
+    'correct': ['bbbb2222'],
 })
 admin = str(AdminUser.objects.get().pk)
 authoring.publish(quiz, admin_id=admin)
@@ -135,7 +135,9 @@ print(run.id, run.current_revision.snapshot_json['questions'][0]['id'])
 run_id=${quiz% *}
 question=${quiz#* }
 check "public quiz page" "$(status "$BASE/q/smoke")" "200"
-check "round page for admin" "$(status -b "$JAR" "$BASE/admin/runs/$run_id")" "200"
+check "run page for admin" "$(status -b "$JAR" "$BASE/admin/runs/$run_id")" "200"
+check "privacy page" "$(status "$BASE/privacy")" "200"
+check "flag is served" "$(status "$BASE/assets/flag-cs.svg")" "200"
 
 started=$(web -X POST -e "$BASE/q/smoke" -d lang=cs "$BASE/r/$run_id/start")
 case "$started" in
@@ -146,13 +148,48 @@ esac
 attempt=$(printf '%s' "$started" | sed -n 's|.*action="\(/a/[^"]*\)".*|\1|p' | head -n 1)
 attempt_token=$(field attempt_token "$started")
 key=$(field submission_key "$started")
-submit() { web -X POST --data-urlencode "attempt_token=$attempt_token" -d "submission_key=$key" -d lang=cs -d "$question:option=bbbb2222" "$BASE$attempt"; }
+submit() { web -X POST --data-urlencode "attempt_token=$attempt_token" -d "submission_key=$key" -d lang=cs -d "$question:options[]=bbbb2222" "$BASE$attempt"; }
 first=$(submit)
 case "$first" in
     *"1 / 1"*) echo "PASS server scores the attempt" ;;
     *) echo "FAIL score: $first"; failed=1 ;;
 esac
 check "second submit gives the same result" "$(submit)" "$first"
+
+compose exec -T app python manage.py shell -v 0 -c "
+from app.domain import authoring
+from app.domain.models import Quiz
+from app.kernel.models import AdminUser
+quiz = Quiz.objects.get(slug='smoke')
+authoring.get_draft(quiz)
+admin = str(AdminUser.objects.get().pk)
+authoring.publish(quiz, admin_id=admin, decision=authoring.Decision.LET_FINISH)
+" > /dev/null
+check "public quiz page after a new revision" "$(status "$BASE/q/smoke")" "200"
+restarted=$(web -X POST -e "$BASE/q/smoke" -d lang=cs "$BASE/r/$run_id/start")
+case "$restarted" in
+    *Otázka*) echo "PASS start works on the new revision" ;;
+    *) echo "FAIL start on the new revision: $restarted"; failed=1 ;;
+esac
+
+code=$(head -c 17000000 /dev/zero | curl -sk -o /dev/null -w '%{http_code}' --resolve "localhost:$HTTPS_PORT:127.0.0.1" -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Expect:' --data-binary @- "$BASE/r/$run_id/start")
+check "proxy refuses a body over the limit" "$code" "413"
+code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "localhost:$HTTPS_PORT:127.0.0.1" -X POST -F lang=cs "$BASE/r/$run_id/start")
+check "application refuses multipart" "$code" "415"
+
+asset=$(compose exec -T app python manage.py shell -v 0 -c "
+import base64
+from app.kernel import registry
+pixel = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+print(registry.get('media_storage', 'local').store_image(pixel))
+" | tail -n 1)
+check "stored image is served" "$(status "$BASE/media/$asset")" "200"
+type=$(curl -sk -o /dev/null -w '%{content_type}' --resolve "localhost:$HTTPS_PORT:127.0.0.1" "$BASE/media/$asset")
+check "stored image is WebP" "$type" "image/webp"
+
+# Connecting by IP address sends no server name (SNI), as a browser on the LAN does.
+code=$(curl -sk -o /dev/null -w '%{http_code}' -H 'Host: localhost' "https://127.0.0.1:$HTTPS_PORT/healthz")
+check "TLS works without a server name" "$code" "200"
 
 [ "$failed" -eq 0 ] && echo "SMOKE OK" || echo "SMOKE FAILED"
 exit "$failed"

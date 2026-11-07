@@ -3,11 +3,11 @@ from uuid import uuid7
 
 import pytest
 import segno
-from django.test import Client
 
 from app.domain import attempts
 from app.domain.models import QuizRun
 from tests.domain.helpers import make_quiz, open_quiz_run, published_quiz
+from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,7 @@ def test_open_run_without_publication_shows_error(logged_in):
 def test_open_second_run_shows_error(logged_in):
     run = open_quiz_run()
     response = logged_in.post(f"/admin/quizzes/{run.quiz_id}/runs")
-    assert "Tento kvíz už má otevřené kolo." in text(response)
+    assert "Tento kvíz už má probíhající běh." in text(response)
     assert QuizRun.objects.count() == 1
 
 
@@ -54,15 +54,16 @@ def test_unknown_run_is_404(logged_in):
 
 def test_close_run_stops_public_start(logged_in, client):
     run = open_quiz_run()
-    assert logged_in.get(f"/admin/runs/{run.id}/close").status_code == 405
+    assert logged_in.get(f"/admin/runs/{run.id}/close").status_code == 200  # only asks
+    assert FormClient().post(f"/r/{run.id}/start").status_code != 409
     assert logged_in.post(f"/admin/runs/{run.id}/close")["Location"] == f"/admin/runs/{run.id}"
-    assert Client().post(f"/r/{run.id}/start").status_code == 409
-    assert "Uzavřené" in text(logged_in.get(f"/admin/runs/{run.id}"))
+    assert FormClient().post(f"/r/{run.id}/start").status_code == 409
+    assert "Skončil" in text(logged_in.get(f"/admin/runs/{run.id}"))
 
 
 def test_close_without_csrf_token_is_403(admin_user):
     run = open_quiz_run()
-    client = Client(enforce_csrf_checks=True)
+    client = FormClient(enforce_csrf_checks=True)
     client.force_login(admin_user)
     assert client.post(f"/admin/runs/{run.id}/close").status_code == 403
 

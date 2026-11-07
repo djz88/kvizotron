@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% from "admin/_import_issues.html" import issues %}
+{% block content %}
+<h1>{{ _("Check the import") }}</h1>
+<p>{{ target_label }}</p>
+{% if refused %}
+<p class="notice" role="alert">{{ refused }}</p>
+<a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
+{% else %}
+<p>{{ _("Questions to import: %(count)s", count=count) }}</p>
+{{ issues(errors, _("Rows that will be skipped")) }}
+{{ issues(warnings, _("Warnings")) }}
+{% if unused %}<p>{{ _("Columns not used: %(columns)s", columns=unused|join(", ")) }}</p>{% endif %}
+{% if preview %}
+<h2>{{ _("First questions") }}</h2>
+{% for question in preview %}
+<section class="card">
+  <h3>{{ _("Row %(row)s", row=question.row) }}</h3>
+  <ul>{% for line in question.lines %}<li>{{ line.label }}{% if line.locale %} ({{ line.locale }}){% endif %}: {{ line.value }}</li>{% endfor %}</ul>
+</section>
+{% endfor %}
+{% endif %}
+{% if count %}
+<form method="post" action="{{ url('admin_import_confirm', args=[job_id]) }}">
+  {{ csrf_input }}
+  <button type="submit">{{ _("Import") }}</button>
+  <a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
+</form>
+{% else %}
+<p class="notice" role="alert">{{ _("No row can be imported.") }}</p>
+<a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
+{% endif %}
+{% endif %}
+{% endblock %}

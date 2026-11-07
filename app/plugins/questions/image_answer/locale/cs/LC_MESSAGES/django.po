@@ -1,0 +1,112 @@
+#: manifest.py:20
+msgid "Who sees a photo"
+msgstr "Kdo vidí fotku"
+
+#: manifest.py:22
+msgid "Admins and its author"
+msgstr "Admini a její autor"
+
+#: manifest.py:23
+msgid "Admins"
+msgstr "Admini"
+
+#: manifest.py:24
+msgid "Its author, and everyone once an admin approves that photo"
+msgstr "Její autor a po schválení adminem všichni"
+
+#: manifest.py:27
+msgid "With the last value, participants are told before uploading that a photo may be shown publicly after the run ends."
+msgstr "U poslední hodnoty se účastníci před nahráním dozvědí, že fotka může být po skončení běhu veřejně vidět."
+
+#: manifest.py:37
+msgid "A photo question needs a person to grade it, so answers cannot be shown after each question."
+msgstr "Fotku musí ohodnotit člověk, takže odpovědi nejde ukazovat po každé otázce."
+
+#: plugin.py:43
+msgid "Image"
+msgstr "Obrázek"
+
+#: plugin.py:43
+msgid "No copy"
+msgstr "Bez kopie"
+
+#: plugin.py:43
+msgid "Image address"
+msgstr "Adresa obrázku"
+
+#: plugin.py:43
+msgid "Image description"
+msgstr "Popis obrázku"
+
+#: plugin.py:59
+msgid "Automatic points must be a whole number, up to the question's points."
+msgstr "Automatické body musí být celé číslo, nejvýše tolik, kolik má otázka bodů."
+
+#: plugin.py:63
+msgid "The automatic share must be a whole number from 0 to 100."
+msgstr "Automatický podíl musí být celé číslo od 0 do 100."
+
+#: plugin.py:77
+msgid "Photo"
+msgstr "Fotka"
+
+#: plugin.py:102
+msgid "The automatic part must fit within the question's points."
+msgstr "Automatická část se musí vejít do bodů otázky."
+
+#: plugin.py:104
+msgid "An image has no description in this language."
+msgstr "Obrázek nemá v tomto jazyce popis."
+
+#: plugin.py:158
+msgid "The question has no text in any language."
+msgstr "Otázka nemá text v žádném jazyce."
+
+#: plugin.py:163
+msgid "Automatic points need the question's points."
+msgstr "Automatické body potřebují body otázky."
+
+#: jinja2/image_answer/admin.html:3 plugin.py:213
+msgid "Question"
+msgstr "Otázka"
+
+#: jinja2/image_answer/admin.html:13 plugin.py:215
+msgid "Automatic part"
+msgstr "Automatická část"
+
+#: jinja2/image_answer/admin.html:15
+msgid "Automatic points"
+msgstr "Automatické body"
+
+#: jinja2/image_answer/admin.html:17
+msgid "A submitted photo earns these points at once. An admin gives the rest of the question's points when grading."
+msgstr "Odeslaná fotka získá tyto body hned. Zbytek bodů otázky dá admin při hodnocení."
+
+#: jinja2/image_answer/admin.html:20
+msgid "Automatic share in percent"
+msgstr "Automatický podíl v procentech"
+
+#: jinja2/image_answer/admin.html:22
+msgid "Points come from the draw row, so the share decides: 20 percent of a 5-point row is 1 automatic point and up to 4 from an admin."
+msgstr "Body určuje řádek losování, proto rozhoduje podíl: 20 procent z řádku za 5 bodů je 1 automatický bod a až 4 od admina."
+
+#: jinja2/image_answer/public.html:4
+msgid "An admin may show this photo publicly after the run ends."
+msgstr "Admin může tuto fotku po skončení běhu ukázat veřejně."
+
+#: jinja2/image_answer/public.html:5
+msgid "A photo has been sent."
+msgstr "Fotka byla odeslána."
+
+#: jinja2/image_answer/public.html:7
+msgid "Your photo"
+msgstr "Vaše fotka"
+
+#: jinja2/image_answer/public.html:9
+msgid "PNG, JPEG or WebP, up to 15 MB. It is sent with your answers."
+msgstr "PNG, JPEG nebo WebP, nejvýše 15 MB. Odešle se s vašimi odpověďmi."
+
+#: jinja2/image_answer/solution.html:1
+msgid "An admin grades this photo."
+msgstr "Tuto fotku hodnotí admin."
+

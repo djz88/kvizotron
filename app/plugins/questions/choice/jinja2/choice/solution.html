@@ -1,0 +1,17 @@
+<ul class="solution">
+  {% for option in options %}
+  <li{% if option.correct %} class="reveal-correct"{% elif option.ticked %} class="reveal-theirs"{% endif %}>
+    {% if option.image %}<img src="{{ option.image.url }}" alt="{{ option.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="option-image">{% endif %}
+    {{ option.text }}
+    {% if option.correct %}<small>{{ _("correct answer") }}</small>{% endif %}
+    {% if option.ticked %}<small>{{ _("your answer") }}</small>{% endif %}
+  </li>
+  {% endfor %}
+  {% if trick or none_ticked %}
+  <li{% if trick %} class="reveal-correct"{% else %} class="reveal-theirs"{% endif %}>
+    {{ _("None of the answers") }}
+    {% if trick %}<small>{{ _("correct answer") }}</small>{% endif %}
+    {% if none_ticked %}<small>{{ _("your answer") }}</small>{% endif %}
+  </li>
+  {% endif %}
+</ul>

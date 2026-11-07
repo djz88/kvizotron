@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+{% if not runs and not run %}
+<p>{{ _("No run has been opened yet, so there is nothing to grade.") }}</p>
+{% else %}
+{% if test_run|default(false) %}
+<p class="notice" role="note">{{ _("You are grading a test link. Its results count nowhere.") }}</p>
+{% elif runs %}
+<form method="get" class="grading-run">
+  <label>{{ _("Run") }}
+    <select name="run">
+      {% for choice in runs %}
+      <option value="{{ choice.id }}"{% if run and choice.id == run.id %} selected{% endif %}>{{ _("Run %(no)s", no=choice.run_no) }}{% if choice.status == "OPEN" %} ({{ _("Running") }}){% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="secondary">{{ _("Show") }}</button>
+</form>
+{% endif %}
+{% if view == "by_attempt" %}
+<div class="grading-attempts">
+  {% for card in cards %}
+  <section class="card">
+    <h2>{{ _("Attempt %(number)s", number=card.number) }}</h2>
+    <p>{{ _("Score: %(score)s of %(maximum)s", score=card.score, maximum=card.maximum) }}{% if card.pending %} <span class="chip chip-draft">{{ _("Waiting") }}</span>{% endif %}</p>
+    {% for photo in card.rows %}
+    <h3>{{ photo.label }}</h3>
+    {% if photo.row.manual_max > 0 %}{% include "admin/_grading_photo.html" %}{% else %}{{ photo.answer_html }}{% endif %}
+    {% else %}
+    <p>{{ _("This attempt has no stored answers.") }}</p>
+    {% endfor %}
+  </section>
+  {% else %}
+  <p>{{ _("There are no submitted attempts in this run.") }}</p>
+  {% endfor %}
+</div>
+{% else %}
+{% if question_links %}
+<nav aria-label="{{ _('Questions with photos') }}">
+  <ul class="chips">
+    {% for link in question_links %}
+    <li class="chip"><a href="?run={{ run.id }}&amp;question={{ link.id }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.label }}{% if link.waiting %} ({{ link.waiting }}){% endif %}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+<h2>{{ question_label }}</h2>
+{% endif %}
+<div class="grading-gallery">
+  {% for photo in photos %}
+  {% include "admin/_grading_photo.html" %}
+  {% else %}
+  <p>{{ _("There is nothing to grade here.") }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav aria-label="{{ _('Pages') }}">
+  {% if page_obj.has_previous() %}<a href="?run={{ run.id }}{% if question_id %}&amp;question={{ question_id }}{% endif %}&amp;page={{ page_obj.previous_page_number() }}">{{ _("Previous page") }}</a>{% endif %}
+  <span>{{ _("Page %(number)s of %(count)s", number=page_obj.number, count=page_obj.paginator.num_pages) }}</span>
+  {% if page_obj.has_next() %}<a href="?run={{ run.id }}{% if question_id %}&amp;question={{ question_id }}{% endif %}&amp;page={{ page_obj.next_page_number() }}">{{ _("Next page") }}</a>{% endif %}
+</nav>
+{% endif %}
+{% endif %}
+{% endblock %}

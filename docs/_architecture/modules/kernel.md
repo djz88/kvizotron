@@ -52,7 +52,7 @@ microservices.
   scoreboard). When the module is selected, the admin UI shows these requirements and offers to apply
   them. Conflicts block publication or opening the run, with an explanation.
 
-See [ADR-0034](../adr/0034-module-requirements-on-settings.md).
+Declared as `settings_requirements`: per setting key, the values refused, the value `Use` applies, and a reason in the module's catalogue. An unknown key or value is a start-up error. A module counts as selected for a quiz when its type is used in the draft or a draw pool; opening a run judges what the run will play. See [ADR-0034](../adr/0034-module-requirements-on-settings.md).
 
 ## Startup sequence
 
@@ -82,7 +82,7 @@ Enabled state comes from `plugin_installation` at request time, so enabling a pl
 
 ## Registry
 
-- Services call typed ports by an explicit registry key, e.g. `question_type.get('choice.single')`.
+- Services call typed ports by an explicit registry key, e.g. `question_type.get('choice')`.
 - Modules are discovered through standard Python entry points (`importlib.metadata`). Business logic
   cannot be overridden by hooks.
 

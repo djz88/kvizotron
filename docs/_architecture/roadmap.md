@@ -27,13 +27,15 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 
 **Goal:** producible content and safe changes without rewriting history.
 
-| Milestone | Content |
-|---|---|
-| B1 Revisions | Immutable revisions, `DRAFT → PUBLISHED → SUPERSEDED/ARCHIVED`, translation validation |
-| B2 Question types | Seven remaining types, image answer type, scoring strategies (incl. partial), full editor, module requirements on settings |
-| B3 Banks & flow | Question bank, random selection, navigation modes, answer-reveal policy |
-| B4 Media | Local upload + HTTPS URLs, MIME checks, alt texts |
-| B5 Testing & import | Preview / test mode, CSV import |
+| Milestone | Content | Status |
+|---|---|---|
+| B1 Revisions | Immutable revisions, `DRAFT → PUBLISHED → SUPERSEDED/ARCHIVED`, translation validation; settings with quiz override, a new revision during an open round, change overview, return to an older revision, discard, duplicate and archive a quiz | Done 2026-11-06 |
+| B1.5 UI foundation | Navigation, quiz header with a state-driven main button, tabs, a fixed place for each setting, quiz description, five colour palettes (FR-53), public menu and information pages | Done 2026-11-06 |
+| B2 Question types | Types Výběr (one, several or no correct answers, yes/no) and Přiřazení (pairs, ordering), images in questions and answers (FR-21 admin upload), scoring strategies including partial, points and sources per question (FR-54), unsaved changes warning, [TD-010](TECH_DEBT.md) | Done 2026-11-06 |
+| B3 Banks & flow | Question bank, random selection, navigation modes with a progress indicator, answer-reveal policy, translated explanation of the correct answer | Done 2026-11-07 |
+| B4 Media | External HTTPS image addresses as a copy or from their source (local upload came with B2); settings inherited global → quiz → question and declared by every module | Done 2026-11-07 |
+| B5 Testing & import | Preview, test links, CSV import and export of questions | Done 2026-11-07 |
+| B6 Remaining question types | Numeric answer, text fill-in, image upload by a participant (FR-45), grading of photos, stored answers and who sees them, a private result link, a public walkthrough, module requirements on settings (FR-46, AC-16 in part, AC-17, AC-53 to AC-61) | Done 2026-11-07 |
 
 - **Exit criteria:** all acceptance criteria with Stage = B in [acceptance-criteria.md](acceptance-criteria.md).
 - **Risks:** per-type JS editors grow complex — keep each in its plugin.
@@ -47,11 +49,13 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 | C1 Runs | Separate runs/restart, schedule, deadline, attempt time limit |
 | C2 Participants | Cookie identity, attempt/duplicate rules, access code, name/e-mail collection |
 | C3 Data policies | Retention profiles, stateless mode, local resume |
-| C4 Results | Results, scoreboard incl. revision modes, analytics, manual grading of image answers |
+| C4 Results | Results, scoreboard incl. revision modes, analytics (grading of image answers came with B6) |
 | C5 Rewards & draw | Threshold rewards, entitlements, manual draw, audit |
 
 - **Exit criteria:** all acceptance criteria with Stage = C in [acceptance-criteria.md](acceptance-criteria.md).
 - **Risks:** SQLite single writer under simultaneous submit — early load spike test.
+- **Comes in C:** revealing answers after a run closes, with a lasting result page ([ADR-0041](adr/0041-draw-rows-and-flow-settings.md)); refusing reveal after each question in a run with a visible scoreboard or rewards (AC-18).
+- **To decide in C:** sources disabled automatically in competitions, like solutions in [ADR-0035](adr/0035-immediate-solutions-only-without-competition.md).
 
 ## Stage D — Administration and release 1.0
 
@@ -59,8 +63,8 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 
 | Milestone | Content |
 |---|---|
-| D1 Branding | Branding and theme contract, global + per-quiz override |
-| D2 Export | CSV export with formula-injection protection; Google Sheets contract only |
+| D1 Branding | Branding and theme contract, global + per-quiz override: custom colours, logo, editable motto and menu texts; the theme takes over the palette list from the domain catalogue; finishes FR-05 |
+| D2 Export | CSV export of results, participants and statistics, with formula-injection protection (questions came with B5); Google Sheets contract only |
 | D3 Retention | Retention and automatic jobs, archives, targeted deletion |
 | D4 Plugin admin | Plugin enable/config UI, dependency checks |
 | D5 Hardening & release | Security hardening, rate limits, configuration docs, load test 50 participants, backup & restore, acceptance tests |
@@ -73,7 +77,7 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 | Stage | Requirements |
 |---|---|
 | A | FR-01, FR-02, FR-03, FR-04, FR-07, FR-15 (single choice), FR-24 (basic) |
-| B | FR-05 (base), FR-08, FR-09, FR-13, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-23, FR-24, FR-40, FR-41, FR-45 (type), FR-46 |
+| B | FR-05 (base), FR-08, FR-09, FR-47, FR-48, FR-49, FR-50, FR-51, FR-52, FR-53, FR-13, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-23, FR-24, FR-40, FR-41, FR-45 (type), FR-46, FR-54 |
 | C | FR-06, FR-10, FR-11, FR-12, FR-22, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30, FR-31, FR-32, FR-33, FR-36, FR-37, FR-38, FR-39, FR-43, FR-45 (grading) |
 | D | FR-05 (complete), FR-14, FR-34, FR-35, FR-42, FR-44 |
 

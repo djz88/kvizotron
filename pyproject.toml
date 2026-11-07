@@ -14,14 +14,22 @@ dependencies = [
     "gunicorn==26.2.0",
     "jinja2==3.1.6",
     "packaging==26.3",
+    "pillow==13.0.0",
     "pydantic==2.14.3",
     "segno==1.6.6",
 ]
 
 [project.entry-points."kvizotron.modules"]
 "auth.local" = "app.providers.auth_local.manifest:MANIFEST"
+"flow.basic" = "app.plugins.quiz_flow.manifest:MANIFEST"
+"media.local" = "app.providers.media_local.manifest:MANIFEST"
+"csv.io" = "app.providers.csv_io.manifest:MANIFEST"
 "persistence.sqlite" = "app.providers.persistence_sqlite.manifest:MANIFEST"
-"question.choice_single" = "app.plugins.questions.choice_single.manifest:MANIFEST"
+"question.choice" = "app.plugins.questions.choice.manifest:MANIFEST"
+"question.image_answer" = "app.plugins.questions.image_answer.manifest:MANIFEST"
+"question.matching" = "app.plugins.questions.matching.manifest:MANIFEST"
+"question.number" = "app.plugins.questions.number.manifest:MANIFEST"
+"question.text" = "app.plugins.questions.text.manifest:MANIFEST"
 "scoring.basic" = "app.plugins.scoring.manifest:MANIFEST"
 "theme.default" = "app.plugins.theme_default.manifest:MANIFEST"
 

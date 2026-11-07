@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+{% if running %}
+<div class="panel">
+  <img class="qr-code" src="{{ url('admin_quiz_qr', args=[quiz.id]) }}" alt="{{ _('QR code of the public address') }}">
+  <div>
+    <h2>{{ _("Run %(no)s is running", no=running.run_no) }}</h2>
+    <p>{{ _("Public address") }}: <a href="{{ public_url }}">{{ public_url }}</a></p>
+    <p>{{ _("Attempts submitted: %(count)s", count=running.submitted) }}</p>
+  </div>
+</div>
+{% endif %}
+{% if rows %}
+<table class="stack">
+  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Revisions") }}</th><th>{{ _("Submitted") }}</th></tr></thead>
+  <tbody>
+    {% for item in rows %}
+    <tr>
+      <td data-label="{{ _('Run') }}"><a href="{{ url('admin_run', args=[item.run.id]) }}">{{ item.run.run_no }}</a></td>
+      <td data-label="{{ _('Status') }}">{{ _("Running") if item.run.status == "OPEN" else _("Ended") }}</td>
+      <td data-label="{{ _('Opened') }}">{{ item.run.opened_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td data-label="{{ _('Ended') }}">{{ item.run.closed_at.strftime("%Y-%m-%d %H:%M") if item.run.closed_at else "–" }}</td>
+      <td data-label="{{ _('Revisions') }}">{{ item.revisions }}</td>
+      <td data-label="{{ _('Submitted') }}">{{ item.run.submitted }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>{{ _("There are no runs yet.") }}</p>
+{% endif %}
+{% endblock %}

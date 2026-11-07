@@ -1,0 +1,11 @@
+<fieldset>
+  <legend>{{ q.prompt }}</legend>
+  {% if q.image %}<img src="{{ q.image.url }}" alt="{{ q.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="question-image">{% endif %}
+  {% if q.may_be_public %}<p role="note"><small>{{ _("An admin may show this photo publicly after the run ends.") }}</small></p>{% endif %}
+  {% if sent %}<p data-photo-sent><small>{{ _("A photo has been sent.") }}</small></p>{% endif %}
+  <label>
+    {{ _("Your photo") }}
+    <input type="file" name="{{ q.id }}:image" accept="image/png,image/jpeg,image/webp">
+    <small>{{ _("PNG, JPEG or WebP, up to 15 MB. It is sent with your answers.") }}</small>
+  </label>
+</fieldset>

@@ -24,6 +24,6 @@ def submit(request):
         question.validate_submission(DEFINITION, answer)
     except ValueError:
         return JsonResponse({"error": "invalid answer"}, status=400)
-    result = scoring.evaluate(DEFINITION, answer, {})
+    result = scoring.evaluate(question.grade(DEFINITION, answer), {})
     DemoAnswer.objects.create(earned_points=result.earned_points)
-    return JsonResponse({"earned_points": result.earned_points})
+    return JsonResponse({"earned_points": float(result.earned_points)})

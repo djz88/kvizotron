@@ -1,0 +1,17 @@
+{# `items` are dicts with code, name and href. With one language there is nothing to choose. #}
+{% macro flag(item) %}<img class="flag" src="{{ url('asset', args=['flag-' ~ item.code ~ '.svg']) }}" alt="{{ item.name }}" width="18" height="12">{% endmacro %}
+{% macro language_menu(items, active) %}
+{% set current = (items|selectattr("code", "equalto", active)|first) or items[0] %}
+{% if items|length > 1 %}
+<details class="dropdown language">
+  <summary>{{ flag(current) }}</summary>
+  <ul>
+    {% for item in items %}
+    <li><a href="{{ item.href }}" lang="{{ item.code }}"{% if item.code == active %} aria-current="true"{% endif %}>{{ flag(item) }} {{ item.name }}</a></li>
+    {% endfor %}
+  </ul>
+</details>
+{% elif items %}
+<span class="language">{{ flag(current) }}</span>
+{% endif %}
+{% endmacro %}

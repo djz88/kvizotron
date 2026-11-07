@@ -28,7 +28,10 @@ def load_modules(env: Mapping[str, str] | None = None) -> list[Manifest]:
 
 
 def load_persistence(modules: list[Manifest]) -> contracts.PersistenceProvider:
-    """Build the persistence provider of the active modules, or raise StartupError."""
+    """Build the persistence provider of the active modules, or raise StartupError.
+
+    The path comes from the manifest of an installed package, never from a request (ADR-0039).
+    """
     module = next((m for m in modules if "persistence" in m.provides), None)
     if module is None or module.persistence is None:
         raise StartupError("No persistence provider is active")

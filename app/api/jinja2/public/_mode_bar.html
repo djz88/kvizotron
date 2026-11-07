@@ -1,0 +1,9 @@
+{% if mode_bar %}
+<p class="notice mode-bar" role="status">{{ mode_bar.text }}{% for link in mode_bar.links %} <a href="{{ link.href }}">{{ link.label }}</a>{% endfor %}</p>
+{% if mode_bar.problems %}
+<article role="alert">
+  <p>{{ _("What publication would refuse:") }}</p>
+  <ul>{% for problem in mode_bar.problems %}<li>{{ problem }}</li>{% endfor %}</ul>
+</article>
+{% endif %}
+{% endif %}

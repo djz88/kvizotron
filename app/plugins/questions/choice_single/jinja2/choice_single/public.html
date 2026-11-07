@@ -1,9 +1,0 @@
-<fieldset>
-  <legend>{{ q.prompt }}</legend>
-  {% for option in q.options %}
-  <label>
-    <input type="radio" name="{{ q.id }}:option" value="{{ option.id }}">
-    {{ option.text }}
-  </label>
-  {% endfor %}
-</fieldset>

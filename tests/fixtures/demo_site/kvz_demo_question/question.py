@@ -1,11 +1,17 @@
+from decimal import Decimal
+
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
-from app.contracts import ScoreBreakdown
+from app.contracts import CsvRowError, DefinitionRow, ItemGrade, ScoreBreakdown
 
 
 class DemoNumberQuestion:
     id = "demo.number"
+
+    def label(self):
+        return "Demo number"
+
     version = "1.0.0"
 
     def config_schema(self):
@@ -13,6 +19,18 @@ class DemoNumberQuestion:
 
     def answer_schema(self):
         return {"type": "object", "required": ["value"]}
+
+    def question_settings(self):
+        return []
+
+    def summarize(self, config, answers, locale):
+        return []
+
+    def file_fields(self, config):
+        return []
+
+    def needs_grading(self, config, answer):
+        return False
 
     def available_scoring_strategies(self):
         return ["demo.exact"]
@@ -34,6 +52,18 @@ class DemoNumberQuestion:
         except (KeyError, IndexError, ValueError) as exc:
             raise ValueError("prompt and integer answer are required") from exc
 
+    def csv_columns(self, locales):
+        return ["prompt", "answer"]
+
+    def from_csv(self, cells, locales):
+        try:
+            return {"prompt": cells["prompt"], "answer": int(cells["answer"])}
+        except (KeyError, ValueError) as exc:
+            raise CsvRowError("answer", "prompt and integer answer are required") from exc
+
+    def to_csv(self, config, locales):
+        return {"prompt": config["prompt"], "answer": str(config["answer"])}
+
     def render_admin(self, config, locales):
         prompt = escape(config.get("prompt", ""))
         answer = escape(config.get("answer", ""))
@@ -42,23 +72,46 @@ class DemoNumberQuestion:
             f'<label>Answer <input name="answer" value="{answer}"></label>'
         )
 
-    def render_public(self, public_config, locale):
-        return render_to_string("kvz_demo_question/play.html", {"q": public_config})
+    def render_public(self, public_config, locale, answer=None):
+        context = {"q": public_config, "answer": answer}
+        return render_to_string("kvz_demo_question/play.html", context)
 
-    def public_payload(self, config, locale):
+    def render_solution(self, config, locale, answer):
+        return render_to_string("kvz_demo_question/solution.html", {"config": config})
+
+    def describe_definition(self, config, locales):
+        return [
+            DefinitionRow("prompt", "Prompt", None, str(config.get("prompt", ""))),
+            DefinitionRow("answer", "Answer", None, str(config.get("answer", ""))),
+        ]
+
+    def public_payload(self, config, locale, quiz_settings=None):
         return {"prompt": config["prompt"]}
+
+    def presets(self):
+        return []
+
+    def initial(self, preset, locales):
+        return {}
+
+    def grade(self, config, answer):
+        is_right = int(answer["value"]) == config["answer"]
+        return ItemGrade(int(is_right), int(not is_right), 1)
 
 
 class DemoExactScoring:
     id = "demo.exact"
     version = "1.0.0"
 
+    def label(self):
+        return "Demo exact"
+
     def supports(self, question_type_id):
         return question_type_id == "demo.number"
 
-    def max_score(self, definition, settings):
-        return 1.0
+    def max_score(self, settings):
+        return Decimal(1)
 
-    def evaluate(self, definition, answer, settings):
-        correct = int(answer["value"]) == definition["answer"]
-        return ScoreBreakdown(1.0 if correct else 0.0, 1.0, int(correct), {})
+    def evaluate(self, grade, settings):
+        correct = grade.right == grade.total
+        return ScoreBreakdown(Decimal(int(correct)), Decimal(1), int(correct), {})

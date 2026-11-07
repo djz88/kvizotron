@@ -1,0 +1,7 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Revision %(no)s", no=revision.revision_no) }}</h1>
+<p><a href="{{ url('admin_revisions', args=[quiz.id]) }}">{{ _("Back to revisions") }}</a></p>
+{% if previous %}<p>{{ _("Compared with revision %(no)s.", no=previous.revision_no) }}</p>{% endif %}
+{% include "admin/_diff.html" %}
+{% endblock %}

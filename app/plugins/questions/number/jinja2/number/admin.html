@@ -1,0 +1,28 @@
+{% from "admin/_image_fields.html" import image_fields %}
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+  {{ image_fields("image", image, locales) }}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Correct answer") }}</legend>
+  <label>
+    {{ _("Correct value") }}
+    <input type="text" name="value" value="{{ value }}" maxlength="40" inputmode="text">
+    <small>{{ _("Write a unit in the question's text, not here.") }}</small>
+  </label>
+  <p>{{ _("Tolerance") }}</p>
+  <label><input type="radio" name="tolerance_kind" value="none"{% if kind == "none" %} checked{% endif %}> {{ _("Exact value") }}</label>
+  <label><input type="radio" name="tolerance_kind" value="absolute"{% if kind == "absolute" %} checked{% endif %}> {{ _("Plus or minus") }}</label>
+  <label><input type="radio" name="tolerance_kind" value="percent"{% if kind == "percent" %} checked{% endif %}> {{ _("Percent") }}</label>
+  <label>
+    {{ _("How much") }}
+    <input type="text" name="tolerance" value="{{ tolerance }}" maxlength="40">
+    <small>{{ _("Both limits count as right: 1000 with 5 percent accepts 950 to 1050.") }}</small>
+  </label>
+</fieldset>

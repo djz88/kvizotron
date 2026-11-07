@@ -6,4 +6,5 @@ MANIFEST = {
     "api_compatibility": ">=1.0,<2.0",
     "provides": ["auth"],
     "auth_backend": "app.providers.auth_local.backends.LocalBackend",
+    "settings": [],
 }

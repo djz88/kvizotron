@@ -1,0 +1,48 @@
+{% from "admin/_image_fields.html" import image_fields %}
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  <p><small>{{ _("For blanks inside the sentence, write {1}, {2} where each one belongs, in any order per language. Without them, the participant gets one field under the question. To show a brace, write {{.") }}</small></p>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+  {{ image_fields("image", image, locales) }}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Accepted answers") }}</legend>
+  <p><small>{{ _("One per line. An answer counts if it matches any of them, in any language.") }}</small></p>
+  {% for row in rows %}
+  {% if row.number <= used %}
+  <article>
+    <input type="hidden" name="blank_{{ row.number }}_id" value="{{ row.id }}">
+    <h4>{{ _("Blank %(number)s", number=row.number) }}</h4>
+    {% for locale in locales %}
+    <label>
+      {{ locale }}
+      <textarea name="accepted_{{ row.number }}_{{ locale }}" rows="2">{{ row.accepted.get(locale, [])|join("\n") }}</textarea>
+    </label>
+    {% endfor %}
+  </article>
+  {% else %}
+  <details>
+    <summary>{{ _("Blank %(number)s", number=row.number) }}</summary>
+    <input type="hidden" name="blank_{{ row.number }}_id" value="{{ row.id }}">
+    {% for locale in locales %}
+    <label>
+      {{ locale }}
+      <textarea name="accepted_{{ row.number }}_{{ locale }}" rows="2"></textarea>
+    </label>
+    {% endfor %}
+  </details>
+  {% endif %}
+  {% endfor %}
+</fieldset>
+<fieldset>
+  <legend>{{ _("How answers are compared") }}</legend>
+  <label><input type="checkbox" name="ignore_case"{% if ignore_case %} checked{% endif %}> {{ _("Ignore letter case") }}</label>
+  <label><input type="checkbox" name="ignore_spaces"{% if ignore_spaces %} checked{% endif %}> {{ _("Ignore extra spaces") }}</label>
+  <label><input type="checkbox" name="ignore_diacritics"{% if ignore_diacritics %} checked{% endif %}> {{ _("Ignore diacritics") }}</label>
+  <small>{{ _("Ignoring diacritics applies to Latin letters only, so Plzen matches Plzeň, while Cyrillic letters stay as they are.") }}</small>
+</fieldset>

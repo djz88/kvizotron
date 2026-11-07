@@ -1,9 +1,4 @@
-<nav aria-label="{{ _('Language') }}">
-  <ul>
-    {% for language in languages %}
-    <li>
-      <a href="?lang={{ language.code }}" lang="{{ language.code }}"{% if language.code == locale %} aria-current="true"{% endif %}>{{ language.name }}</a>
-    </li>
-    {% endfor %}
-  </ul>
-</nav>
+{% from "_language_menu.html" import language_menu %}
+{% set items = [] %}
+{% for language in languages|default([]) %}{% set _x = items.append({"code": language.code, "name": language.name, "href": "?lang=" ~ language.code}) %}{% endfor %}
+{{ language_menu(items, locale) }}

@@ -1,18 +1,26 @@
-{% extends theme.layout_template() %}
+{% extends "public/base.html" %}
 {% block title %}{{ title }} · Kvízotron{% endblock %}
 {% block content %}
-{% include "public/_languages.html" %}
-<h1>{{ title }}</h1>
-{% if is_open %}
-<p>{{ _("Questions: %(count)s", count=question_count) }}</p>
+{# Starting replaces all of #play, so the questions begin at the top of the page. #}
 <div id="play">
-  <form method="post" action="{{ url('start', args=[run.id]) }}" hx-post="{{ url('start', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
-    <input type="hidden" name="lang" value="{{ locale }}">
-    <button type="submit">{{ _("Start") }}</button>
-  </form>
+  {% include "public/_mode_bar.html" %}
+  <div class="hero">
+    <h1>{{ title }}</h1>
+    {% if description %}<p>{{ description }}</p>{% endif %}
+  </div>
+  {% include "public/_result_slot.html" %}
+{% if walkthrough_url %}<p class="card"><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+  <div class="card">
+    {% if is_open %}
+    <p>{{ _("Questions: %(count)s", count=question_count) }}</p>
+    <form method="post" action="{{ url('start', args=[run.id]) }}" hx-post="{{ url('start', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+      <input type="hidden" name="lang" value="{{ locale }}">
+      <button type="submit">{{ _("Start") }}</button>
+    </form>
+    {% else %}
+    <p>{{ _("This run has ended.") }}</p>
+    {% endif %}
+  </div>
 </div>
 {% include "public/_message.html" %}
-{% else %}
-<p>{{ _("This round is closed.") }}</p>
-{% endif %}
 {% endblock %}

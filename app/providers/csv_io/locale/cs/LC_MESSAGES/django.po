@@ -1,0 +1,62 @@
+#: provider.py:57
+msgid "The file is larger than 100 MB."
+msgstr "Soubor je větší než 100 MB."
+
+#: reader.py:38
+msgid "The file has no column names."
+msgstr "Soubor nemá názvy sloupců."
+
+#: reader.py:40
+msgid "A column name is used twice."
+msgstr "Název sloupce je použitý dvakrát."
+
+#: reader.py:56
+msgid "This row has more cells than the file has columns."
+msgstr "Tento řádek má víc buněk, než má soubor sloupců."
+
+#: reader.py:64
+msgid "The file is not in UTF-8. Save it as CSV UTF-8."
+msgstr "Soubor není v UTF-8. Uložte ho jako CSV UTF-8."
+
+#: reader.py:66 reader.py:83
+msgid "The file could not be read as CSV."
+msgstr "Soubor nejde přečíst jako CSV."
+
+#: reader.py:80
+msgid "The file has more than 2000 rows."
+msgstr "Soubor má víc než 2000 řádků."
+
+#: reader.py:85
+msgid "The file is empty."
+msgstr "Soubor je prázdný."
+
+#: reader.py:105
+#, python-format
+msgid "A file in the archive is too large: %(name)s"
+msgstr "Soubor v archivu je příliš velký: %(name)s"
+
+#: reader.py:114 reader.py:151 reader.py:164
+msgid "The archive could not be read."
+msgstr "Archiv nejde přečíst."
+
+#: reader.py:119
+msgid "The archive holds too many files or too much data."
+msgstr "Archiv má příliš mnoho souborů nebo dat."
+
+#: reader.py:122
+msgid "The archive is encrypted."
+msgstr "Archiv je zašifrovaný."
+
+#: reader.py:133
+msgid "The archive must hold exactly one CSV file at its top level."
+msgstr "Archiv musí mít přímo v kořeni právě jeden soubor CSV."
+
+#: reader.py:142
+msgid "The CSV file is larger than 5 MB."
+msgstr "Soubor CSV je větší než 5 MB."
+
+#: reader.py:165
+#, python-format
+msgid "The archive has no file named %(name)s."
+msgstr "Archiv nemá soubor %(name)s."
+

@@ -19,4 +19,4 @@ def test_demo_module_passes_shared_contract_suites():
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "12 passed" in result.stdout
+    assert "40 passed" in result.stdout

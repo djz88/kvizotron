@@ -1,0 +1,19 @@
+<fieldset>
+  {% if q.segments %}
+  <legend>{{ _("Fill in the blanks") }}</legend>
+  {% if q.image %}<img src="{{ q.image.url }}" alt="{{ q.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="question-image">{% endif %}
+  <p class="fill-text">
+    {%- for part in q.segments %}
+    {%- if part.blank %}<input type="text" autocomplete="off" maxlength="{{ max_length }}" name="{{ q.id }}:blank_{{ part.blank }}" value="{{ values[part.blank] }}" aria-label="{{ _('Blank %(number)s', number=part.blank) }}">
+    {%- else %}<span>{{ part.text }}</span>{% endif %}
+    {%- endfor %}
+  </p>
+  {% else %}
+  <legend>{{ q.prompt }}</legend>
+  {% if q.image %}<img src="{{ q.image.url }}" alt="{{ q.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="question-image">{% endif %}
+  <label>
+    {{ _("Your answer") }}
+    <input type="text" autocomplete="off" maxlength="{{ max_length }}" name="{{ q.id }}:blank_1" value="{{ values[1] }}">
+  </label>
+  {% endif %}
+</fieldset>

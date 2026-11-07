@@ -1,0 +1,9 @@
+{% for requirement in requirements %}
+<form method="post" action="{{ url('admin_requirement_use', args=[quiz.id]) }}" class="notice requirement" role="alert">
+  {{ csrf_input }}
+  <input type="hidden" name="key" value="{{ requirement.key }}">
+  {% if here %}<input type="hidden" name="next" value="{{ here }}">{% endif %}
+  <p>{{ requirement.text }}</p>
+  <button type="submit" class="secondary">{{ _("Use: %(value)s", value=requirement.use_label) }}</button>
+</form>
+{% endfor %}

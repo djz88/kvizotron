@@ -13,24 +13,29 @@ ID format: UUIDv7 ([ADR-0023](adr/0023-id-format.md)).
 | `django_session` | Django database sessions | Django |
 | `plugin_installation` | `plugin_id`, `version`, `manifest_json`, `enabled`, `status` | kernel |
 | `plugin_configuration` | `plugin_id`, `scope=global/quiz/run`, `scope_id`, `settings_json`, `schema_version` | kernel |
-| `quiz` | `id`, `slug UNIQUE`, `title` (locale → text), `default_locale`, `supported_locales`, `featured`, `archived_at` | domain |
+| `quiz` | `id`, `slug UNIQUE`, `title` (locale → text), `description` (locale → text), `default_locale`, `supported_locales`, `featured`, `archived_at` | domain |
 | `quiz_revision` | `id`, `quiz_id`, `revision_no`, `status`, `snapshot_json`, `plugins_json`, `max_score`, `checksum`, `published_at` | domain |
-| `question_bank` | `id`, `name`, `labels`, `created_by` | question types |
-| `bank_question` | `id`, `bank_id`, `type_id`, `type_version`, `definition_json`, `translation_json`, `tags`, `active` | question types |
-| `media_asset` | `id`, `kind`, `storage_key/remote_url`, `mime_type`, `size`, `sha256`, `locale_alt_json` | media-local |
+| `app_setting` | `key`, `value_json`, `quiz_id` nullable (global when empty); one value per key and scope; a question value lives in the question ([ADR-0042](adr/0042-settings-inherited-and-declared.md)) | domain |
+| `question_bank` | `id`, `name`, `created_by`, `created_at` | domain |
+| `bank_question` | `id`, `bank_id`, `question_json` (the shape of a quiz question in a draft), `tags`, `created_at` | domain |
+| `media_asset` | `id`, `kind`, `storage_key`, `mime_type`, `size`, `sha256`, `created_at`, `private` (a participant's photo, never on `/media/`) | media-local |
+| `media_address_check` | `address`, `ok`, `checked_at`; the last check of an address some quiz loads an image from. An address itself lives in the question definition as `source` ([ADR-0043](adr/0043-external-images.md)) | media-local |
 | `quiz_run` | `id`, `quiz_id`, `run_no`, `current_revision_id`, `status`, `starts_at`, `deadline_at`, `attempt_limit_sec`, `config_json`, `retention_json` | domain |
-| `run_revision` | `id`, `run_id`, `revision_id`, `active_from`, `active_to`, `max_score` | domain |
+| `run_revision` | `id`, `run_id`, `revision_id`, `active_from`, `active_to` (empty on the current row), `max_score`, `switch_mode` (`finish`/`switch`) | domain |
 | `participant` | `id`, `run_id`, `anonymous_key_hash`, `display_name`, `email_nullable`, `created_at`, `redacted_at` | participants |
-| `attempt` | `id`, `run_id`, `revision_id`, `participant_id`, `started_at`, `submitted_at`, `status` (incl. `PENDING_GRADING`), `test_mode`, `score`, `max_score`, `duration_ms`, `submission_key` | domain |
+| `attempt` | `id`, `run_id`, `revision_id`, `participant_id`, `started_at`, `submitted_at`, `status` (incl. `SWITCHED`, `PENDING_GRADING`), `replaced_by`, `score`, `max_score`, `duration_ms`, `submission_key`, `selection_json` (questions given, and a seed for option order), `auto_score` (what the server gave; `score` adds what admins decide), `settings_json` (navigation, reveal and `store_answers` frozen at start) | domain |
 | `attempt_question` | `id`, `attempt_id`, `question_snapshot_id`, `sequence_no`, `option_order_json` (proof of the concrete selection) | domain |
-| `attempt_answer` | `id`, `attempt_question_id`, `answer_json`, `points_earned`, `manual_points`, `graded_by`, `graded_at`, `media_asset_id`, `score_details_json` (only if retention allows) | domain |
+| `attempt_answer` | `id`, `attempt_id`, `question_id`, `answer_json`, `auto_points`, `manual_max`, `manual_points`, `graded_by`, `graded_at`, `asset_id`, `removed`, `approved`; unique per attempt and question; only what `store_answers` keeps and what a person grades ([ADR-0046](adr/0046-stored-answers-and-who-sees-them.md)) | domain |
+| `hidden_answer_value` | `id`, `run_id`, `question_id`, `value_key` (a hash of the value), `hidden_by`, `created_at`; what an admin took off a walkthrough | domain |
 | `scoreboard_policy` | `run_id`, `revision_mode`, `visibility`, `public_columns_json`, `sort_json`, `attempt_selection_policy`, `tie_break_policy`, `tie_break_seed` | results |
 | `reward_rule` | `id`, `run_id`, `type`, `threshold_unit`, `threshold_value`, `description_json`, `fulfilment_json` | rewards |
 | `reward_entitlement` | `id`, `run_id`, `participant_id`, `rule_id`, `attempt_id`, `status`, `created_at` | rewards |
 | `draw` | `id`, `run_id`, `rule_id`, `admin_id`, `created_at`, `eligible_count`, `eligible_set_hash`, `algorithm`, `audit_json` | drawing |
 | `draw_entry` / `draw_winner` | `draw_id`, `participant_id` or pseudonymised key, `selected`, `rank` | drawing |
 | `audit_event` | `id`, `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `created_at`, `details_json` | kernel |
-| `import_job` / `export_job` | `id`, `admin_id`, `kind`, `status`, `report_json`, `created_at`, `expires_at` | csv-io |
+| `import_job` | `id`, `admin_id`, `status`, `target_json`, `mapping_json`, `report_json`, `created_at`, `expires_at` | csv-io |
+| `export_job` | `id`, `admin_id`, `kind`, `status`, `report_json`, `created_at`, `expires_at` (D2) | csv-io |
+| `test_link` | `id`, `run_id`, `token`, `expires_at`, `created_by`, `created_at`; the run has kind `test`, and its revision may have status `TEST_COPY` | domain |
 | `retention_job` | `id`, `run_id`, `policy`, `cutoff_at`, `executed_at`, `counts_json` | retention |
 | `branding_configuration` | `scope`, `scope_id`, `theme_id`, `tokens_json`, `assets_json` | theme |
 
@@ -43,7 +48,7 @@ The "Owner" column is a documentation proposal mapping tables to modules.
                 │                                │
                 │ 1                              ├──N participant 1───N attempt
                 └────────────N attempt N─────────┘                       │
-                                                         attempt 1───N attempt_question 1───1 attempt_answer
+                                                         attempt 1───N attempt_answer
  quiz_run 1───N reward_rule 1───N reward_entitlement N───1 participant
  quiz_run 1───N draw 1───N draw_entry
 ```

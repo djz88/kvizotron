@@ -14,8 +14,16 @@ REPO = Path(__file__).resolve().parents[1]
 LOCALES = ("cs", "uk")
 ROOTS = (
     REPO / "app" / "api",
-    REPO / "app" / "plugins" / "questions" / "choice_single",
+    REPO / "app" / "domain",
+    REPO / "app" / "plugins" / "questions" / "choice",
+    REPO / "app" / "plugins" / "questions" / "image_answer",
+    REPO / "app" / "plugins" / "questions" / "matching",
+    REPO / "app" / "plugins" / "questions" / "number",
+    REPO / "app" / "plugins" / "questions" / "text",
+    REPO / "app" / "plugins" / "scoring",
     REPO / "app" / "plugins" / "theme_default",
+    REPO / "app" / "providers" / "csv_io",
+    REPO / "app" / "providers" / "media_local",
 )
 METHODS = [("**.py", "python"), ("**/jinja2/**.html", "jinja2")]
 OPTIONS = {"**/jinja2/**.html": {"extensions": "jinja2.ext.i18n", "newstyle_gettext": "true"}}

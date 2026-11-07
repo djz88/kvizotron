@@ -1,0 +1,27 @@
+{% macro image_fields(name, image, locales) %}
+<details class="image-fields"{% if image %} open{% endif %}>
+  <summary>{{ _("Image") }}</summary>
+  {% if image and (image.asset or image.source) %}
+  {% if image.asset %}<input type="hidden" name="{{ name }}_asset" value="{{ image.asset }}">{% endif %}
+  {% if image.asset and image.source %}<input type="hidden" name="{{ name }}_kept_source" value="{{ image.source }}">{% endif %}
+  {% if image.url %}<img src="{{ image.url }}" alt="" class="image-preview" referrerpolicy="no-referrer">{% endif %}
+  {% if image.source and not image.asset %}<p><small>{{ _("No copy of this image is kept, so it always loads from its address. Saving tries to fetch it again.") }}</small></p>{% endif %}
+  <label><input type="checkbox" name="{{ name }}_remove"> {{ _("Remove image") }}</label>
+  {% endif %}
+  <label>
+    {{ _("Choose a file") }}
+    <input type="file" name="{{ name }}" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+  </label>
+  <label>
+    {{ _("Or an image address") }}
+    <input name="{{ name }}_source" type="url" value="{{ image.source if image and image.source else '' }}" maxlength="2000" placeholder="https://">
+    <small>{{ _("A copy is fetched when you save. Participants never see the address unless the image loads from its server.") }}</small>
+  </label>
+  {% for locale in locales %}
+  <label>
+    {{ _("Image description") }} ({{ locale }})
+    <input type="text" name="{{ name }}_alt_{{ locale }}" value="{{ image.alt.get(locale, '') if image else '' }}" maxlength="300">
+  </label>
+  {% endfor %}
+</details>
+{% endmacro %}

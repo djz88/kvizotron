@@ -1,0 +1,43 @@
+{% extends "public/base.html" %}
+{% block title %}{{ title }} · Kvízotron{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>{{ title }}</h1>
+  <p>{{ _("The answers of this run.") }}</p>
+</div>
+{% for item in items %}
+<section class="card walkthrough-question">
+  <h2>{{ item.prompt }}</h2>
+  {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="question-image">{% endif %}
+  {% if item.solution %}<h3>{{ _("Correct answer") }}</h3>{{ item.solution }}{% endif %}
+  {% if item.explanation %}<p class="explanation">{{ item.explanation }}</p>{% endif %}
+  {% if item.counts %}
+  <h3>{{ _("What people answered") }}</h3>
+  <ul class="walkthrough-counts">
+    {% for row in item.counts %}
+    <li{% if row.hidden %} class="walkthrough-hidden"{% endif %}>
+      {{ row.label }} {{ row.count }}×
+      {% if is_admin %}
+      <form method="post" action="{{ url('admin_walkthrough_hide', args=[run.id]) }}" class="inline-form">
+        {{ csrf_input }}
+        <input type="hidden" name="question" value="{{ item.id }}">
+        <input type="hidden" name="key" value="{{ row.key }}">
+        <input type="hidden" name="hidden" value="{{ '' if row.hidden else '1' }}">
+        <button type="submit" class="secondary outline">{{ _("Show again") if row.hidden else _("Hide") }}</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if item.photos %}
+  <div class="grading-gallery">
+    {% for photo in item.photos %}
+    <img src="{{ photo }}" alt="{{ _('A participant\'s photo') }}" loading="lazy" class="photo-thumb" referrerpolicy="no-referrer">
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+<div class="card"><a href="/">{{ _("Back to quizzes") }}</a></div>
+{% endblock %}

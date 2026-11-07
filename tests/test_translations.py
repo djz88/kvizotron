@@ -1,11 +1,14 @@
 """Catalogues: complete where required, compiled, and in step with the code."""
 
+import re
 from pathlib import Path
 
 import pytest
 from babel.messages.mofile import read_mo
 from babel.messages.pofile import read_po
+from django.utils import translation
 
+from app.kernel.discovery import installed_modules
 from tools import messages
 
 CATALOGUES = [
@@ -48,3 +51,35 @@ def test_compiled_catalogue_matches_source(root, locale, directory):
 def test_catalogue_contains_every_string_in_the_code(root, locale):
     known = {m.id for m in read(root / "locale" / locale / "LC_MESSAGES" / "django.po")}
     assert {m.id for m in messages.extract(root) if m.id} <= known
+
+
+OLD_WORD = re.compile(r"(?i)\b(rounds?|kolo|kola|kolu|kole|раунд\w*)\b")
+
+
+def test_catalogues_do_not_use_the_old_word_for_a_run():
+    found = [
+        text
+        for root, _locale, directory in CATALOGUES
+        for message in read(directory / "django.po")
+        for text in (message.id, message.string)
+        if text and OLD_WORD.search(str(text))
+    ]
+    assert found == []
+
+
+def test_every_text_of_a_manifest_is_translated():
+    """Settings and requirements are shown to admins, and a manifest cannot call gettext."""
+    missing = []
+    for module in installed_modules():
+        texts = [
+            text
+            for declared in module.settings
+            for text in (declared.label, declared.help, *declared.value_labels.values())
+            if text
+        ]
+        texts += [item.reason for item in module.settings_requirements.values()]
+        for text in texts:
+            with translation.override("cs"):
+                if translation.gettext(text) == text:  # noqa: INT001
+                    missing.append(f"{module.id}: {text}")
+    assert missing == []

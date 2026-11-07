@@ -1,0 +1,41 @@
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Kind") }}</legend>
+  <label><input type="radio" name="mode" value="pairs"{% if mode == "pairs" %} checked{% endif %}> {{ _("Pairs") }}</label>
+  <label><input type="radio" name="mode" value="order"{% if mode == "order" %} checked{% endif %}> {{ _("Ordering") }}</label>
+</fieldset>
+<fieldset class="order-only">
+  <legend>{{ _("Direction shown to the participant") }}</legend>
+  <label><input type="radio" name="direction" value="top_down"{% if direction != "bottom_up" %} checked{% endif %}> {{ _("From top to bottom") }}</label>
+  <label><input type="radio" name="direction" value="bottom_up"{% if direction == "bottom_up" %} checked{% endif %}> {{ _("From bottom to top") }}</label>
+</fieldset>
+<fieldset>
+  <legend>{{ _("Rows") }}</legend>
+  <p><small>{{ _("Write pairs as they belong together, and for ordering the rows from first to last. Participants see them in a different order. Leave unused rows empty.") }}</small></p>
+  {% for row in rows %}
+  <article>
+    <input type="hidden" name="item_{{ row.index }}_id" value="{{ row.id }}">
+    <input type="hidden" name="item_{{ row.index }}_match_id" value="{{ row.match_id }}">
+    {% for locale in locales %}
+    <div class="match-admin-row">
+      <label>
+        {{ locale }}
+        <input type="text" name="item_{{ row.index }}_{{ locale }}" value="{{ row.text.get(locale, '') }}" maxlength="300">
+      </label>
+      <label class="pairs-only">
+        {{ _("Matches") }} ({{ locale }})
+        <input type="text" name="match_{{ row.index }}_{{ locale }}" value="{{ row.match.get(locale, '') }}" maxlength="300">
+      </label>
+    </div>
+    {% endfor %}
+  </article>
+  {% endfor %}
+</fieldset>

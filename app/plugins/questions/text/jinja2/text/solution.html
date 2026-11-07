@@ -1,0 +1,8 @@
+<ul class="solution">
+  {% for row in rows %}
+  <li class="reveal-correct">
+    {% if several %}{{ _("Blank %(number)s", number=row.number) }}: {% endif %}{{ row.accepted }}
+    {% if row.theirs %}<small class="reveal-theirs">{{ _("your answer: %(answer)s", answer=row.theirs) }}</small>{% endif %}
+  </li>
+  {% endfor %}
+</ul>

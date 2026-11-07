@@ -11,13 +11,18 @@ from app.kernel.models import AdminUser
 
 client.force_login(AdminUser.objects.create_admin("alice", "dlouhe-a-neobvykle-heslo"))
 new = client.post("/admin/quizzes/new", {
+    "description_cs": "Popis",
     "slug": "demo", "supported_locales": ["cs"], "default_locale": "cs", "title_cs": "Demo",
 })
 quiz = Quiz.objects.get()
 url = f"/admin/quizzes/{quiz.id}/questions/new?type=demo.number"
 editor = client.get(url).content.decode()
 saved = client.post(url, {"prompt": "2 + 5 = ?", "answer": "7"}).status_code
-published = client.post(f"/admin/quizzes/{quiz.id}/publish").status_code
+publish_url = f"/admin/quizzes/{quiz.id}/publish"
+snapshot_hash = re.search(
+    r'name="snapshot_hash" value="([^"]*)"', client.get(publish_url).content.decode()
+).group(1)
+published = client.post(publish_url, {"snapshot_hash": snapshot_hash}).status_code
 opened = client.post(f"/admin/quizzes/{quiz.id}/runs").status_code
 run = QuizRun.objects.get()
 qid = run.current_revision.snapshot_json["questions"][0]["id"]

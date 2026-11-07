@@ -1,0 +1,39 @@
+{# The main button and what is under its arrow, following app.domain.quiz_state. #}
+{% set publish_url = url('admin_quiz_publish', args=[quiz.id]) %}
+{% set end_url = url('admin_run_close', args=[state.open_run.id]) if state.open_run else "" %}
+<div class="main-action">
+  {% if state.main in ("start", "start_again") %}
+  {% set start_label = _("Start the quiz") if state.main == "start" else _("Start again") %}
+  {% if state.needs_publication_page %}
+  <a href="{{ publish_url }}?start=1" role="button">{{ start_label }}</a>
+  {% else %}
+  <form method="post" action="{{ url('admin_run_open', args=[quiz.id]) }}">
+    {{ csrf_input }}
+    <button type="submit">{{ start_label }}</button>
+  </form>
+  {% endif %}
+  {% elif state.main == "publish_changes" %}
+  <a href="{{ publish_url }}" role="button">{{ _("Publish changes") }}</a>
+  {% elif state.main == "end_run" %}
+  <a href="{{ end_url }}" role="button">{{ _("End the run") }}</a>
+  {% elif state.main == "restore" %}
+  <form method="post" action="{{ url('admin_quiz_restore', args=[quiz.id]) }}">
+    {{ csrf_input }}
+    <button type="submit">{{ _("Restore from archive") }}</button>
+  </form>
+  {% endif %}
+  {% if state.secondary %}
+  <details class="dropdown more">
+    <summary aria-label="{{ _('More actions') }}">▾</summary>
+    <ul>
+      {% for action in state.secondary %}
+      {% if action == "publish_only" %}<li><a href="{{ publish_url }}">{{ _("Publish only") }}</a></li>
+      {% elif action == "discard" %}<li><a href="{{ url('admin_draft_discard', args=[quiz.id]) }}">{{ _("Discard changes") }}</a></li>
+      {% elif action == "end_run" %}<li><a href="{{ end_url }}">{{ _("End the run") }}</a></li>
+      {% elif action == "duplicate" %}<li><a href="{{ url('admin_quiz_duplicate', args=[quiz.id]) }}">{{ _("Duplicate") }}</a></li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>

@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Settings") }}</h1>
+<section class="form-section">
+  <p>{{ _("These values apply to every quiz that does not set its own.") }}</p>
+  <form method="post">
+    {{ csrf_input }}
+    {{ form.as_div() }}
+    <button type="submit">{{ _("Save") }}</button>
+  </form>
+</section>
+{% endblock %}

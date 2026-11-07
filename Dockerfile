@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=app.settings \
     KVZ_DB_PATH=/data/db/kvizotron.sqlite3
 
-RUN pip install --quiet --disable-pip-version-check --root-user-action=ignore uv==0.13.7
+RUN pip install --quiet --disable-pip-version-check --no-cache-dir --root-user-action=ignore uv==0.13.7
 
 WORKDIR /srv/kvizotron
 COPY pyproject.toml uv.lock ./

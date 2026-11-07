@@ -1,0 +1,10 @@
+{% extends "public/base.html" %}
+{% block title %}{{ _("About") }} · Kvízotron{% endblock %}
+{% block content %}
+<div class="hero"><h1>{{ _("About") }}</h1></div>
+<div class="card prose">
+  <p>{{ _("Kvízotron is an application for quizzes and contests in Czech, English and Ukrainian.") }}</p>
+  <p>{{ _("Anyone can play without registering. Organisers create the quizzes and start them for their participants.") }}</p>
+  <p>{{ _("Organisers run Kvízotron on their own server, so they also look after its data.") }}</p>
+</div>
+{% endblock %}

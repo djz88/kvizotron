@@ -1,12 +1,21 @@
-{% extends theme.layout_template() %}
+{% extends "public/base.html" %}
 {% block content %}
-{% include "public/_languages.html" %}
-<h1>{{ _("Quizzes") }}</h1>
-{% for quiz in quizzes %}
-<article{% if quiz.featured %} class="is-featured"{% endif %}>
-  <a href="/q/{{ quiz.slug }}?lang={{ locale }}">{{ quiz.title }}</a>
-</article>
-{% else %}
-<p>{{ _("No quiz is running right now.") }}</p>
-{% endfor %}
+<div class="hero">
+  <h1>{{ _("Turn on your brain. Start Kvízotron.") }}</h1>
+  <p>{{ _("Quizzes and contests without registration, right on your phone.") }}</p>
+</div>
+<div class="card">
+  {% if quizzes %}
+  <ul class="quiz-list">
+    {% for quiz in quizzes %}
+    <li{% if quiz.featured %} class="is-featured"{% endif %}>
+      <a href="/q/{{ quiz.slug }}?lang={{ locale }}"><strong>{{ quiz.title }}</strong>{% if quiz.description %}<span>{{ quiz.description }}</span>{% endif %}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>{{ _("No quiz is running right now.") }}</p>
+  {% endif %}
+</div>
+<p class="admin-link"><a href="{{ url('admin_quizzes') }}?lang={{ locale }}">{{ _("Administration") }}</a></p>
 {% endblock %}

@@ -61,21 +61,27 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Ahead of everything that reads the form: reading it spools the upload.
+    "app.kernel.middleware.RefuseMultipartMiddleware",
     "app.api.i18n.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "app.kernel.middleware.ModuleGateMiddleware",
 ]
-# data: only for images, which Pico CSS uses for its icons.
+# data: only for images, which Pico CSS uses for its icons. https: for images a quiz loads from
+# their own server (ADR-0043).
 SECURE_CSP = {
     "default-src": [CSP.SELF],
-    "img-src": [CSP.SELF, "data:"],
+    "img-src": [CSP.SELF, "data:", "https:"],
     "object-src": [CSP.NONE],
     "base-uri": [CSP.SELF],
     "form-action": [CSP.SELF],
     "frame-ancestors": [CSP.NONE],
 }
+KVZ_MEDIA_PATH = os.environ.get("KVZ_MEDIA_PATH", "/data/media")
+# An upload stays in memory up to Caddy's body limit, so no temporary files stay behind.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 16 * 1024 * 1024
 ROOT_URLCONF = "app.urls"
 WSGI_APPLICATION = "app.wsgi.application"
 TEMPLATES = [

@@ -51,4 +51,4 @@ Rules:
 ## More Information
 
 Defined by FR-46 in [../modules/kernel.md](../modules/kernel.md). Extends
-[ADR-0021](0021-plugin-manifest-and-versioning.md). First user: [ADR-0033](0033-image-answer-question-type.md).
+[ADR-0021](0021-plugin-manifest-and-versioning.md). First user: [ADR-0033](0033-image-answer-question-type.md), through `reveal_moment` ([ADR-0047](0047-image-answer-photo-visibility.md)). A requirement states the values it refuses, the value `Use` applies, and a reason.

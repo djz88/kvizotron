@@ -1,20 +1,24 @@
 {% extends theme.layout_template() %}
-{% block content %}
-<nav aria-label="{{ _('Administration') }}">
-  <ul>
-    <li><a href="{{ url('admin_quizzes') }}">{{ _("Quizzes") }}</a></li>
-    <li><a href="{{ url('admin_users') }}">{{ _("Admins") }}</a></li>
-  </ul>
-  <ul>
-    <li><a href="{{ with_lang(request, 'cs') }}" lang="cs">Čeština</a></li>
-    <li><a href="{{ with_lang(request, 'en') }}" lang="en">English</a></li>
-    <li>
-      <form method="post" action="{{ url('admin_logout') }}">
-        {{ csrf_input }}
-        <button type="submit" class="secondary">{{ _("Log out") }}</button>
-      </form>
-    </li>
-  </ul>
-</nav>
-{% block admin %}{% endblock %}
+{% from "_language_menu.html" import language_menu %}
+{% block body_class %}admin{% endblock %}
+{% block bar %}
+{% set section = "quizzes" if request.path.startswith(("/admin/quizzes", "/admin/runs")) else "banks" if request.path.startswith("/admin/banks") else request.path.removeprefix("/admin/") %}
+<details class="site-nav" open>
+  <summary aria-label="{{ _('Menu') }}">☰</summary>
+  <nav aria-label="{{ _('Administration') }}">
+    <ul>
+      <li><a href="{{ url('admin_quizzes') }}"{% if section == "quizzes" %} aria-current="page"{% endif %}>{{ _("Quizzes") }}</a></li>
+      <li><a href="{{ url('admin_banks') }}"{% if section == "banks" %} aria-current="page"{% endif %}>{{ _("Banks") }}</a></li>
+      <li><a href="{{ url('admin_settings') }}"{% if section == "settings" %} aria-current="page"{% endif %}>{{ _("Settings") }}</a></li>
+      <li><a href="{{ url('admin_users') }}"{% if section == "users" %} aria-current="page"{% endif %}>{{ _("Admins") }}</a></li>
+      <li>{{ language_menu([{"code": "cs", "name": "Čeština", "href": with_lang(request, "cs")}, {"code": "en", "name": "English", "href": with_lang(request, "en")}], locale) }}</li>
+      <li>
+        <form method="post" action="{{ url('admin_logout') }}">
+          {{ csrf_input }}
+          <button type="submit" class="outline">{{ _("Log out") }}</button>
+        </form>
+      </li>
+    </ul>
+  </nav>
+</details>
 {% endblock %}

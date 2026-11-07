@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Contract | `QuizFlowPlugin` |
-| Package | `app/plugins/quiz_flow/` (not listed in spec layout; proposed) |
+| Package | `app/plugins/quiz_flow/` |
 | Stage | B (navigation modes), C (local resume) |
 
 ## Requirements
@@ -16,6 +16,9 @@
 
 ## Behaviour
 
+- One form holds all the attempt's questions and is submitted once. `assets/flow.js` shows them one at a time, with "Question 3 of 12" and a bar; all at once shows "Answered 3 of 12". Without JavaScript every mode is the one-page form.
+- `QuizFlowPlugin.client_options(mode, moment)` tells the page what to offer. Without the module every quiz is one page.
+- With `after_each`, `POST /a/<id>/check` returns one question's reveal and stores nothing. It refuses unless the attempt is in progress, its frozen moment allows it and the question was given. The page then locks the answer; a locked answer still goes in with the submission.
 - Local storage keeps answers + `attempt_token` with a short TTL and minimum personal data.
 - Images are not kept in browser storage: after resuming, the participant selects the image again and
   the page says so.

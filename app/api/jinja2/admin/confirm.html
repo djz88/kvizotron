@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Please confirm") }}</h1>
+<p>{{ message }}</p>
+<form method="post" action="{{ action }}">
+  {{ csrf_input }}
+  <input type="hidden" name="confirm" value="1">
+  <button type="submit">{{ _("Confirm") }}</button>
+  <a href="{{ cancel|default(url('admin_quiz_edit', args=[quiz.id])) }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+</form>
+{% endblock %}

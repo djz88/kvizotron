@@ -37,6 +37,9 @@ Admin UI shows these dependencies and the retention setting **before** activatin
 
 ## Rules
 
+- Images a quiz loads from their own server (`external_image_mode`, off by default) let that server
+  see the participant's IP address. Copies kept by the installation do not. The public privacy page
+  says so.
 - Images uploaded by participants may show people and are treated as personal data: visible only to
   admins, EXIF removed, deleted with the answers under the run's retention.
 - No marketing consent and no e-mail mailing module in v1.0.
@@ -48,3 +51,13 @@ Admin UI shows these dependencies and the retention setting **before** activatin
 - Implementation: [providers/retention.md](_architecture/providers/retention.md);
   decision: [ADR-0012](_architecture/adr/0012-configurable-retention-profiles-and-stateless-mode.md);
   default period: [ADR-0029](_architecture/adr/0029-default-retention.md).
+
+## Stored answers and photos
+
+Answers are stored only as a quiz's settings say ([ADR-0046](_architecture/adr/0046-stored-answers-and-who-sees-them.md)). By default only photos are kept, because a person grades them; `store_answers=all` keeps each answered question.
+
+- Who sees answers: `answers_visibility` chooses admins, the participant through a private link, or everyone on a walkthrough after the run ends, without naming anyone.
+- Who sees a photo: `photo_visibility` ([ADR-0047](_architecture/adr/0047-image-answer-photo-visibility.md)). Public needs that level, approval of that photo, and a notice shown before upload.
+- A photo is rebuilt from pixels, so EXIF and any other metadata are gone. It stays until an admin deletes it, or its test link is deleted. Automatic cleanup arrives with D3.
+- The private link has no end date until D3. Anyone holding it can open it, so the result page asks to save it.
+- The participant's browser keeps that link in `localStorage`, per quiz, on that device. Nothing about it is sent anywhere. Without a script only the link itself works.

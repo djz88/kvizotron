@@ -6,7 +6,7 @@ Self-hosted platforma pro vícejazyčné kvízy (cs/en/uk) a soutěže. Veřejno
 URL nebo QR kód. Lokální admini tvoří kvízy, spouštějí soutěžní kola se žebříčkem a odměnami a
 provádějí auditovatelné losování.
 
-**Stav:** hotová etapa A. Admin napíše kvíz s jednou správnou odpovědí v cs/en/uk, publikuje ho a otevře kolo s QR kódem; účastník odehraje kvíz a skóre spočítá server. Žebříčky, odměny a další typy otázek přijdou v dalších etapách. Na veřejné nasazení zatím není určeno, chybí limity požadavků (D5).
+**Stav:** hotová etapa A a milník B1. Admin napíše kvíz s jednou správnou odpovědí v cs/en/uk, publikuje ho a otevře kolo s QR kódem; účastník odehraje kvíz a skóre spočítá server. Běžící kvíz jde bezpečně změnit: před zveřejněním je vidět přehled změn a nastavení určí, co se stane s rozehranými pokusy. Žebříčky, odměny a další typy otázek přijdou v dalších etapách. Na veřejné nasazení zatím není určeno, chybí limity požadavků (D5).
 
 ## Dokumentace
 

@@ -1,0 +1,24 @@
+{% from "admin/_image_fields.html" import image_fields %}
+<fieldset>
+  <legend>{{ _("Question") }}</legend>
+  {% for locale in locales %}
+  <label>
+    {{ locale }}
+    <input type="text" name="prompt_{{ locale }}" value="{{ prompt.get(locale, '') }}" maxlength="500">
+  </label>
+  {% endfor %}
+  {{ image_fields("image", image, locales) }}
+</fieldset>
+<fieldset>
+  <legend>{{ _("Automatic part") }}</legend>
+  <label class="quiz-only">
+    {{ _("Automatic points") }}
+    <input type="number" name="auto_points" min="0" step="1" value="{{ auto_points }}">
+    <small>{{ _("A submitted photo earns these points at once. An admin gives the rest of the question's points when grading.") }}</small>
+  </label>
+  <label class="bank-only">
+    {{ _("Automatic share in percent") }}
+    <input type="number" name="auto_percent" min="0" max="100" step="1" value="{{ auto_percent }}">
+    <small>{{ _("Points come from the draw row, so the share decides: 20 percent of a 5-point row is 1 automatic point and up to 4 from an admin.") }}</small>
+  </label>
+</fieldset>

@@ -8,9 +8,9 @@ from tests.support.run import run_manage, run_python
 
 CHECK_BROKEN_DB = """
 import django
+from tests.support.client import FormClient
 django.setup()
-from django.test import Client
-response = Client().get("/healthz")
+response = FormClient().get("/healthz")
 print(response.status_code)
 print(response.content.decode())
 """

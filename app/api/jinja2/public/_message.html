@@ -1,1 +1,1 @@
-<p id="play-message" role="status" aria-live="polite" data-network-error="{{ _('The connection failed. Your answers are still here, please try again.') }}"></p>
+<p id="play-message" role="status" aria-live="polite" data-too-large="{{ _('The photos are too large to send together. Your answers are still here: choose smaller photos and try again.') }}" data-network-error="{{ _('The connection failed. Your answers are still here, please try again.') }}">{{ play_message|default('') }}</p>

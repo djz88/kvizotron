@@ -1,0 +1,137 @@
+#: plugin.py:52
+#, python-format
+msgid "Two rows have the same text: %(text)s"
+msgstr "Dva řádky mají stejný text: %(text)s"
+
+#: plugin.py:87
+msgid "Matching"
+msgstr "Přiřazení"
+
+#: plugin.py:241
+msgid "Every pair needs both sides."
+msgstr "Každá dvojice potřebuje obě strany."
+
+#: plugin.py:258
+msgid "The question has no text in any language."
+msgstr "Otázka nemá text v žádném jazyce."
+
+#: plugin.py:262
+msgid "This is not valid JSON."
+msgstr "Tohle není platný JSON."
+
+#: plugin.py:265 plugin.py:272
+msgid "Write up to 8 items in a list named items."
+msgstr "Napište nejvýš 8 položek do seznamu items."
+
+#: plugin.py:267
+msgid "The mode must be pairs or order."
+msgstr "Režim musí být pairs nebo order."
+
+#: plugin.py:276
+msgid "Texts must be listed by language."
+msgstr "Texty se uvádějí podle jazyků."
+
+#: jinja2/matching/admin.html:2 plugin.py:372
+msgid "Question"
+msgstr "Otázka"
+
+#: plugin.py:375
+msgid "Row"
+msgstr "Řádek"
+
+#: jinja2/matching/admin.html:34 plugin.py:381
+msgid "Matches"
+msgstr "Patří k"
+
+#: plugin.py:386
+msgid "Order of rows"
+msgstr "Pořadí řádků"
+
+#: jinja2/matching/admin.html:13 plugin.py:387
+msgid "Ordering"
+msgstr "Seřazení"
+
+#: jinja2/matching/admin.html:12 plugin.py:387
+msgid "Pairs"
+msgstr "Spojení dvojic"
+
+#: jinja2/matching/admin.html:11 plugin.py:388
+msgid "Kind"
+msgstr "Druh"
+
+#: jinja2/matching/admin.html:17 plugin.py:391
+msgid "From top to bottom"
+msgstr "Shora dolů"
+
+#: jinja2/matching/admin.html:18 plugin.py:391
+msgid "From bottom to top"
+msgstr "Zdola nahoru"
+
+#: plugin.py:392
+msgid "Direction"
+msgstr "Směr"
+
+#: jinja2/matching/admin.html:16
+msgid "Direction shown to the participant"
+msgstr "Směr, který účastník uvidí"
+
+#: jinja2/matching/admin.html:21
+msgid "Rows"
+msgstr "Řádky"
+
+#: jinja2/matching/admin.html:22
+msgid "Write pairs as they belong together, and for ordering the rows from first to last. Participants see them in a different order. Leave unused rows empty."
+msgstr "Dvojice pište tak, jak k sobě patří, a u seřazení řádky od prvního po poslední. Účastník je uvidí v jiném pořadí. Nepoužité řádky nechte prázdné."
+
+#: jinja2/matching/public_order.html:3
+msgid "Arrange from bottom to top: the first belongs at the bottom."
+msgstr "Seřaďte zdola nahoru: první patří dolů."
+
+#: jinja2/matching/public_order.html:3
+msgid "Arrange from top to bottom: the first belongs at the top."
+msgstr "Seřaďte shora dolů: první patří nahoru."
+
+#: jinja2/matching/public_order.html:4
+msgid "Move up"
+msgstr "Posunout nahoru"
+
+#: jinja2/matching/public_order.html:4
+msgid "Move down"
+msgstr "Posunout dolů"
+
+#: jinja2/matching/public_order.html:4
+#, python-brace-format
+msgid "Moved to position {n}"
+msgstr "Přesunuto na pozici {n}"
+
+#: jinja2/matching/public_order.html:8
+#, python-format
+msgid "Position of: %(text)s"
+msgstr "Pozice položky: %(text)s"
+
+#: jinja2/matching/public_order.html:9
+msgid "Position"
+msgstr "Pozice"
+
+#: jinja2/matching/public_order.html:17
+msgid "Each position can be used once."
+msgstr "Každou pozici lze použít jen jednou."
+
+#: jinja2/matching/public_pairs.html:7
+msgid "Choose"
+msgstr "Vyberte"
+
+#: jinja2/matching/public_pairs.html:14
+msgid "Each option can be used once."
+msgstr "Každou možnost lze použít jen jednou."
+
+#: jinja2/matching/solution.html:6
+#, python-format
+msgid "you placed it at %(position)s"
+msgstr "vy jste dali na %(position)s. místo"
+
+#: jinja2/matching/solution.html:15
+#, python-format
+msgid "your answer: %(answer)s"
+msgstr "vaše odpověď: %(answer)s"
+

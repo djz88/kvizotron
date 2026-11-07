@@ -1,7 +1,7 @@
 import pytest
-from django.test import Client
 
 from app.kernel.models import AdminUser, AuditEvent
+from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
 GOOD = "jine-dlouhe-heslo-42"
@@ -17,7 +17,7 @@ def test_list_shows_admins(logged_in):
 
 def test_create_second_admin_who_can_log_in(logged_in):
     assert create(logged_in)["Location"] == "/admin/users"
-    response = Client().post("/admin/login", {"login": "bob", "password": GOOD})
+    response = FormClient().post("/admin/login", {"login": "bob", "password": GOOD})
     assert response.status_code == 302
 
 

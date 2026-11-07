@@ -1,0 +1,9 @@
+<fieldset>
+  <legend>{{ q.prompt }}</legend>
+  {% if q.image %}<img src="{{ q.image.url }}" alt="{{ q.image.alt }}" loading="lazy" referrerpolicy="no-referrer" class="question-image">{% endif %}
+  <label>
+    {{ _("Your answer") }}
+    <input type="text" inputmode="text" autocomplete="off" pattern="-?[0-9]+([.,][0-9]+)?" maxlength="32" name="{{ q.id }}:value" value="{{ value }}">
+    <small>{{ _("Write digits only, with a comma or dot for decimals.") }}</small>
+  </label>
+</fieldset>

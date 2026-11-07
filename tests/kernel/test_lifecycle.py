@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from django.test import override_settings
 
@@ -12,14 +14,17 @@ class Scoring:
     id = "basic"
     version = "1.0.0"
 
+    def label(self):
+        return "Basic"
+
     def supports(self, question_type_id):
         return True
 
-    def max_score(self, definition, settings):
-        return 1.0
+    def max_score(self, settings):
+        return Decimal(1)
 
-    def evaluate(self, definition, answer, settings):
-        return ScoreBreakdown(1.0, 1.0, 1, {})
+    def evaluate(self, grade, settings):
+        return ScoreBreakdown(Decimal(1), Decimal(1), 1, {})
 
 
 def manifest(module_id, kind="plugin", **fields):
@@ -29,6 +34,7 @@ def manifest(module_id, kind="plugin", **fields):
         version="1.0.0",
         app="x.y",
         api_compatibility=">=1.0",
+        settings=[],
         **fields,
     )
 

@@ -21,6 +21,7 @@ def make_module(
         "version": "1.0.0",
         "app": f"{package}.apps.Cfg",
         "api_compatibility": ">=1.0,<2.0",
+        "settings": [],
     } | manifest_overrides
     package_dir = root / package
     package_dir.mkdir(parents=True)

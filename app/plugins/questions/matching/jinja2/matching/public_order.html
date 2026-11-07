@@ -1,0 +1,18 @@
+<fieldset>
+  <legend>{{ q.prompt }}</legend>
+  <p class="match-direction">{% if q.direction == "bottom_up" %}{{ _("Arrange from bottom to top: the first belongs at the bottom.") }}{% else %}{{ _("Arrange from top to bottom: the first belongs at the top.") }}{% endif %}</p>
+  <ol class="sortable" data-sortable data-name="{{ q.id }}:order[]" data-up="{{ _('Move up') }}" data-down="{{ _('Move down') }}" data-moved="{{ _('Moved to position {n}') }}">
+    {% for item in items %}
+    <li data-id="{{ item.id }}">
+      <span class="sortable-text">{{ item.text }}</span>
+      <select name="{{ q.id }}:pos_{{ item.id }}" aria-label="{{ _('Position of: %(text)s', text=item.text) }}">
+        <option value="">{{ _("Position") }}</option>
+        {% for number in range(1, q["items"]|length + 1) %}
+        <option value="{{ number }}"{% if positions.get(item.id) == number %} selected{% endif %}>{{ number }}.</option>
+        {% endfor %}
+      </select>
+    </li>
+    {% endfor %}
+  </ol>
+  <p class="sortable-note"><small>{{ _("Each position can be used once.") }}</small></p>
+</fieldset>

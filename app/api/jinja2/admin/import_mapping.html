@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Columns this application does not know") }}</h1>
+<p>{{ _("Choose what each column means, or leave it unused.") }}</p>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="{{ url('admin_import_mapping', args=[job_id]) }}">
+  {{ csrf_input }}
+  {% for row in rows %}
+  <label>{{ row.column }}{% if row.sample %} <small>({{ row.sample[:80] }})</small>{% endif %}
+    <select name="map_{{ row.column }}">
+      <option value=""{% if not row.chosen %} selected{% endif %}>{{ _("Do not use") }}</option>
+      {% for target in targets %}
+      <option value="{{ target }}"{% if target == row.chosen %} selected{% endif %}>{{ target }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% endfor %}
+  <button type="submit">{{ _("Continue") }}</button>
+</form>
+{% endblock %}

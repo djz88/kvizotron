@@ -1,0 +1,320 @@
+#: question_import.py:165
+msgid "This setting cannot be set here."
+msgstr "Це налаштування тут не можна використати."
+
+#: question_import.py:167
+msgid "This value is not offered for this setting."
+msgstr "Це налаштування не пропонує такого значення."
+
+#: question_import.py:178
+msgid "Points must be a positive whole number."
+msgstr "Бали мають бути додатним цілим числом."
+
+#: question_import.py:185
+#, python-format
+msgid "At most %(count)s sources are allowed."
+msgstr "Дозволено не більше %(count)s джерел."
+
+#: question_import.py:189
+#, python-format
+msgid "A source can have at most %(count)s characters."
+msgstr "Джерело може мати не більше %(count)s символів."
+
+#: question_import.py:208
+msgid "Images cannot be stored on this installation."
+msgstr "Це встановлення не може зберігати зображення."
+
+#: question_import.py:215
+#, python-format
+msgid "The file %(name)s is not in the upload."
+msgstr "Файлу %(name)s немає у завантаженні."
+
+#: question_import.py:229
+msgid "This question type is not known."
+msgstr "Цей тип запитання невідомий."
+
+#: question_import.py:232
+msgid "This scoring is not offered for this question type."
+msgstr "Цей тип запитання не пропонує такого оцінювання."
+
+#: question_import.py:264
+#, python-format
+msgid "Language %(locale)s: %(detail)s"
+msgstr "Мова %(locale)s: %(detail)s"
+
+#: question_import.py:277
+msgid "No answer is marked as correct."
+msgstr "Жодну відповідь не позначено як правильну."
+
+#: question_import.py:284
+msgid "The quiz row needs a title."
+msgstr "Рядок вікторини потребує назви."
+
+#: question_import.py:289
+msgid "The quiz row lists a language this application does not have."
+msgstr "Рядок вікторини вказує мову, якої застосунок не має."
+
+#: question_import.py:293
+msgid "The default language must be among the listed ones."
+msgstr "Основна мова має бути серед указаних."
+
+#: question_import.py:343
+#, python-format
+msgid "Text in language %(locale)s was left out: the target does not use it."
+msgstr "Текст мовою %(locale)s пропущено: ціль не використовує цю мову."
+
+#: question_import.py:358
+msgid "This file uses a format version this application does not know."
+msgstr "Файл використовує версію формату, невідому застосунку."
+
+#: question_import.py:365
+msgid "A new quiz needs a row with row_type quiz."
+msgstr "Нова вікторина потребує рядка з row_type quiz."
+
+#: question_import.py:371
+msgid "A file can hold only one quiz row."
+msgstr "Файл може мати лише один рядок вікторини."
+
+#: question_import.py:377
+msgid "The quiz row was ignored: the target already exists."
+msgstr "Рядок вікторини пропущено: ціль уже існує."
+
+#: question_import.py:389
+msgid "Unknown row type."
+msgstr "Невідомий тип рядка."
+
+#: question_import.py:421
+#, python-format
+msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
+msgstr "Адреса %(wanted)s зайнята, тому вікторина отримала %(slug)s."
+
+#: question_import.py:452
+msgid "A bank question must be complete in at least one language."
+msgstr "Запитання в банку має бути повним принаймні однією мовою."
+
+#: revision_diff.py:103
+#, python-format
+msgid "%(count)s questions, %(points)s points each"
+msgstr "%(count)s питань, по %(points)s балів"
+
+#: revision_diff.py:116
+#, python-format
+msgid "Draw from %(bank)s"
+msgstr "Вибірка з банку %(bank)s"
+
+#: revision_diff.py:153
+msgid "Title"
+msgstr "Назва"
+
+#: revision_diff.py:159
+msgid "Description"
+msgstr "Опис"
+
+#: revision_diff.py:163
+msgid "Languages"
+msgstr "Мови"
+
+#: revision_diff.py:166
+msgid "Default language"
+msgstr "Мова за замовчуванням"
+
+#: revision_diff.py:183
+msgid "Points"
+msgstr "Бали"
+
+#: revision_diff.py:194
+msgid "Scoring"
+msgstr "Оцінювання"
+
+#: revision_diff.py:195
+msgid "Sources"
+msgstr "Джерела"
+
+#: revision_diff.py:199
+msgid "Explanation"
+msgstr "Пояснення"
+
+#: revision_diff.py:207
+msgid "Question type version"
+msgstr "Версія типу питання"
+
+#: revision_diff.py:220
+msgid "Question type"
+msgstr "Тип питання"
+
+#: revision_diff.py:223
+msgid "Definition"
+msgstr "Визначення"
+
+#: settings.py:132
+msgid "No"
+msgstr "Ні"
+
+#: settings.py:132
+msgid "Yes"
+msgstr "Так"
+
+#: settings.py:138
+msgid "When a new version is published during a run"
+msgstr "Коли під час запуску публікується нова версія"
+
+#: settings.py:140
+msgid "Ask at publication"
+msgstr "Запитати під час публікації"
+
+#: settings.py:141
+msgid "Notify participants and let them switch"
+msgstr "Сповістити учасників і дозволити перейти"
+
+#: settings.py:142
+msgid "Let participants finish on the old version"
+msgstr "Дозволити учасникам завершити на старій версії"
+
+#: settings.py:151
+msgid "Colours"
+msgstr "Кольори"
+
+#: settings.py:153
+msgid "Blue and teal"
+msgstr "Синій і бірюзовий"
+
+#: settings.py:154
+msgid "Indigo and pink"
+msgstr "Індиго і рожевий"
+
+#: settings.py:155
+msgid "Violet and white"
+msgstr "Фіолетовий і білий"
+
+#: settings.py:156
+msgid "Green and blue"
+msgstr "Зелений і синій"
+
+#: settings.py:157
+msgid "Red and plum"
+msgstr "Червоний і сливовий"
+
+#: settings.py:166
+msgid "Answer \"None of the answers\""
+msgstr "Відповідь «Жодна з відповідей»"
+
+#: settings.py:169
+msgid "On every question, which hides trick questions"
+msgstr "У кожному запитанні, що приховує запитання-пастки"
+
+#: settings.py:171
+msgid "Only on trick questions"
+msgstr "Лише в запитаннях-пастках"
+
+#: settings.py:178
+msgid "Stored answers"
+msgstr "Збережені відповіді"
+
+#: settings.py:180
+msgid "Only photos"
+msgstr "Лише фото"
+
+#: settings.py:181
+msgid "All answers"
+msgstr "Усі відповіді"
+
+#: settings.py:190
+msgid "Who sees stored answers"
+msgstr "Хто бачить збережені відповіді"
+
+#: settings.py:192
+msgid "Admins"
+msgstr "Адміністратори"
+
+#: settings.py:193
+msgid "Admins and the participant"
+msgstr "Адміністратори й учасник"
+
+#: settings.py:194
+msgid "Everyone, after the run ends"
+msgstr "Усі, після завершення запуску"
+
+#: settings.py:199
+msgid "Needs all answers stored. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
+msgstr "Потребує збереження всіх відповідей. Вільний текст може містити будь-що: у публічному огляді значення показується, доки адміністратор його не приховає."
+
+#: settings.py:207
+msgid "Grading page"
+msgstr "Сторінка оцінювання"
+
+#: settings.py:209
+msgid "By question"
+msgstr "За запитаннями"
+
+#: settings.py:210
+msgid "By attempt"
+msgstr "За спробами"
+
+#: settings.py:219
+msgid "Sources on the result"
+msgstr "Джерела в результаті"
+
+#: settings.py:221
+msgid "Show"
+msgstr "Показати"
+
+#: settings.py:222
+msgid "Hide"
+msgstr "Приховати"
+
+#: settings.py:229
+msgid "Moving through the questions"
+msgstr "Проходження питань"
+
+#: settings.py:231
+msgid "All questions at once"
+msgstr "Усі питання одразу"
+
+#: settings.py:232
+msgid "One by one, with going back"
+msgstr "По одному, з поверненням"
+
+#: settings.py:233
+msgid "One by one, without going back"
+msgstr "По одному, без повернення"
+
+#: settings.py:242
+msgid "When to show the answers"
+msgstr "Коли показувати відповіді"
+
+#: settings.py:244
+msgid "Never"
+msgstr "Ніколи"
+
+#: settings.py:245
+msgid "At the end"
+msgstr "Наприкінці"
+
+#: settings.py:246
+msgid "After each question"
+msgstr "Після кожного питання"
+
+#: settings.py:255
+msgid "What to show"
+msgstr "Що показувати"
+
+#: settings.py:257
+msgid "Whether each answer is right"
+msgstr "Лише чи відповідь правильна"
+
+#: settings.py:258
+msgid "And the correct answers"
+msgstr "Також правильні відповіді"
+
+#: settings.py:259
+msgid "And the correct answers and explanations"
+msgstr "Також правильні відповіді та пояснення"
+
+#: settings.py:268
+msgid "Shuffle the questions"
+msgstr "Перемішувати питання"
+
+#: settings.py:277
+msgid "Shuffle the options"
+msgstr "Перемішувати варіанти"
+

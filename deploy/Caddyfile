@@ -1,3 +1,19 @@
+{
+	# Prohlížeč připojený přes IP adresu neposílá jméno serveru (SNI) a Caddy by nevěděl, který certifikát vybrat.
+	default_sni {$KVZ_DOMAIN}
+}
+
 {$KVZ_DOMAIN} {
+	# ADR-0028: největší nahrávaný soubor má 15 MB, zbytek je rezerva na formulář.
+	# ADR-0045: import přijímá ZIP do 100 MB.
+	# ADR-0047: jedno odeslání nese všechny fotky pokusu; aplikace přijímá multipart jen od pokusu s fotkou.
+	@large path /admin/import/* /a/*/submit
+	@other not path /admin/import/* /a/*/submit
+	request_body @large {
+		max_size 101MB
+	}
+	request_body @other {
+		max_size 16MB
+	}
 	reverse_proxy app:8000
 }

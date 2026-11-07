@@ -1,7 +1,9 @@
+from decimal import Decimal
+
 import pytest
 from django.test import override_settings
 
-from app.contracts import ScoreBreakdown
+from app.contracts import ItemGrade, ScoreBreakdown
 from app.kernel import registry
 from app.kernel.errors import StartupError
 from app.kernel.manifest import Manifest
@@ -9,6 +11,10 @@ from app.kernel.manifest import Manifest
 
 class GoodQuestion:
     id = "good"
+
+    def label(self):
+        return "Good"
+
     version = "1.0.0"
 
     def config_schema(self):
@@ -16,6 +22,9 @@ class GoodQuestion:
 
     def answer_schema(self):
         return {}
+
+    def question_settings(self):
+        return []
 
     def available_scoring_strategies(self):
         return []
@@ -32,25 +41,61 @@ class GoodQuestion:
     def render_admin(self, config, locales):
         return ""
 
-    def render_public(self, public_config, locale):
+    def render_public(self, public_config, locale, answer=None):
         return ""
 
-    def public_payload(self, config, locale):
+    def file_fields(self, config):
+        return []
+
+    def needs_grading(self, config, answer):
+        return False
+
+    def summarize(self, config, answers, locale):
+        return []
+
+    def csv_columns(self, locales):
+        return []
+
+    def from_csv(self, cells, locales):
         return {}
+
+    def to_csv(self, config, locales):
+        return {}
+
+    def render_solution(self, config, locale, answer):
+        return ""
+
+    def describe_definition(self, config, locales):
+        return []
+
+    def public_payload(self, config, locale, quiz_settings=None):
+        return {}
+
+    def presets(self):
+        return []
+
+    def initial(self, preset, locales):
+        return {}
+
+    def grade(self, config, answer):
+        return ItemGrade(0, 0, 1)
 
 
 class GoodScoring:
     id = "basic"
     version = "1.0.0"
 
+    def label(self):
+        return "Basic"
+
     def supports(self, question_type_id):
         return True
 
-    def max_score(self, definition, settings):
-        return 1.0
+    def max_score(self, settings):
+        return Decimal(1)
 
-    def evaluate(self, definition, answer, settings):
-        return ScoreBreakdown(1.0, 1.0, 1, {})
+    def evaluate(self, grade, settings):
+        return ScoreBreakdown(Decimal(1), Decimal(1), 1, {})
 
 
 MODULE = Manifest(
@@ -59,6 +104,7 @@ MODULE = Manifest(
     version="1.0.0",
     app="x.y",
     api_compatibility=">=1.0",
+    settings=[],
     provides=["question_type"],
 )
 

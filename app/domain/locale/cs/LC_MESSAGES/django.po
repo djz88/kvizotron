@@ -1,0 +1,320 @@
+#: question_import.py:165
+msgid "This setting cannot be set here."
+msgstr "Toto nastavení tady nejde použít."
+
+#: question_import.py:167
+msgid "This value is not offered for this setting."
+msgstr "Tuto hodnotu nastavení nenabízí."
+
+#: question_import.py:178
+msgid "Points must be a positive whole number."
+msgstr "Body musí být kladné celé číslo."
+
+#: question_import.py:185
+#, python-format
+msgid "At most %(count)s sources are allowed."
+msgstr "Povoleno je nejvýš %(count)s zdrojů."
+
+#: question_import.py:189
+#, python-format
+msgid "A source can have at most %(count)s characters."
+msgstr "Zdroj může mít nejvýš %(count)s znaků."
+
+#: question_import.py:208
+msgid "Images cannot be stored on this installation."
+msgstr "Tato instalace neumí ukládat obrázky."
+
+#: question_import.py:215
+#, python-format
+msgid "The file %(name)s is not in the upload."
+msgstr "Soubor %(name)s v nahrávce není."
+
+#: question_import.py:229
+msgid "This question type is not known."
+msgstr "Tento typ otázky aplikace nezná."
+
+#: question_import.py:232
+msgid "This scoring is not offered for this question type."
+msgstr "Toto bodování tento typ otázky nenabízí."
+
+#: question_import.py:264
+#, python-format
+msgid "Language %(locale)s: %(detail)s"
+msgstr "Jazyk %(locale)s: %(detail)s"
+
+#: question_import.py:277
+msgid "No answer is marked as correct."
+msgstr "Žádná odpověď není označená jako správná."
+
+#: question_import.py:284
+msgid "The quiz row needs a title."
+msgstr "Řádek kvízu potřebuje název."
+
+#: question_import.py:289
+msgid "The quiz row lists a language this application does not have."
+msgstr "Řádek kvízu uvádí jazyk, který aplikace nemá."
+
+#: question_import.py:293
+msgid "The default language must be among the listed ones."
+msgstr "Výchozí jazyk musí být mezi uvedenými."
+
+#: question_import.py:343
+#, python-format
+msgid "Text in language %(locale)s was left out: the target does not use it."
+msgstr "Text v jazyce %(locale)s se nepoužil: cíl tento jazyk nemá."
+
+#: question_import.py:358
+msgid "This file uses a format version this application does not know."
+msgstr "Soubor používá verzi formátu, kterou aplikace nezná."
+
+#: question_import.py:365
+msgid "A new quiz needs a row with row_type quiz."
+msgstr "Nový kvíz potřebuje řádek s row_type quiz."
+
+#: question_import.py:371
+msgid "A file can hold only one quiz row."
+msgstr "Soubor může mít jen jeden řádek kvízu."
+
+#: question_import.py:377
+msgid "The quiz row was ignored: the target already exists."
+msgstr "Řádek kvízu se nepoužil: cíl už existuje."
+
+#: question_import.py:389
+msgid "Unknown row type."
+msgstr "Neznámý typ řádku."
+
+#: question_import.py:421
+#, python-format
+msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
+msgstr "Adresa %(wanted)s je obsazená, kvíz dostal %(slug)s."
+
+#: question_import.py:452
+msgid "A bank question must be complete in at least one language."
+msgstr "Otázka v bance musí být úplná aspoň v jednom jazyce."
+
+#: revision_diff.py:103
+#, python-format
+msgid "%(count)s questions, %(points)s points each"
+msgstr "%(count)s otázek, po %(points)s bodech"
+
+#: revision_diff.py:116
+#, python-format
+msgid "Draw from %(bank)s"
+msgstr "Los z banky %(bank)s"
+
+#: revision_diff.py:153
+msgid "Title"
+msgstr "Název"
+
+#: revision_diff.py:159
+msgid "Description"
+msgstr "Popis"
+
+#: revision_diff.py:163
+msgid "Languages"
+msgstr "Jazyky"
+
+#: revision_diff.py:166
+msgid "Default language"
+msgstr "Výchozí jazyk"
+
+#: revision_diff.py:183
+msgid "Points"
+msgstr "Body"
+
+#: revision_diff.py:194
+msgid "Scoring"
+msgstr "Bodování"
+
+#: revision_diff.py:195
+msgid "Sources"
+msgstr "Zdroje"
+
+#: revision_diff.py:199
+msgid "Explanation"
+msgstr "Vysvětlení"
+
+#: revision_diff.py:207
+msgid "Question type version"
+msgstr "Verze typu otázky"
+
+#: revision_diff.py:220
+msgid "Question type"
+msgstr "Typ otázky"
+
+#: revision_diff.py:223
+msgid "Definition"
+msgstr "Definice"
+
+#: settings.py:132
+msgid "No"
+msgstr "Ne"
+
+#: settings.py:132
+msgid "Yes"
+msgstr "Ano"
+
+#: settings.py:138
+msgid "When a new version is published during a run"
+msgstr "Když se během běhu publikuje nová verze"
+
+#: settings.py:140
+msgid "Ask at publication"
+msgstr "Zeptat se při publikaci"
+
+#: settings.py:141
+msgid "Notify participants and let them switch"
+msgstr "Upozornit hráče a nabídnout přepnutí"
+
+#: settings.py:142
+msgid "Let participants finish on the old version"
+msgstr "Nechat hráče dokončit na staré verzi"
+
+#: settings.py:151
+msgid "Colours"
+msgstr "Barvy"
+
+#: settings.py:153
+msgid "Blue and teal"
+msgstr "Modrá a tyrkysová"
+
+#: settings.py:154
+msgid "Indigo and pink"
+msgstr "Indigo a růžová"
+
+#: settings.py:155
+msgid "Violet and white"
+msgstr "Fialová a bílá"
+
+#: settings.py:156
+msgid "Green and blue"
+msgstr "Zelená a modrá"
+
+#: settings.py:157
+msgid "Red and plum"
+msgstr "Červená a vínová"
+
+#: settings.py:166
+msgid "Answer \"None of the answers\""
+msgstr "Odpověď „Žádná z odpovědí“"
+
+#: settings.py:169
+msgid "On every question, which hides trick questions"
+msgstr "U každé otázky, takže chyták nejde poznat"
+
+#: settings.py:171
+msgid "Only on trick questions"
+msgstr "Jen u chytáků"
+
+#: settings.py:178
+msgid "Stored answers"
+msgstr "Ukládané odpovědi"
+
+#: settings.py:180
+msgid "Only photos"
+msgstr "Jen fotky"
+
+#: settings.py:181
+msgid "All answers"
+msgstr "Všechny odpovědi"
+
+#: settings.py:190
+msgid "Who sees stored answers"
+msgstr "Kdo vidí uložené odpovědi"
+
+#: settings.py:192
+msgid "Admins"
+msgstr "Správci"
+
+#: settings.py:193
+msgid "Admins and the participant"
+msgstr "Admini a účastník"
+
+#: settings.py:194
+msgid "Everyone, after the run ends"
+msgstr "Všichni, po skončení běhu"
+
+#: settings.py:199
+msgid "Needs all answers stored. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
+msgstr "Vyžaduje ukládání všech odpovědí. Volný text může obsahovat cokoli: ve veřejném průchodu se hodnota ukazuje, dokud ji admin neskryje."
+
+#: settings.py:207
+msgid "Grading page"
+msgstr "Stránka hodnocení"
+
+#: settings.py:209
+msgid "By question"
+msgstr "Po otázkách"
+
+#: settings.py:210
+msgid "By attempt"
+msgstr "Po pokusech"
+
+#: settings.py:219
+msgid "Sources on the result"
+msgstr "Zdroje u výsledku"
+
+#: settings.py:221
+msgid "Show"
+msgstr "Zobrazit"
+
+#: settings.py:222
+msgid "Hide"
+msgstr "Skrýt"
+
+#: settings.py:229
+msgid "Moving through the questions"
+msgstr "Průchod otázkami"
+
+#: settings.py:231
+msgid "All questions at once"
+msgstr "Všechny otázky najednou"
+
+#: settings.py:232
+msgid "One by one, with going back"
+msgstr "Po jedné, s návratem"
+
+#: settings.py:233
+msgid "One by one, without going back"
+msgstr "Po jedné, bez návratu"
+
+#: settings.py:242
+msgid "When to show the answers"
+msgstr "Kdy ukázat odpovědi"
+
+#: settings.py:244
+msgid "Never"
+msgstr "Nikdy"
+
+#: settings.py:245
+msgid "At the end"
+msgstr "Na konci"
+
+#: settings.py:246
+msgid "After each question"
+msgstr "Po každé otázce"
+
+#: settings.py:255
+msgid "What to show"
+msgstr "Co ukázat"
+
+#: settings.py:257
+msgid "Whether each answer is right"
+msgstr "Jen zda je odpověď správně"
+
+#: settings.py:258
+msgid "And the correct answers"
+msgstr "Navíc správné odpovědi"
+
+#: settings.py:259
+msgid "And the correct answers and explanations"
+msgstr "Navíc správné odpovědi a vysvětlení"
+
+#: settings.py:268
+msgid "Shuffle the questions"
+msgstr "Míchat otázky"
+
+#: settings.py:277
+msgid "Shuffle the options"
+msgstr "Míchat možnosti"
+

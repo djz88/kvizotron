@@ -1,0 +1,138 @@
+#: plugin.py:65
+#, python-format
+msgid "Two options have the same text: %(text)s"
+msgstr "Dvě odpovědi mají stejný text: %(text)s"
+
+#: plugin.py:69
+msgid "Several options are marked as correct. Allow participants to choose several answers."
+msgstr "Správných je označeno víc. Povolte účastníkům vybrat více odpovědí."
+
+#: plugin.py:73
+msgid "A yes/no question needs both answers and exactly one marked as correct."
+msgstr "Otázka ano/ne potřebuje obě odpovědi a právě jednu označenou jako správnou."
+
+#: plugin.py:90
+msgid "Image"
+msgstr "Obrázek"
+
+#: plugin.py:90
+msgid "No copy"
+msgstr "Bez kopie"
+
+#: plugin.py:90
+msgid "Image address"
+msgstr "Adresa obrázku"
+
+#: plugin.py:90
+msgid "Image description"
+msgstr "Popis obrázku"
+
+#: plugin.py:102
+msgid "Write true or false here."
+msgstr "Sem patří true nebo false."
+
+#: plugin.py:114
+msgid "Name correct options by letter, like A or A,C."
+msgstr "Správné možnosti se píšou písmenem, třeba A nebo A,C."
+
+#: plugin.py:132 plugin.py:443
+msgid "Choice"
+msgstr "Výběr"
+
+#: plugin.py:153 plugin.py:443
+msgid "Yes or no"
+msgstr "Ano, nebo ne"
+
+#: plugin.py:178
+msgid "An image has no description in this language."
+msgstr "Obrázek nemá v tomto jazyce popis."
+
+#: jinja2/choice/public.html:19 jinja2/choice/solution.html:12 plugin.py:233
+msgid "None of the answers"
+msgstr "Žádná z odpovědí"
+
+#: plugin.py:274
+msgid "A row marked as correct has no text."
+msgstr "Řádek označený jako správný nemá text."
+
+#: plugin.py:301
+msgid "The question has no text in any language."
+msgstr "Otázka nemá text v žádném jazyce."
+
+#: plugin.py:317
+msgid "A letter names an option that has no text."
+msgstr "Písmeno ukazuje na možnost bez textu."
+
+#: jinja2/choice/admin.html:4 plugin.py:408
+msgid "Question"
+msgstr "Otázka"
+
+#: plugin.py:412
+msgid "Option"
+msgstr "Možnost"
+
+#: plugin.py:417
+msgid "Order of options"
+msgstr "Pořadí možností"
+
+#: jinja2/choice/admin.html:25 plugin.py:424
+msgid "Correct"
+msgstr "Správná"
+
+#: plugin.py:424
+msgid "None (trick question)"
+msgstr "Žádná (chyták)"
+
+#: jinja2/choice/admin.html:47 plugin.py:430
+msgid "Show the number of correct answers"
+msgstr "Prozradit počet správných odpovědí"
+
+#: plugin.py:432 plugin.py:440
+msgid "Yes"
+msgstr "Ano"
+
+#: plugin.py:432 plugin.py:440
+msgid "No"
+msgstr "Ne"
+
+#: jinja2/choice/admin.html:41 plugin.py:438
+msgid "Participants may choose several answers"
+msgstr "Účastník smí vybrat více odpovědí"
+
+#: plugin.py:444
+msgid "Kind"
+msgstr "Druh"
+
+#: jinja2/choice/admin.html:14
+msgid "Options"
+msgstr "Možnosti"
+
+#: jinja2/choice/admin.html:16
+msgid "Mark the correct answer."
+msgstr "Označte správnou odpověď."
+
+#: jinja2/choice/admin.html:18
+msgid "Mark every correct option. With none marked, this is a trick question: only the answer \"None of the answers\" scores. Leave unused rows empty."
+msgstr "Označte všechny správné možnosti. Když neoznačíte žádnou, je to chyták: body dostane jen odpověď „Žádná z odpovědí“. Nepoužité řádky nechte prázdné."
+
+#: jinja2/choice/admin.html:43
+msgid "Without this, a participant chooses one answer at most. It is needed when several options are correct."
+msgstr "Bez toho vybere účastník nejvýše jednu odpověď. Je to potřeba, když je správných víc."
+
+#: jinja2/choice/admin.html:49
+msgid "A trick question shows no number, because that would give it away. In a quiz with trick questions, a missing number is a clue."
+msgstr "Chyták počet neukazuje, protože by se tím prozradil. V kvízu s chytáky je chybějící počet nápovědou."
+
+#: jinja2/choice/public.html:3
+#, python-format
+msgid "choose %(count)s"
+msgstr "vyberte %(count)s"
+
+#: jinja2/choice/solution.html:6 jinja2/choice/solution.html:13
+msgid "correct answer"
+msgstr "správná odpověď"
+
+#: jinja2/choice/solution.html:7 jinja2/choice/solution.html:14
+msgid "your answer"
+msgstr "vaše odpověď"
+

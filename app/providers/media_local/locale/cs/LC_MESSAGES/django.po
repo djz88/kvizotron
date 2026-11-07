@@ -1,0 +1,65 @@
+#: manifest.py:26
+msgid "Images from an address"
+msgstr "Obrázky z adresy"
+
+#: manifest.py:28
+msgid "Show a copy kept here"
+msgstr "Ukazovat kopii uloženou zde"
+
+#: manifest.py:29
+msgid "Load them from their server"
+msgstr "Načítat z jejich serveru"
+
+#: manifest.py:31
+msgid "A server that images load from sees the IP addresses of participants."
+msgstr "Server, ze kterého se obrázky načítají, vidí IP adresy účastníků."
+
+#: manifest.py:39
+msgid "Fetching images from the internal network"
+msgstr "Stahování obrázků z vnitřní sítě"
+
+#: manifest.py:40
+msgid "Refuse"
+msgstr "Odmítnout"
+
+#: manifest.py:40
+msgid "Allow"
+msgstr "Povolit"
+
+#: manifest.py:42
+msgid "Any admin can turn this on, so a stolen admin account could use it to reach the internal network."
+msgstr "Zapnout to může každý správce, takže ukradený účet správce by tudy mohl dosáhnout do vnitřní sítě."
+
+#: provider.py:61
+msgid "This file is not a usable image. Use PNG, JPEG, WebP, GIF or SVG."
+msgstr "Tento soubor není použitelný obrázek. Použijte PNG, JPEG, WebP, GIF nebo SVG."
+
+#: provider.py:65
+#, python-format
+msgid "This file is too large. The limit is %(mb)s MB."
+msgstr "Soubor je příliš velký. Limit je %(mb)s MB."
+
+#: provider.py:162
+msgid "HEIC photos cannot be used. Save the photo as JPEG on the phone and upload it again."
+msgstr "Fotky HEIC nejde použít. Uložte fotku v telefonu jako JPEG a nahrajte ji znovu."
+
+#: provider.py:180
+msgid "This file is not a usable photo. Use PNG, JPEG or WebP."
+msgstr "Tento soubor není použitelná fotka. Použijte PNG, JPEG nebo WebP."
+
+#: provider.py:223
+msgid "This run cannot take any more photos."
+msgstr "Tento běh už další fotky nepojme."
+
+#: provider.py:258
+msgid "Enter a whole address starting with https://, with no login in it."
+msgstr "Zadejte celou adresu začínající https://, bez přihlašovacích údajů."
+
+#: provider.py:273
+msgid "This address is in an internal network, which the settings do not allow."
+msgstr "Tato adresa je ve vnitřní síti, a to nastavení nedovoluje."
+
+#: provider.py:276
+msgid "The image could not be fetched from this address."
+msgstr "Obrázek se z této adresy nepodařilo stáhnout."
+

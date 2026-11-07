@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Duplicate quiz") }}: {{ title }}</h1>
+<p>{{ _("The copy gets the questions as a draft. Revisions, runs and results stay with the original.") }}</p>
+<form method="post">
+  {{ csrf_input }}
+  {{ form.as_div() }}
+  <button type="submit">{{ _("Duplicate") }}</button>
+  <a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+</form>
+{% endblock %}

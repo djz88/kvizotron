@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% from "admin/_import_issues.html" import issues %}
+{% block content %}
+<h1>{{ _("Import report") }}</h1>
+{% if not report %}
+<p class="notice" role="status">{{ _("This import is still running. Reload this page in a moment. If nothing changes for several minutes, upload the file again.") }}</p>
+{% elif report.failed %}
+<p class="notice" role="alert">{{ _("This import did not finish. Upload the file again.") }}</p>
+{% else %}
+{% if report.refused %}<p class="notice" role="alert">{{ report.refused }}</p>{% endif %}
+<p>{{ _("Questions added: %(count)s", count=report.added) }}</p>
+{% if report.link %}<p><a href="{{ report.link }}" role="button">{{ _("Open what was imported") }}</a></p>{% endif %}
+{{ issues(report.errors, _("Rows that were skipped")) }}
+{{ issues(report.warnings, _("Warnings")) }}
+{% if report.unused %}<p>{{ _("Columns not used: %(columns)s", columns=report.unused|join(", ")) }}</p>{% endif %}
+{% endif %}
+{% endblock %}

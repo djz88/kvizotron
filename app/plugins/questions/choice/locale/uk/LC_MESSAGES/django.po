@@ -1,0 +1,138 @@
+#: plugin.py:65
+#, python-format
+msgid "Two options have the same text: %(text)s"
+msgstr "Дві відповіді мають однаковий текст: %(text)s"
+
+#: plugin.py:69
+msgid "Several options are marked as correct. Allow participants to choose several answers."
+msgstr "Позначено кілька правильних варіантів. Дозвольте учасникам обирати кілька відповідей."
+
+#: plugin.py:73
+msgid "A yes/no question needs both answers and exactly one marked as correct."
+msgstr "Питання так/ні потребує обох відповідей і рівно однієї позначеної як правильна."
+
+#: plugin.py:90
+msgid "Image"
+msgstr "Зображення"
+
+#: plugin.py:90
+msgid "No copy"
+msgstr "Без копії"
+
+#: plugin.py:90
+msgid "Image address"
+msgstr "Адреса зображення"
+
+#: plugin.py:90
+msgid "Image description"
+msgstr "Опис зображення"
+
+#: plugin.py:102
+msgid "Write true or false here."
+msgstr "Тут має бути true або false."
+
+#: plugin.py:114
+msgid "Name correct options by letter, like A or A,C."
+msgstr "Правильні варіанти позначаються літерою, наприклад A або A,C."
+
+#: plugin.py:132 plugin.py:443
+msgid "Choice"
+msgstr "Вибір"
+
+#: plugin.py:153 plugin.py:443
+msgid "Yes or no"
+msgstr "Так чи ні"
+
+#: plugin.py:178
+msgid "An image has no description in this language."
+msgstr "Зображення не має опису цією мовою."
+
+#: jinja2/choice/public.html:19 jinja2/choice/solution.html:12 plugin.py:233
+msgid "None of the answers"
+msgstr "Жодна з відповідей"
+
+#: plugin.py:274
+msgid "A row marked as correct has no text."
+msgstr "Рядок, позначений як правильний, не має тексту."
+
+#: plugin.py:301
+msgid "The question has no text in any language."
+msgstr "Запитання не має тексту жодною мовою."
+
+#: plugin.py:317
+msgid "A letter names an option that has no text."
+msgstr "Літера вказує на варіант без тексту."
+
+#: jinja2/choice/admin.html:4 plugin.py:408
+msgid "Question"
+msgstr "Питання"
+
+#: plugin.py:412
+msgid "Option"
+msgstr "Варіант"
+
+#: plugin.py:417
+msgid "Order of options"
+msgstr "Порядок варіантів"
+
+#: jinja2/choice/admin.html:25 plugin.py:424
+msgid "Correct"
+msgstr "Правильна"
+
+#: plugin.py:424
+msgid "None (trick question)"
+msgstr "Жодна (питання з підступом)"
+
+#: jinja2/choice/admin.html:47 plugin.py:430
+msgid "Show the number of correct answers"
+msgstr "Показати кількість правильних відповідей"
+
+#: plugin.py:432 plugin.py:440
+msgid "Yes"
+msgstr "Так"
+
+#: plugin.py:432 plugin.py:440
+msgid "No"
+msgstr "Ні"
+
+#: jinja2/choice/admin.html:41 plugin.py:438
+msgid "Participants may choose several answers"
+msgstr "Учасник може обрати кілька відповідей"
+
+#: plugin.py:444
+msgid "Kind"
+msgstr "Вид"
+
+#: jinja2/choice/admin.html:14
+msgid "Options"
+msgstr "Варіанти"
+
+#: jinja2/choice/admin.html:16
+msgid "Mark the correct answer."
+msgstr "Позначте правильну відповідь."
+
+#: jinja2/choice/admin.html:18
+msgid "Mark every correct option. With none marked, this is a trick question: only the answer \"None of the answers\" scores. Leave unused rows empty."
+msgstr "Позначте всі правильні варіанти. Якщо не позначено жодного, це питання з підступом: бали дає лише відповідь «Жодна з відповідей». Невикористані рядки залиште порожніми."
+
+#: jinja2/choice/admin.html:43
+msgid "Without this, a participant chooses one answer at most. It is needed when several options are correct."
+msgstr "Без цього учасник обирає щонайбільше одну відповідь. Це потрібно, коли правильних варіантів кілька."
+
+#: jinja2/choice/admin.html:49
+msgid "A trick question shows no number, because that would give it away. In a quiz with trick questions, a missing number is a clue."
+msgstr "Питання з підступом не показує кількість, бо це б його видало. У вікторині з такими питаннями відсутність кількості є підказкою."
+
+#: jinja2/choice/public.html:3
+#, python-format
+msgid "choose %(count)s"
+msgstr "оберіть %(count)s"
+
+#: jinja2/choice/solution.html:6 jinja2/choice/solution.html:13
+msgid "correct answer"
+msgstr "правильна відповідь"
+
+#: jinja2/choice/solution.html:7 jinja2/choice/solution.html:14
+msgid "your answer"
+msgstr "ваша відповідь"
+

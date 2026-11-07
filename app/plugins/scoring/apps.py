@@ -8,6 +8,7 @@ class ScoringBasicConfig(AppConfig):
     def ready(self):
         from app.kernel import registry
 
-        from .strategies import AllOrNothing
+        from .strategies import AllOrNothing, Partial
 
-        registry.register("scoring_strategy", AllOrNothing.id, AllOrNothing(), "scoring.basic")
+        for strategy in (AllOrNothing(), Partial()):
+            registry.register("scoring_strategy", strategy.id, strategy, "scoring.basic")

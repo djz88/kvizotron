@@ -58,5 +58,12 @@ def keys(capability: str) -> list[str]:
     return sorted(k for (c, k), (_, owner) in ports if c == capability and is_enabled(owner))
 
 
+def owner_of(capability: str, key: str) -> str:
+    try:
+        return _ports[(capability, key)][1]
+    except KeyError:
+        raise UnknownPort(f"{capability}: {key}") from None
+
+
 def owned_by(module_id: str) -> set[tuple[str, str]]:
     return {port for port, (_, owner) in _ports.items() if owner == module_id}

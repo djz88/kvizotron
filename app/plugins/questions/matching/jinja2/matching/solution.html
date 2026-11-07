@@ -1,0 +1,19 @@
+{% if order %}
+<ol class="solution">
+  {% for row in rows %}
+  <li class="reveal-correct">
+    {{ row.text }}
+    {% if row.position and row.position != loop.index %}<small class="reveal-theirs">{{ _("you placed it at %(position)s", position=row.position) }}</small>{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<ul class="solution">
+  {% for row in rows %}
+  <li class="reveal-correct">
+    {{ row.text }}: {{ row.match }}
+    {% if row.theirs %}<small class="reveal-theirs">{{ _("your answer: %(answer)s", answer=row.theirs) }}</small>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

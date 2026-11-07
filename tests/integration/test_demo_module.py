@@ -33,9 +33,10 @@ def test_module_registers_ports(tmp_path):
         "print(registry.keys('question_type'), registry.keys('scoring_strategy'))"
     )
     result = run_python(code, db=migrated(tmp_path, sites=[DEMO_SITE]), sites=[DEMO_SITE])
-    assert (
-        result.stdout.strip() == "['choice.single', 'demo.number'] ['all_or_nothing', 'demo.exact']"
-    ), result.stderr
+    types = "['choice', 'demo.number', 'image_answer', 'matching', 'number', 'text']"
+    assert result.stdout.strip() == f"{types} ['all_or_nothing', 'demo.exact', 'partial']", (
+        result.stderr
+    )
 
 
 def test_client_score_is_ignored_and_answer_stored(tmp_path):

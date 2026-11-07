@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<table class="stack">
+  <thead><tr><th>{{ _("Number") }}</th><th>{{ _("Status") }}</th><th>{{ _("Published") }}</th><th>{{ _("Questions") }}</th><th>{{ _("Maximum score") }}</th><th></th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td data-label="{{ _('Number') }}">{{ row.no }}</td>
+      <td data-label="{{ _('Status') }}">{{ row.status }}</td>
+      <td data-label="{{ _('Published') }}">{{ row.published_at.strftime("%Y-%m-%d %H:%M") if row.published_at else "–" }}</td>
+      <td data-label="{{ _('Questions') }}">{{ row.questions }}</td>
+      <td data-label="{{ _('Maximum score') }}">{{ row.max_score|number }}</td>
+      <td>
+        {% if not row.is_draft %}
+        <details class="dropdown more">
+          <summary aria-label="{{ _('More actions') }}">⋮</summary>
+          <ul>
+            <li><a href="{{ url('admin_preview_revision', args=[quiz.id, row.no]) }}">{{ _("Preview") }}</a></li>
+            <li><a href="{{ url('admin_revision_compare', args=[quiz.id, row.no]) }}">{{ _("Compare with previous") }}</a></li>
+            {% if not quiz.archived_at %}
+            <li>
+              <form method="post" action="{{ url('admin_revision_restore', args=[quiz.id, row.no]) }}">
+                {{ csrf_input }}
+                <button type="submit" class="outline">{{ _("Use as new draft") }}</button>
+              </form>
+            </li>
+            {% endif %}
+          </ul>
+        </details>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

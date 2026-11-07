@@ -6,4 +6,5 @@ MANIFEST = {
     "urls": "app.plugins.theme_default.urls",
     "api_compatibility": ">=1.0,<2.0",
     "provides": ["theme"],
+    "settings": [],
 }

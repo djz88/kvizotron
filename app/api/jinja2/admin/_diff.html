@@ -1,0 +1,39 @@
+{% macro rows(change) %}
+{% if change.rows %}
+<table>
+  <thead><tr><th>{{ _("Item") }}</th><th>{{ _("Before") }}</th><th>{{ _("After") }}</th></tr></thead>
+  <tbody>
+    {% for row in change.rows %}
+    <tr>
+      <td>{{ row.label }}{% if row.locale %} ({{ row.locale }}){% endif %}</td>
+      <td>{{ row.before if row.before is not none else "–" }}</td>
+      <td>{{ row.after if row.after is not none else "–" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endmacro %}
+
+{% if diff.is_empty %}
+<p>{{ _("No differences.") }}</p>
+{% endif %}
+{% if diff.quiz_fields %}
+<h3>{{ _("Quiz") }}</h3>
+{{ rows({"rows": diff.quiz_fields}) }}
+{% endif %}
+{% if diff.draws %}
+<h3>{{ _("Draws from banks") }}</h3>
+{{ rows({"rows": diff.draws}) }}
+{% endif %}
+{% for title, changes in [(_("Added questions"), diff.added), (_("Removed questions"), diff.removed), (_("Moved questions"), diff.moved), (_("Changed questions"), diff.changed), (_("Added to a bank"), diff.bank_added), (_("Removed from a bank"), diff.bank_removed), (_("Changed in a bank"), diff.bank_changed)] %}
+{% if changes %}
+<h3>{{ title }}</h3>
+{% for change in changes %}
+<article>
+  <p><strong>{% if change.number %}{{ change.number }}. {% endif %}{{ change.label }}</strong></p>
+  {{ rows(change) }}
+</article>
+{% endfor %}
+{% endif %}
+{% endfor %}

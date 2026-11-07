@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<p class="crumb"><a href="{{ back_url }}">{{ _("Back") }}</a></p>
+<h1>{{ _("Import questions") }}</h1>
+<p>{{ target_label }}</p>
+<p><a href="{{ url('admin_import_sample') }}">{{ _("Download a sample file") }}</a> · <a href="{{ url('admin_import_format') }}">{{ _("Download the column description") }}</a></p>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+<form method="post" enctype="multipart/form-data" action="{{ url('admin_import_new') }}?target={{ target_value }}">
+  {{ csrf_input }}
+  <label>{{ _("CSV file, or ZIP with a CSV and images") }}
+    <input type="file" name="file" accept=".csv,.zip,text/csv,application/zip" required>
+  </label>
+  <p><small>{{ _("Nothing changes until you confirm the import. Up to 2000 rows; a CSV up to 5 MB, a ZIP up to 100 MB.") }}</small></p>
+  <button type="submit">{{ _("Upload and check") }}</button>
+</form>
+{% endblock %}

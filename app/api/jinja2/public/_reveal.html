@@ -1,0 +1,6 @@
+<div class="reveal reveal-{{ revealed.state }}">
+  {% if revealed.prompt %}<p class="reveal-prompt">{{ revealed.prompt }}</p>{% endif %}
+  <p class="reveal-state"><strong>{% if revealed.state == "right" %}{{ _("Answered correctly") }}{% elif revealed.state == "partial" %}{{ _("Partly correct: %(earned)s of %(maximum)s points", earned=revealed.earned|number, maximum=revealed.maximum|number) }}{% elif revealed.state == "pending" %}{{ _("Waiting for grading: %(earned)s of %(maximum)s points so far", earned=revealed.earned|number, maximum=revealed.maximum|number) }}{% elif revealed.state == "wrong" %}{{ _("Wrong") }}{% else %}{{ _("No answer") }}{% endif %}</strong></p>
+  {% if revealed.solution_html %}{{ revealed.solution_html }}{% endif %}
+  {% if revealed.explanation %}<p class="explanation">{{ revealed.explanation }}</p>{% endif %}
+</div>

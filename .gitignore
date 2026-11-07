@@ -27,3 +27,6 @@ __pycache__/
 htmlcov/
 dist/
 build/
+
+# Pracovní kopie git worktree.
+.worktrees/

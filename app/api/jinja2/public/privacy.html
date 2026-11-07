@@ -1,0 +1,18 @@
+{% extends "public/base.html" %}
+{% block title %}{{ _("Privacy") }} · Kvízotron{% endblock %}
+{% block content %}
+<div class="hero"><h1>{{ _("Privacy") }}</h1></div>
+<div class="card prose">
+  <p>{{ _("This notice covers the current version of Kvízotron and will be completed as new features arrive.") }}</p>
+  <ul>
+    <li>{{ _("You do not register to play, and we do not ask for your name or e-mail.") }}</li>
+    <li>{{ _("Your answers and score are stored so that the result can be computed. They belong to one attempt, not to your name.") }}</li>
+    <li>{{ _("If a quiz asks for a photo, it is stored without its metadata until an admin deletes it. The organiser chooses who sees it: admins, you through a private link, or everyone after approving that photo. A question tells you before uploading if its photo may become public.") }}</li>
+    <li>{{ _("An organiser can choose to store all answers, and to show them to you or, after the run ends, to everyone, without naming who gave them.") }}</li>
+    <li>{{ _("When a result has a private link, this browser remembers it on your device so that you can return to it. Nothing about that is sent anywhere.") }}</li>
+    <li>{{ _("Answers and personal data are not written to the application logs.") }}</li>
+    <li>{{ _("Pages load nothing from other services, with one exception: an organiser can have a quiz load its images from another server, which then sees your IP address.") }}</li>
+    <li>{{ _("The organiser who runs this installation is responsible for its data.") }}</li>
+  </ul>
+</div>
+{% endblock %}

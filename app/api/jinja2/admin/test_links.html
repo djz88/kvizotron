@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+{% if not quiz.archived_at %}
+<form method="post" class="card" action="{{ url('admin_quiz_tests', args=[quiz.id]) }}">
+  {{ csrf_input }}
+  <h2>{{ _("New test link") }}</h2>
+  <p>{{ _("Anyone with the link sees the questions and whatever the quiz's settings reveal, and can play without an account. The results count nowhere.") }}</p>
+  {% if problems %}
+  <article role="alert">
+    <p>{{ _("This draft cannot be sent to test yet:") }}</p>
+    <ul>{% for problem in problems %}<li>{{ problem }}</li>{% endfor %}</ul>
+  </article>
+  {% elif error %}
+  <p class="notice" role="alert">{{ error }}</p>
+  {% endif %}
+  <label>{{ _("Version") }}
+    <select name="version">
+      {% for value, label in versions %}
+      <option value="{{ value }}"{% if value == chosen %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>{{ _("End (UTC, optional)") }}
+    <input type="datetime-local" name="expires_at" value="{{ expires_at }}">
+  </label>
+  {% if versions %}<button type="submit">{{ _("Create test link") }}</button>{% else %}<p>{{ _("The quiz has no questions to test yet.") }}</p>{% endif %}
+</form>
+{% endif %}
+{% for row in rows %}
+<section class="card">
+  <h3>{{ row.version }}</h3>
+  <p>{{ _("Address") }}: <a href="{{ row.address }}" rel="noreferrer">{{ row.address }}</a></p>
+  <ul class="chips">
+    <li class="chip">{{ row.state }}</li>
+    <li class="chip">{{ _("Created %(when)s", when=row.created) }}</li>
+    {% if row.end %}<li class="chip">{{ _("Ends %(when)s", when=row.end) }}</li>{% endif %}
+    <li class="chip">{{ _("Attempts: %(count)s", count=row.attempts|length) }}</li>
+  </ul>
+  {% if row.attempts %}
+  <p><a href="{{ url('admin_quiz_grading', args=[quiz.id]) }}?run={{ row.run_id }}">{{ _("Grade") }}</a></p>
+  <table class="stack">
+    <thead><tr><th>{{ _("Status") }}</th><th>{{ _("Score") }}</th><th>{{ _("Duration") }}</th><th>{{ _("Started") }}</th></tr></thead>
+    <tbody>
+      {% for attempt in row.attempts %}
+      <tr>
+        <td data-label="{{ _('Status') }}">{{ attempt.status }}</td>
+        <td data-label="{{ _('Score') }}">{{ attempt.score }}</td>
+        <td data-label="{{ _('Duration') }}">{{ attempt.duration }}</td>
+        <td data-label="{{ _('Started') }}">{{ attempt.started }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  <div class="row-actions">
+    {% if row.is_active %}
+    <form method="post" action="{{ url('admin_test_link_cancel', args=[row.id]) }}">{{ csrf_input }}<button type="submit" class="secondary">{{ _("Cancel link") }}</button></form>
+    {% endif %}
+    {% if row.attempts %}<a role="button" class="secondary" href="{{ url('admin_test_link_attempts_delete', args=[row.id]) }}">{{ _("Delete attempts") }}</a>{% endif %}
+    <a role="button" class="secondary" href="{{ url('admin_test_link_delete', args=[row.id]) }}">{{ _("Delete link") }}</a>
+  </div>
+</section>
+{% else %}
+<p>{{ _("No test links yet.") }}</p>
+{% endfor %}
+{% endblock %}

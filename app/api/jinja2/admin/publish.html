@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Publish") }}: {{ title }}</h1>
+<p><a href="{{ url('admin_quiz_edit', args=[quiz.id]) }}">{{ _("Back to the editor") }}</a></p>
+
+{% if message %}<p role="alert">{{ message }}</p>{% endif %}
+
+{% if problems %}
+<article role="alert">
+  <h2>{{ _("The quiz cannot be published yet") }}</h2>
+  <ul>
+    {% for problem in problems %}<li>{{ problem }}</li>{% endfor %}
+  </ul>
+</article>
+{% endif %}
+
+{% if image_check.failed %}
+<article role="status">
+  {% include "admin/_image_warning.html" %}
+  <ul>{% for address in image_check.failed %}<li>{{ address }}</li>{% endfor %}</ul>
+</article>
+{% endif %}
+
+<h2>{{ _("Changes") }}</h2>
+{% include "admin/_diff.html" %}
+
+{% if not problems %}
+<form method="post">
+  {{ csrf_input }}
+  <input type="hidden" name="snapshot_hash" value="{{ snapshot_hash }}">
+  {% if starting %}<input type="hidden" name="start" value="1">{% endif %}
+  {% if outcome == "ask" %}
+  <fieldset>
+    <legend>{{ _("A run is in progress. What should happen to it?") }}</legend>
+    <label><input type="radio" name="decision" value="let_finish" checked> {{ _("Move the run to the new version; participants in progress finish on the old one") }}</label>
+    <label><input type="radio" name="decision" value="notify_switch"> {{ _("Move the run to the new version; participants in progress get a notice and switch") }}</label>
+    <label><input type="radio" name="decision" value="stay"> {{ _("Keep the run on the old version; the new one applies from the next run") }}</label>
+  </fieldset>
+  {% elif outcome == "notify_switch" %}
+  <p>{{ _("The running run moves to the new version; participants in progress get a notice and switch.") }}</p>
+  {% elif outcome == "let_finish" %}
+  <p>{{ _("The running run moves to the new version; participants in progress finish on the old one.") }}</p>
+  {% endif %}
+  <button type="submit">{{ _("Start the quiz") if starting else _("Publish") }}</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,7 +1,14 @@
 import pytest
 
-from app.domain import authoring
-from tests.domain.helpers import ADMIN_ID, make_quiz, open_quiz_run, published_quiz
+from app.domain import authoring, settings
+from tests.domain.helpers import (
+    ADMIN_ID,
+    add_question,
+    definition,
+    make_quiz,
+    open_quiz_run,
+    published_quiz,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -106,7 +113,7 @@ def test_closed_run_page_is_view_only(client):
     authoring.close_run(run, admin_id=ADMIN_ID)
     response = client.get(f"/q/kviz/r/{run.id}")
     assert response.status_code == 200
-    assert "Toto kolo je uzavřené." in text(response)
+    assert "Tento běh skončil." in text(response)
     assert "/start" not in text(response)
 
 
@@ -129,3 +136,56 @@ def test_title_markup_is_escaped(client):
     for url in ("/", "/q/kviz"):
         html = text(client.get(url))
         assert "<script>x" not in html and "&lt;script&gt;x" in html
+
+
+def started_page(client, quiz):
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    return text(client.post(f"/r/{run.id}/start", {"lang": "cs"}))
+
+
+def quiz_with_trick_question():
+    quiz = make_quiz()
+    standard = add_question(quiz)
+    config = definition(quiz.supported_locales)
+    config["correct"] = []
+    trick = authoring.save_question(quiz, None, "choice", config)
+    return quiz, standard, trick
+
+
+def test_none_option_all_questions_appears_on_a_standard_question(client):
+    quiz, standard, trick = quiz_with_trick_question()
+    html = started_page(client, quiz)
+    assert f'name="{standard}:options[]" value="none"' in html
+    assert f'name="{trick}:options[]" value="none"' in html
+
+
+def test_none_option_trick_questions_appears_only_on_trick(client):
+    quiz, standard, trick = quiz_with_trick_question()
+    settings.set_override(
+        settings.NONE_OPTION, quiz, settings.NoneOption.TRICK_QUESTIONS, admin_id=ADMIN_ID
+    )
+    html = started_page(client, quiz)
+    assert f'name="{standard}:options[]" value="none"' not in html
+    assert f'name="{trick}:options[]" value="none"' in html
+
+
+def test_texts_of_a_question_type_follow_the_language_of_the_attempt(client):
+    quiz = make_quiz(locales=("cs", "uk"))
+    add_question(quiz)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    html = text(
+        client.post(
+            f"/r/{run.id}/start",
+            {"lang": "uk"},
+            headers={"HX-Request": "true", "Accept-Language": "en"},
+        )
+    )
+    assert "Жодна з відповідей" in html
+
+
+def test_landing_links_to_the_administration(client):
+    html = text(client.get("/?lang=uk"))
+    assert '<a href="/admin/quizzes?lang=uk">Адміністрування</a>' in html
+    assert "/admin/" not in text(client.get("/about?lang=uk"))

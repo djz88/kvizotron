@@ -1,0 +1,3 @@
+{% if image_check.failed %}
+<p class="notice" role="status">{{ _("Images from other servers that could not be reached: %(count)s.", count=image_check.failed|length) }} {{ _("Last checked: %(time)s.", time=image_check.checked_at) }}</p>
+{% endif %}

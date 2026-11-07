@@ -1,0 +1,127 @@
+#: plugin.py:85
+msgid "Each blank can stand only once in the question's text."
+msgstr "Кожен пропуск може бути в тексті запитання лише один раз."
+
+#: plugin.py:121
+msgid "Image"
+msgstr "Зображення"
+
+#: plugin.py:121
+msgid "No copy"
+msgstr "Без копії"
+
+#: plugin.py:121
+msgid "Image address"
+msgstr "Адреса зображення"
+
+#: plugin.py:121
+msgid "Image description"
+msgstr "Опис зображення"
+
+#: plugin.py:126
+#, python-format
+msgid "A question can have at most %(count)s blanks."
+msgstr "Запитання може мати щонайбільше %(count)s пропусків."
+
+#: plugin.py:128
+#, python-brace-format
+msgid "Number the blanks in order from {1}, without a gap."
+msgstr "Нумеруйте пропуски по порядку від {1}, без прогалин."
+
+#: plugin.py:142
+msgid "Text"
+msgstr "Текст"
+
+#: plugin.py:173
+msgid "Every language must use the same blanks."
+msgstr "Кожна мова має використовувати однакові пропуски."
+
+#: plugin.py:176 plugin.py:178 plugin.py:304
+msgid "Every blank needs its accepted answers."
+msgstr "Кожен пропуск потребує прийнятних відповідей."
+
+#: plugin.py:180
+msgid "An image has no description in this language."
+msgstr "Зображення не має опису цією мовою."
+
+#: jinja2/text/admin.html:20 jinja2/text/admin.html:30
+#: jinja2/text/public.html:7 jinja2/text/solution.html:4 plugin.py:221
+#, python-format
+msgid "Blank %(number)s"
+msgstr "Пропуск %(number)s"
+
+#: plugin.py:263
+msgid "A row of answers has no blank in the question's text."
+msgstr "Рядок відповідей не має пропуску в тексті запитання."
+
+#: plugin.py:286
+msgid "The question has no text in any language."
+msgstr "Запитання не має тексту жодною мовою."
+
+#: plugin.py:295
+msgid "Write true or false here."
+msgstr "Тут має бути true або false."
+
+#: jinja2/text/admin.html:3 plugin.py:366
+msgid "Question"
+msgstr "Питання"
+
+#: plugin.py:369
+#, python-format
+msgid "Accepted answers for blank %(number)s"
+msgstr "Прийнятні відповіді для пропуску %(number)s"
+
+#: jinja2/text/admin.html:44 plugin.py:377
+msgid "Ignore letter case"
+msgstr "Не розрізняти регістр літер"
+
+#: jinja2/text/admin.html:45 plugin.py:378
+msgid "Ignore extra spaces"
+msgstr "Ігнорувати зайві пробіли"
+
+#: jinja2/text/admin.html:46 plugin.py:379
+msgid "Ignore diacritics"
+msgstr "Ігнорувати діакритику"
+
+#: plugin.py:382
+msgid "Yes"
+msgstr "Так"
+
+#: plugin.py:382
+msgid "No"
+msgstr "Ні"
+
+#: jinja2/text/admin.html:4
+#, python-brace-format
+msgid "For blanks inside the sentence, write {1}, {2} where each one belongs, in any order per language. Without them, the participant gets one field under the question. To show a brace, write {{."
+msgstr "Для пропусків у реченні напишіть {1}, {2} там, де вони мають бути, у кожній мові в будь-якому порядку. Без них учасник отримає одне поле під запитанням. Фігурну дужку запишіть як {{."
+
+#: jinja2/text/admin.html:14
+msgid "Accepted answers"
+msgstr "Прийнятні відповіді"
+
+#: jinja2/text/admin.html:15
+msgid "One per line. An answer counts if it matches any of them, in any language."
+msgstr "По одній у рядку. Відповідь зараховується, якщо збігається з будь-якою з них будь-якою мовою."
+
+#: jinja2/text/admin.html:43
+msgid "How answers are compared"
+msgstr "Як порівнюються відповіді"
+
+#: jinja2/text/admin.html:47
+msgid "Ignoring diacritics applies to Latin letters only, so Plzen matches Plzeň, while Cyrillic letters stay as they are."
+msgstr "Ігнорування діакритики стосується лише латиниці, тому Plzen відповідає Plzeň, а кирилиця лишається без змін."
+
+#: jinja2/text/public.html:3
+msgid "Fill in the blanks"
+msgstr "Заповніть пропуски"
+
+#: jinja2/text/public.html:15
+msgid "Your answer"
+msgstr "Ваша відповідь"
+
+#: jinja2/text/solution.html:5
+#, python-format
+msgid "your answer: %(answer)s"
+msgstr "ваша відповідь: %(answer)s"
+

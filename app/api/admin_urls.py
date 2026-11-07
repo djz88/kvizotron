@@ -1,6 +1,19 @@
 from django.urls import path
 
-from app.api import admin_auth, admin_quizzes, admin_runs, admin_users
+from app.api import (
+    admin_auth,
+    admin_banks,
+    admin_export,
+    admin_grading,
+    admin_import,
+    admin_links,
+    admin_preview,
+    admin_quizzes,
+    admin_revisions,
+    admin_runs,
+    admin_settings,
+    admin_users,
+)
 
 urlpatterns = [
     path("", admin_auth.index, name="admin_index"),
@@ -24,10 +37,131 @@ urlpatterns = [
         admin_quizzes.question_delete,
         name="admin_question_delete",
     ),
+    path(
+        "quizzes/<uuid:quiz_id>/requirements/use",
+        admin_quizzes.requirement_use,
+        name="admin_requirement_use",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/image-check",
+        admin_quizzes.image_check_view,
+        name="admin_image_check",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/settings",
+        admin_quizzes.quiz_settings,
+        name="admin_quiz_settings",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/duplicate",
+        admin_quizzes.quiz_duplicate,
+        name="admin_quiz_duplicate",
+    ),
+    path("quizzes/<uuid:quiz_id>/archive", admin_quizzes.quiz_archive, name="admin_quiz_archive"),
+    path("quizzes/<uuid:quiz_id>/restore", admin_quizzes.quiz_restore, name="admin_quiz_restore"),
     path("quizzes/<uuid:quiz_id>/publish", admin_quizzes.quiz_publish, name="admin_quiz_publish"),
-    path("quizzes/<uuid:quiz_id>/runs", admin_quizzes.run_open, name="admin_run_open"),
+    path(
+        "quizzes/<uuid:quiz_id>/revisions",
+        admin_revisions.revisions,
+        name="admin_revisions",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/revisions/<int:revision_no>/compare",
+        admin_revisions.compare,
+        name="admin_revision_compare",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/revisions/<int:revision_no>/restore",
+        admin_revisions.restore,
+        name="admin_revision_restore",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/draft/discard",
+        admin_revisions.discard,
+        name="admin_draft_discard",
+    ),
+    path("quizzes/<uuid:quiz_id>/runs", admin_runs.runs_page, name="admin_run_open"),
+    path(
+        "runs/<uuid:run_id>/answers/hide",
+        admin_runs.walkthrough_hide,
+        name="admin_walkthrough_hide",
+    ),
+    path("quizzes/<uuid:quiz_id>/grading", admin_grading.grading_page, name="admin_quiz_grading"),
+    path(
+        "answers/<uuid:answer_id>/points",
+        admin_grading.answer_points,
+        name="admin_answer_points",
+    ),
+    path(
+        "answers/<uuid:answer_id>/delete",
+        admin_grading.answer_delete,
+        name="admin_answer_delete",
+    ),
+    path(
+        "answers/<uuid:answer_id>/approve",
+        admin_grading.answer_approve,
+        name="admin_answer_approve",
+    ),
+    path("answers/<uuid:answer_id>/photo", admin_grading.answer_photo, name="admin_answer_photo"),
+    path("quizzes/<uuid:quiz_id>/preview", admin_preview.preview_page, name="admin_preview"),
+    path(
+        "quizzes/<uuid:quiz_id>/preview/<int:revision_no>",
+        admin_preview.preview_page,
+        name="admin_preview_revision",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/preview/submit", admin_preview.submit, name="admin_preview_submit"
+    ),
+    path("quizzes/<uuid:quiz_id>/preview/check", admin_preview.check, name="admin_preview_check"),
     path("quizzes/<uuid:quiz_id>/qr.svg", admin_runs.quiz_qr, name="admin_quiz_qr"),
+    path("quizzes/<uuid:quiz_id>/tests", admin_links.links_page, name="admin_quiz_tests"),
+    path("tests/<uuid:link_id>/cancel", admin_links.link_cancel, name="admin_test_link_cancel"),
+    path("tests/<uuid:link_id>/delete", admin_links.link_delete, name="admin_test_link_delete"),
+    path(
+        "tests/<uuid:link_id>/attempts/delete",
+        admin_links.link_attempts_delete,
+        name="admin_test_link_attempts_delete",
+    ),
     path("runs/<uuid:run_id>", admin_runs.run_detail, name="admin_run"),
     path("runs/<uuid:run_id>/close", admin_runs.run_close, name="admin_run_close"),
+    path("quizzes/<uuid:quiz_id>/draws/new", admin_banks.draw_new, name="admin_draw_new"),
+    path(
+        "quizzes/<uuid:quiz_id>/draws/<str:draw_id>/edit",
+        admin_banks.draw_edit,
+        name="admin_draw_edit",
+    ),
+    path(
+        "quizzes/<uuid:quiz_id>/draws/<str:draw_id>/delete",
+        admin_banks.draw_delete,
+        name="admin_draw_delete",
+    ),
+    path("import/new", admin_import.new, name="admin_import_new"),
+    path("import/sample.csv", admin_import.sample, name="admin_import_sample"),
+    path("import/format.md", admin_import.format_description, name="admin_import_format"),
+    path("import/<uuid:job_id>/mapping", admin_import.mapping, name="admin_import_mapping"),
+    path("import/<uuid:job_id>/check", admin_import.check, name="admin_import_check"),
+    path("import/<uuid:job_id>/confirm", admin_import.confirm, name="admin_import_confirm"),
+    path("import/<uuid:job_id>/report", admin_import.report, name="admin_import_report"),
+    path("quizzes/<uuid:quiz_id>/export", admin_export.quiz_export, name="admin_quiz_export"),
+    path("banks/<uuid:bank_id>/export", admin_export.bank_export, name="admin_bank_export"),
+    path("banks", admin_banks.banks_page, name="admin_banks"),
+    path("banks/<uuid:bank_id>", admin_banks.bank_page, name="admin_bank"),
+    path("banks/<uuid:bank_id>/delete", admin_banks.bank_delete, name="admin_bank_delete"),
+    path(
+        "banks/<uuid:bank_id>/questions/new",
+        admin_banks.bank_question_new,
+        name="admin_bank_question_new",
+    ),
+    path(
+        "banks/<uuid:bank_id>/questions/<uuid:question_id>/edit",
+        admin_banks.bank_question_edit,
+        name="admin_bank_question_edit",
+    ),
+    path(
+        "banks/<uuid:bank_id>/questions/<uuid:question_id>/delete",
+        admin_banks.bank_question_delete,
+        name="admin_bank_question_delete",
+    ),
+    path("settings", admin_settings.settings_page, name="admin_settings"),
     path("users", admin_users.users, name="admin_users"),
 ]

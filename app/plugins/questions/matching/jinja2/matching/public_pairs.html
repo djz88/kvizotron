@@ -1,0 +1,15 @@
+<fieldset data-unique-choices>
+  <legend>{{ q.prompt }}</legend>
+  {% for item in q["items"] %}
+  <label class="match-row">
+    <span>{{ item.text }}</span>
+    <select name="{{ q.id }}:pair_{{ item.id }}">
+      <option value="">{{ _("Choose") }}</option>
+      {% for choice in q.choices %}
+      <option value="{{ choice.id }}"{% if chosen.get("pair_" ~ item.id) == choice.id %} selected{% endif %}>{{ choice.text }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% endfor %}
+  <p><small>{{ _("Each option can be used once.") }}</small></p>
+</fieldset>
