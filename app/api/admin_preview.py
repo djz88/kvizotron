@@ -20,12 +20,14 @@ from app.api.play import (
     _message_fragment,
     _respond,
     _revealed,
+    received_time,
     uploads,
     with_files,
     without_files,
 )
 from app.api.rendering import (
     flow_options,
+    identity_context,
     media_storage,
     page,
     question_html,
@@ -33,8 +35,8 @@ from app.api.rendering import (
     result_sources,
     reveal_context,
 )
-from app.contracts import ImageRefused
-from app.domain import attempts, authoring, preview, reveal, selection, settings
+from app.contracts import ASK_WHEN, ImageRefused
+from app.domain import attempts, authoring, participants, preview, reveal, selection, settings
 from app.domain.models import Attempt, Quiz, QuizRevision
 from app.kernel import registry
 
@@ -50,14 +52,17 @@ def _check_photo(data: bytes, _stored: list[str]) -> str:
     return PREVIEW_PHOTO
 
 
-def _bar(quiz: Quiz, problems: list[str] | None = None) -> dict[str, Any]:
+def _bar(
+    quiz: Quiz, problems: list[str] | None = None, switch: dict[str, str] | None = None
+) -> dict[str, Any]:
     return {
         "text": _("Preview. Nothing is stored."),
         "links": [
             {
                 "href": reverse("admin_quiz_edit", args=[quiz.id]),
                 "label": _("Back to the editor"),
-            }
+            },
+            *([switch] if switch else []),
         ],
         "problems": problems or [],
     }
@@ -116,6 +121,15 @@ def _message_page(
     return _respond(request, "public/_preview_message.html", context, locale)
 
 
+def _limit_switch(request: HttpRequest, quiz: Quiz, timed: bool) -> dict[str, str] | None:
+    """Mostly a preview is for looking at questions; this simulates whether it can be finished."""
+    if settings.attempt_limit_seconds(quiz) is None:
+        return None
+    if timed:
+        return {"href": request.path, "label": str(_("Turn the time limit off"))}
+    return {"href": f"{request.path}?timed=1", "label": str(_("Try it with the time limit"))}
+
+
 @admin_required
 @require_GET
 def preview_page(
@@ -130,8 +144,9 @@ def preview_page(
         if revision.status == QuizRevision.Status.DRAFT:
             revision = None
     locale = _locale(request, quiz, revision)
+    timed = request.GET.get("timed") == "1"
     try:
-        started = preview.start(quiz, revision)
+        started = preview.start(quiz, revision, timed=timed)
     except selection.CannotDraw:
         problems = authoring.validate_for_publication(quiz)
         texts = [problem_text(problem) for problem in problems]
@@ -142,13 +157,17 @@ def preview_page(
         return _message_page(request, quiz, locale, texts)
     context = {
         "palette_quiz": quiz,
-        "mode_bar": _bar(quiz, texts),
+        "mode_bar": _bar(quiz, texts, _limit_switch(request, quiz, timed)),
         "attempt": started.attempt,
+        "time_left": attempts.time_left(started.attempt),
         "attempt_token": started.token,
         "submission_key": "",
         "questions": questions,
         "flow": flow_options(attempts.flow_of(started.attempt)),
         "uploads": uploads(started.attempt),
+        # A preview has no start page, so the fields sit in the form whenever they are asked.
+        # What they hold is never read.
+        "identity": identity_context(participants.rules_for_quiz(quiz) | {ASK_WHEN: "end"}),
         **_urls(quiz),
     }
     return page(
@@ -165,6 +184,8 @@ def _stale(request: HttpRequest, quiz: Quiz) -> HttpResponse:
 @admin_required
 @require_POST
 def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
+    received_at = received_time(request)
+    automatic = request.POST.get("auto_submit") == "1"
     quiz = get_object_or_404(Quiz, pk=quiz_id)
     try:
         attempt = preview.load(request.POST.get("attempt_token", ""), quiz)
@@ -176,9 +197,10 @@ def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     answers = _answers(request)
     without_files(attempt, answers)
     try:
+        preview.check_time(attempt, received_at)
         with translation.override(locale):
-            with_files(request, attempt, answers, _check_photo)
-        result = preview.score(attempt, answers)
+            with_files(request, attempt, answers, _check_photo, lenient=automatic)
+        result = preview.score(attempt, answers, lenient=automatic)
         revealed = _revealed(attempt, answers, locale)
     except ImageRefused as error:
         if request.headers.get("HX-Request") == "true":
@@ -200,6 +222,7 @@ def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         "percentage": result.percentage_display,
         "correct_count": result.correct_count,
         "pending": result.pending,
+        "time_ran_out": automatic,
         "back_url": reverse("admin_preview", args=[quiz.id]),
         "back_label": _("Preview again"),
     }

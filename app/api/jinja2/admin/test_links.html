@@ -21,7 +21,7 @@
       {% endfor %}
     </select>
   </label>
-  <label>{{ _("End (UTC, optional)") }}
+  <label>{{ _("End (optional, %(zone)s)", zone=server_clock().zone) }}
     <input type="datetime-local" name="expires_at" value="{{ expires_at }}">
   </label>
   {% if versions %}<button type="submit">{{ _("Create test link") }}</button>{% else %}<p>{{ _("The quiz has no questions to test yet.") }}</p>{% endif %}

@@ -7,14 +7,15 @@ reaches these views, but the signature keeps a token from being edited into anot
 import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, cast
 
 from django.core import signing
+from django.utils import timezone
 
 from app.contracts import JSON, QuestionTypePlugin, ScoringStrategyPlugin
-from app.domain import attempts, authoring, selection, settings
+from app.domain import attempts, authoring, clock, selection, settings
 from app.domain.models import Attempt, Quiz, QuizRevision, QuizRun
 from app.kernel import registry
 
@@ -48,8 +49,12 @@ def _snapshot(quiz: Quiz, revision: QuizRevision | None) -> JSON:
     return revision.snapshot_json if revision is not None else authoring.future_snapshot(quiz)
 
 
-def start(quiz: Quiz, revision: QuizRevision | None) -> Started:
-    """`revision=None` means the draft. Raises `selection.CannotDraw`, listed in `problems` too."""
+def start(quiz: Quiz, revision: QuizRevision | None, *, timed: bool = False) -> Started:
+    """`revision=None` means the draft. Raises `selection.CannotDraw`, listed in `problems` too.
+
+    `timed` simulates the quiz's time limit. Its start lives in the signed token, so reloading the
+    page starts again, and the browser cannot change it.
+    """
     snapshot = _snapshot(quiz, revision)
     problems = authoring.validate_for_publication(quiz) if revision is None else []
     flow = settings.flow(quiz)
@@ -63,7 +68,10 @@ def start(quiz: Quiz, revision: QuizRevision | None) -> Started:
         "moment": flow.moment,
         "level": flow.level,
         "shuffle_questions": flow.shuffle_questions,
+        "page_size": flow.page_size,
+        "limit_sec": settings.attempt_limit_seconds(quiz) if timed else None,
     }
+    started_at = timezone.now()
     token = signing.dumps(
         {
             "quiz": str(quiz.pk),
@@ -71,10 +79,13 @@ def start(quiz: Quiz, revision: QuizRevision | None) -> Started:
             "hash": authoring.snapshot_hash(quiz) if revision is None else None,
             "selection": selected,
             "flow": behaviour,
+            "started_at": started_at.isoformat(),
         },
         salt=SALT,
     )
-    return Started(_attempt(quiz, snapshot, selected, behaviour), token, problems)
+    attempt = _attempt(quiz, snapshot, selected, behaviour)
+    attempt.started_at = started_at
+    return Started(attempt, token, problems)
 
 
 def load(token: str, quiz: Quiz) -> Attempt:
@@ -91,7 +102,16 @@ def load(token: str, quiz: Quiz) -> Attempt:
             raise PreviewStale
     elif data["hash"] != authoring.snapshot_hash(quiz):
         raise PreviewStale
-    return _attempt(quiz, _snapshot(quiz, revision), data["selection"], data["flow"])
+    attempt = _attempt(quiz, _snapshot(quiz, revision), data["selection"], data["flow"])
+    attempt.started_at = datetime.fromisoformat(data["started_at"])
+    return attempt
+
+
+def check_time(attempt: Attempt, now: datetime) -> None:
+    """Refused as in a real run, by the same boundary rule."""
+    ends = attempts.ends_at(attempt)
+    if ends is not None and clock.whole_second(now) > clock.whole_second(ends):
+        raise attempts.AttemptError("attempt_expired")
 
 
 def unusable(attempt: Attempt, locale: str) -> dict[str, str]:
@@ -115,8 +135,10 @@ def keep_usable(attempt: Attempt, locale: str) -> None:
     attempt.selection_json = selected
 
 
-def score(attempt: Attempt, answers: Mapping[str, JSON]) -> attempts.AttemptResult:
-    """Raises `AttemptError("invalid_answer")`, like a real submission."""
+def score(
+    attempt: Attempt, answers: Mapping[str, JSON], lenient: bool = False
+) -> attempts.AttemptResult:
+    """Raises `AttemptError("invalid_answer")`, like a real submission, and leniently like one."""
     earned = Decimal(0)
     maximum = Decimal(0)
     correct = 0
@@ -129,7 +151,12 @@ def score(attempt: Attempt, answers: Mapping[str, JSON]) -> attempts.AttemptResu
         answer = answers.get(question["id"])
         if answer is None:
             continue
-        breakdown = attempts.evaluate(question, answer)
+        try:
+            breakdown = attempts.evaluate(question, answer)
+        except attempts.AttemptError as error:
+            if lenient and error.code == "invalid_answer":
+                continue
+            raise
         earned += breakdown.earned_points
         correct += breakdown.correct_count or 0
         pending = pending or (

@@ -11,177 +11,403 @@ msgstr "Цей банк використовують квізи: %(quizzes)s"
 msgid "Complete the question in at least one language."
 msgstr "Завершіть питання принаймні однією мовою."
 
-#: admin_forms.py:20 admin_forms.py:396
+#: admin_forms.py:28 admin_forms.py:856
 msgid "Login"
 msgstr ""
 
-#: admin_forms.py:22 admin_forms.py:398
+#: admin_forms.py:30 admin_forms.py:858
 msgid "Password"
 msgstr ""
 
-#: admin_forms.py:31 admin_forms.py:119 admin_quizzes.py:88
-#: admin_quizzes.py:252 admin_quizzes.py:641
+#: admin_forms.py:39 admin_forms.py:127 admin_quizzes.py:92
+#: admin_quizzes.py:269 admin_quizzes.py:669
 msgid "Another quiz already uses this identifier."
 msgstr ""
 
-#: admin_forms.py:39 jinja2/admin/_quiz_header.html:18
+#: admin_forms.py:47 jinja2/admin/_quiz_header.html:19
 msgid "Languages"
 msgstr "Мови"
 
-#: admin_forms.py:44
+#: admin_forms.py:52
 msgid "Default language"
 msgstr "Мова за замовчуванням"
 
-#: admin_forms.py:62
+#: admin_forms.py:70
 msgid "Title"
 msgstr "Назва"
 
-#: admin_forms.py:65
+#: admin_forms.py:73
 msgid "Description"
 msgstr "Опис"
 
-#: admin_forms.py:77
+#: admin_forms.py:85
 msgid "The default language must be among the selected languages."
 msgstr ""
 
-#: admin_forms.py:100 admin_forms.py:114 admin_forms.py:186
+#: admin_forms.py:108 admin_forms.py:122 admin_forms.py:617
 msgid "URL identifier"
 msgstr ""
 
-#: admin_forms.py:101 admin_forms.py:192
+#: admin_forms.py:109 admin_forms.py:623
 msgid "Highlight on the home page"
 msgstr ""
 
-#: admin_forms.py:139
+#: admin_forms.py:147
 msgid "Answers after each question need a one-by-one mode."
 msgstr "Відповіді після кожного питання потребують режиму по одному."
 
-#: admin_forms.py:153
-msgid "Showing answers to anyone but admins needs all answers stored."
-msgstr "Щоб відповіді бачив хтось, крім адміністратора, треба зберігати всі."
+#: admin_forms.py:161
+msgid "Showing answers to anyone but admins needs a profile that keeps all answers."
+msgstr "Показ відповідей будь-кому, крім адміністраторів, потребує профілю, який зберігає всі відповіді."
 
-#: admin_forms.py:189
+#: admin_forms.py:171
+msgid "Nothing is kept, so the quiz cannot have a photo question: a photo is stored."
+msgstr "Нічого не зберігається, тож у вікторині не може бути питання з фото: фото було б збережено."
+
+#: admin_forms.py:176
+#, python-format
+msgid "Nothing is kept, which does not go with the setting \"%(name)s\" as it is."
+msgstr "Нічого не зберігається, що не поєднується з налаштуванням «%(name)s» у такому вигляді."
+
+#: admin_forms.py:197
+msgid "Nothing is kept, so the run cannot have a public scoreboard."
+msgstr "Нічого не зберігається, тому запуск не може мати публічну таблицю результатів."
+
+#: admin_forms.py:198
+msgid "Answers after each question cannot go with a visible scoreboard."
+msgstr "Відповіді після кожного питання несумісні з видимою таблицею результатів."
+
+#: admin_forms.py:199
+msgid "The duration needs the data profile that keeps times."
+msgstr "Тривалість потребує профілю даних, що зберігає час."
+
+#: admin_forms.py:200
+msgid "A test run has no scoreboard."
+msgstr "Тестовий запуск не має таблиці результатів."
+
+#: admin_forms.py:286
+msgid "In minutes. 0 means no limit."
+msgstr "У хвилинах. 0 означає без обмеження."
+
+#: admin_forms.py:333
+msgid "This time does not exist because of the clock change."
+msgstr "Цього часу не існує через переведення годинника."
+
+#: admin_forms.py:335 admin_runs.py:490
+msgid "Enter a valid time."
+msgstr "Введіть правильний час."
+
+#: admin_forms.py:343 jinja2/admin/run.html:13 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:25
+msgid "Start time"
+msgstr "Початок"
+
+#: admin_forms.py:345
+msgid "Empty starts the run now."
+msgstr "Порожнє поле почне запуск одразу."
+
+#: admin_forms.py:348 jinja2/admin/run.html:14 jinja2/admin/run.html:174
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:27
+msgid "Deadline"
+msgstr "Кінцевий термін"
+
+#: admin_forms.py:350
+msgid "Empty means the run lasts until you end it."
+msgstr "Порожнє поле означає, що запуск триває, доки ви його не завершите."
+
+#: admin_forms.py:353
+msgid "Time limit for an attempt (minutes)"
+msgstr "Обмеження часу спроби (хвилини)"
+
+#: admin_forms.py:357
+msgid "Empty or 0 means no limit. It cannot change once the run opens."
+msgstr "Порожнє поле або 0 означає без обмеження. Після початку запуску його не можна змінити."
+
+#: admin_forms.py:365
+msgid "Nothing: only counts, so there is no attempts table, result link, scoreboard, draw or export. Score and photos: rankings by time need the last profile. Score and all answers: every answer is kept. Score, all answers and times: also how long each attempt took. It cannot change once the run opens."
+msgstr "Нічого: лише кількості, тому немає таблиці спроб, посилання на результат, рейтингу, жеребкування та експорту. Бали й фото: рейтинг за часом потребує останнього профілю. Бали та всі відповіді: зберігається кожна відповідь. Бали, всі відповіді й час: також те, скільки тривала спроба. Після відкриття запуску це не можна змінити."
+
+#: admin_forms.py:376
+msgid "It can change later, also after the run ends."
+msgstr "Це можна змінити пізніше, також після завершення запуску."
+
+#: admin_forms.py:379 jinja2/admin/run.html:18 jinja2/public/quiz.html:35
+msgid "Access code"
+msgstr "Код доступу"
+
+#: admin_forms.py:384
+msgid "Optional. Participants must enter it before they start. It is shown once after saving."
+msgstr "Необов'язковий. Учасники мають ввести його перед початком. Після збереження він показується лише один раз."
+
+#: admin_forms.py:387 jinja2/admin/run.html:31
+msgid "Generate a code"
+msgstr "Згенерувати код"
+
+#: admin_forms.py:456
+msgid "Choose a kind of reward."
+msgstr ""
+
+#: admin_forms.py:457
+msgid "Choose a unit and enter a value."
+msgstr ""
+
+#: admin_forms.py:458
+msgid "Enter a valid number. Correct answers are a whole number."
+msgstr ""
+
+#: admin_forms.py:459
+msgid "Enter a number greater than 0."
+msgstr ""
+
+#: admin_forms.py:460
+msgid "A percentage can be at most 100."
+msgstr ""
+
+#: admin_forms.py:461
+#, python-format
+msgid "Enter from 1 to %(max)s winners."
+msgstr "Введіть від 1 до %(max)s переможців."
+
+#: admin_forms.py:462
+#, python-format
+msgid "Enter from 0 to %(max)s alternates."
+msgstr "Введіть від 0 до %(max)s запасних."
+
+#: admin_forms.py:464
+msgid "A text is too long."
+msgstr ""
+
+#: admin_forms.py:466
+msgid "This reward cannot be saved."
+msgstr ""
+
+#: admin_forms.py:477
+msgid "Kind"
+msgstr ""
+
+#: admin_forms.py:479
+msgid "Threshold: for a score that reaches it"
+msgstr ""
+
+#: admin_forms.py:480
+msgid "Participation: for every submission"
+msgstr ""
+
+#: admin_forms.py:481
+msgid "Manual: granted by an admin"
+msgstr ""
+
+#: admin_forms.py:482
+msgid "Draw: winners drawn after the run"
+msgstr ""
+
+#: admin_forms.py:486
+msgid "Threshold unit"
+msgstr ""
+
+#: admin_forms.py:490
+msgid "Percent"
+msgstr ""
+
+#: admin_forms.py:491 admin_forms.py:697
+msgid "Points"
+msgstr "Бали"
+
+#: admin_forms.py:492
+msgid "Correct answers"
+msgstr ""
+
+#: admin_forms.py:494
+msgid "Only for a threshold. Reached means at least this value."
+msgstr ""
+
+#: admin_forms.py:497
+msgid "Threshold value"
+msgstr ""
+
+#: admin_forms.py:503
+msgid "Who may be drawn"
+msgstr ""
+
+#: admin_forms.py:506
+msgid "Everyone with a submitted attempt"
+msgstr ""
+
+#: admin_forms.py:507
+msgid "At least a percentage"
+msgstr ""
+
+#: admin_forms.py:508
+msgid "At least a number of points"
+msgstr ""
+
+#: admin_forms.py:510
+msgid "Only for a draw."
+msgstr ""
+
+#: admin_forms.py:513
+msgid "Minimum for the draw"
+msgstr ""
+
+#: admin_forms.py:519 jinja2/admin/prize_draw.html:37
+#: jinja2/public/scoreboard.html:22
+msgid "Winners"
+msgstr "Переможці"
+
+#: admin_forms.py:522 jinja2/admin/prize_draw.html:63
+msgid "Alternates"
+msgstr ""
+
+#: admin_forms.py:528
+#, python-brace-format
+msgid "Drawn after the winners, in order. Empty means {default}."
+msgstr "Обираються після переможців, за порядком. Порожнє поле означає {default}."
+
+#: admin_forms.py:545
+#, python-format
+msgid "Name (%(locale)s)"
+msgstr ""
+
+#: admin_forms.py:550
+#, python-format
+msgid "Description (%(locale)s)"
+msgstr ""
+
+#: admin_forms.py:556
+#, python-format
+msgid "How to claim it (%(locale)s)"
+msgstr ""
+
+#: admin_forms.py:620
 msgid "Locked after the first publication, so that printed QR codes work."
 msgstr ""
 
-#: admin_forms.py:203 admin_forms.py:280
+#: admin_forms.py:634 admin_forms.py:740
 #, python-format
 msgid "Use global setting (now: %(value)s)"
 msgstr ""
 
-#: admin_forms.py:237
-msgid "Points"
-msgstr "Бали"
+#: admin_forms.py:638
+msgid "Empty:"
+msgstr "Порожнє:"
 
-#: admin_forms.py:240
+#: admin_forms.py:657
+msgid "Anonymous participant on the scoreboard"
+msgstr "Анонімний учасник у таблиці результатів"
+
+#: admin_forms.py:661
+msgid "NN stands for the number. Empty uses \"Player NN\" in that language."
+msgstr "NN замінить номер. Порожнє поле використає цією мовою «Гравець NN»."
+
+#: admin_forms.py:700
 msgid "Scoring"
 msgstr "Оцінювання"
 
-#: admin_forms.py:243
+#: admin_forms.py:703
 msgid "Part by part: every correct answer adds its share and a wrong tick subtracts it, down to zero."
 msgstr ""
 
-#: admin_forms.py:248
+#: admin_forms.py:708
 msgid "Sources (optional)"
 msgstr ""
 
-#: admin_forms.py:252
+#: admin_forms.py:712
 msgid "One per line. An address starting with https:// becomes a link. Participants see them with the result, if the settings allow it."
 msgstr ""
 
-#: admin_forms.py:278
+#: admin_forms.py:738
 #, python-format
 msgid "Use quiz setting (now: %(value)s)"
 msgstr "За налаштуванням вікторини (зараз: %(value)s)"
 
-#: admin_forms.py:290
+#: admin_forms.py:750
 #, python-format
 msgid "Explanation (optional), %(language)s"
 msgstr "Пояснення (необов'язково), %(language)s"
 
-#: admin_forms.py:295
+#: admin_forms.py:755
 msgid "Participants see it with the correct answer, if the settings allow it."
 msgstr "Учасник побачить його біля правильної відповіді, якщо це дозволяють налаштування."
 
-#: admin_forms.py:316
+#: admin_forms.py:776
 #, python-format
 msgid "At most %(count)s sources are allowed."
 msgstr "Дозволено не більше %(count)s джерел."
 
-#: admin_forms.py:320
+#: admin_forms.py:780
 #, python-format
 msgid "A source can have at most %(count)s characters."
 msgstr "Джерело може мати не більше %(count)s символів."
 
-#: admin_forms.py:330
+#: admin_forms.py:790
 msgid "Tags (optional)"
 msgstr "Мітки (необов'язково)"
 
-#: admin_forms.py:332
+#: admin_forms.py:792
 msgid "Separated by commas. A quiz can draw only questions with one tag."
 msgstr "Через кому. Квіз може вибирати лише питання з однією міткою."
 
-#: admin_forms.py:343
+#: admin_forms.py:803
 #, python-format
 msgid "At most %(count)s tags are allowed."
 msgstr "Дозволено не більше %(count)s міток."
 
-#: admin_forms.py:347
+#: admin_forms.py:807
 #, python-format
 msgid "A tag can have at most %(count)s characters."
 msgstr "Мітка може мати не більше %(count)s символів."
 
-#: admin_forms.py:353
+#: admin_forms.py:813
 msgid "Bank name"
 msgstr "Назва банку"
 
-#: admin_forms.py:359
+#: admin_forms.py:819
 msgid "Bank"
 msgstr "Банк"
 
-#: admin_forms.py:361
+#: admin_forms.py:821
 msgid "Tag (optional)"
 msgstr "Мітка (необов'язково)"
 
-#: admin_forms.py:364
+#: admin_forms.py:824
 msgid "Without a tag, questions are drawn from the whole bank."
 msgstr "Без мітки вибірка з усього банку."
 
-#: admin_forms.py:367
+#: admin_forms.py:827
 msgid "Number of questions"
 msgstr "Кількість питань"
 
-#: admin_forms.py:370
+#: admin_forms.py:830
 msgid "Points per question"
 msgstr "Бали за питання"
 
-#: admin_forms.py:372
+#: admin_forms.py:832
 msgid "Position"
 msgstr "Позиція"
 
-#: admin_forms.py:385
+#: admin_forms.py:845
 msgid "At the start"
 msgstr "На початку"
 
-#: admin_forms.py:387
+#: admin_forms.py:847
 #, python-format
 msgid "After question %(number)s"
 msgstr "Після питання %(number)s"
 
-#: admin_forms.py:404 admin_users.py:33
+#: admin_forms.py:864 admin_users.py:33
 msgid "This login already exists."
 msgstr ""
 
-#: admin_grading.py:152
+#: admin_grading.py:153
 msgid "A question no longer in the quiz"
 msgstr "Запитання, якого більше немає у вікторині"
 
-#: admin_grading.py:303
+#: admin_grading.py:304
 #, python-format
 msgid "Points must be a number from 0 to %(maximum)s."
 msgstr "Бали мають бути числом від 0 до %(maximum)s."
 
-#: admin_grading.py:331
+#: admin_grading.py:332
 msgid "Delete this photo? It is gone for good, and its points given by an admin become 0."
 msgstr "Видалити це фото? Воно зникне назавжди, а його бали від адміністратора стануть 0."
 
@@ -220,170 +446,190 @@ msgstr "Не вдалося завантажити зображення за а�
 msgid "This quiz was archived in the meantime. Nothing was imported."
 msgstr "Вікторину тим часом заархівовано. Нічого не імпортовано."
 
-#: admin_links.py:27
+#: admin_links.py:26
 msgid "Draft (a frozen copy)"
 msgstr "Чернетка (заморожена копія)"
 
-#: admin_links.py:30 admin_links.py:68 jinja2/admin/revision_compare.html:3
+#: admin_links.py:29 admin_links.py:66 jinja2/admin/revision_compare.html:3
+#: jinja2/admin/run.html:12 jinja2/admin/run.html:71 jinja2/admin/run.html:129
+#: jinja2/public/_scoreboard_rows.html:6
 #, python-format
 msgid "Revision %(no)s"
 msgstr "Редакція %(no)s"
 
-#: admin_links.py:43
+#: admin_links.py:42
 msgid "Waiting for grading"
 msgstr "Очікує на оцінювання"
 
-#: admin_links.py:45 jinja2/admin/runs.html:16 jinja2/admin/runs.html:25
+#: admin_links.py:44 jinja2/admin/run.html:74 jinja2/admin/run.html:81
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:163
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:31
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:51
+#: jinja2/public/_scoreboard_rows.html:16
+#: jinja2/public/_scoreboard_rows.html:29
 msgid "Submitted"
 msgstr "Надіслано"
 
-#: admin_links.py:45
+#: admin_links.py:44
 msgid "In progress"
 msgstr "Триває"
 
-#: admin_links.py:54
+#: admin_links.py:53
 msgid "Cancelled"
 msgstr "Скасовано"
 
-#: admin_links.py:55
+#: admin_links.py:54
 msgid "Active"
 msgstr "Активне"
 
-#: admin_links.py:55 jinja2/admin/run.html:8 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:21 jinja2/admin/runs.html:23
+#: admin_links.py:54 admin_runs.py:60 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:28 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:49
 msgid "Ended"
 msgstr "Завершено"
 
-#: admin_links.py:65
+#: admin_links.py:64
 #, python-format
 msgid "Copy of the draft from %(when)s"
 msgstr "Копія чернетки від %(when)s"
 
-#: admin_links.py:113
+#: admin_links.py:111
 msgid "Choose a version."
 msgstr "Виберіть версію."
 
-#: admin_links.py:118
+#: admin_links.py:116
 msgid "The end must be a valid time in the future."
 msgstr "Завершення має бути дійсним часом у майбутньому."
 
-#: admin_links.py:165
+#: admin_links.py:163
 msgid "Delete this test link with all its attempts? This cannot be undone."
 msgstr "Видалити це тестове посилання з усіма спробами? Цю дію не можна скасувати."
 
-#: admin_links.py:176
+#: admin_links.py:174
 msgid "Delete all attempts of this test link? This cannot be undone."
 msgstr "Видалити всі спроби цього тестового посилання? Цю дію не можна скасувати."
 
-#: admin_preview.py:48 play.py:241
+#: admin_preview.py:50 play.py:538
 msgid "Photos cannot be stored on this installation."
 msgstr "У цій інсталяції не можна зберігати фото."
 
-#: admin_preview.py:55
+#: admin_preview.py:59
 msgid "Preview. Nothing is stored."
 msgstr "Перегляд. Нічого не зберігається."
 
-#: admin_preview.py:59 jinja2/admin/draw_form.html:3
+#: admin_preview.py:63 jinja2/admin/draw_form.html:3
 #: jinja2/admin/publish.html:4 jinja2/admin/question_form.html:3
 msgid "Back to the editor"
 msgstr ""
 
-#: admin_preview.py:82
+#: admin_preview.py:87
 #, python-format
 msgid "This question cannot be shown yet: %(reason)s"
 msgstr "Це запитання поки не можна показати: %(reason)s"
 
-#: admin_preview.py:161
+#: admin_preview.py:129
+msgid "Turn the time limit off"
+msgstr "Вимкнути обмеження часу"
+
+#: admin_preview.py:130
+msgid "Try it with the time limit"
+msgstr "Спробувати з обмеженням часу"
+
+#: admin_preview.py:180
 msgid "The draft changed in the meantime. Start the preview again."
 msgstr "Чернетка тим часом змінилася. Запустіть перегляд ще раз."
 
-#: admin_preview.py:204
+#: admin_preview.py:227
 msgid "Preview again"
 msgstr "Переглянути ще раз"
 
-#: admin_quizzes.py:60 jinja2/admin/quiz_settings.html:5
+#: admin_quizzes.py:64 jinja2/admin/quiz_settings.html:5
 msgid "This quiz is archived. Restore it to change it."
 msgstr ""
 
-#: admin_quizzes.py:350 admin_quizzes.py:384
+#: admin_quizzes.py:367 admin_quizzes.py:401
 msgid "Images cannot be stored on this installation."
 msgstr "Це встановлення не може зберігати зображення."
 
-#: admin_quizzes.py:509
+#: admin_quizzes.py:526
 msgid "The quiz has no questions."
 msgstr ""
 
-#: admin_quizzes.py:511
+#: admin_quizzes.py:528
 msgid "There is nothing new to publish."
 msgstr ""
 
-#: admin_quizzes.py:513
+#: admin_quizzes.py:530
 #, python-format
 msgid "The title is missing in language %(locale)s."
 msgstr ""
 
-#: admin_quizzes.py:515
+#: admin_quizzes.py:532
 #, python-format
 msgid "The description is missing in language %(locale)s."
 msgstr "Відсутній опис мовою %(locale)s."
 
-#: admin_quizzes.py:517
+#: admin_quizzes.py:534
 #, python-format
 msgid "Question %(number)s: the explanation is missing in language %(locale)s."
 msgstr "Питання %(number)s: немає пояснення мовою %(locale)s."
 
-#: admin_quizzes.py:522
+#: admin_quizzes.py:539
 #, python-format
 msgid "There are not enough usable questions to draw for %(row)s."
 msgstr "Для вибірки %(row)s замало придатних питань."
 
-#: admin_quizzes.py:526
+#: admin_quizzes.py:543
 #, python-format
 msgid "The bank of the draw %(row)s no longer exists."
 msgstr "Банк вибірки %(row)s більше не існує."
 
-#: admin_quizzes.py:529
+#: admin_quizzes.py:546
 #, python-format
 msgid "Question %(number)s: an image has no copy, and this quiz shows copies. Save the question again, or change how images are shown."
 msgstr ""
 
-#: admin_quizzes.py:534
+#: admin_quizzes.py:551
 #, python-format
 msgid "The draw %(row)s holds an image with no copy, and this quiz shows copies. Save that question in the bank again, or change how images are shown."
 msgstr ""
 
-#: admin_quizzes.py:541
+#: admin_quizzes.py:558
 #, python-format
 msgid "Question types of this quiz need settings that exclude each other: %(detail)s"
 msgstr "Типи запитань у цій вікторині потребують налаштувань, що виключають одне одного: %(detail)s"
 
-#: admin_quizzes.py:544
+#: admin_quizzes.py:561
 #, python-format
 msgid "Question %(number)s: its question type is not available."
 msgstr ""
 
-#: admin_quizzes.py:547
+#: admin_quizzes.py:564
 #, python-format
 msgid "Question %(number)s, language %(locale)s: %(detail)s"
 msgstr ""
 
-#: admin_quizzes.py:607
+#: admin_quizzes.py:624
 msgid "The quiz changed in the meantime. Check the changes and publish again."
 msgstr ""
 
-#: admin_quizzes.py:610
+#: admin_quizzes.py:627
 msgid "Choose what happens to the running run."
 msgstr ""
 
-#: admin_quizzes.py:612 admin_quizzes.py:626
+#: admin_quizzes.py:629 admin_quizzes.py:650
 msgid "This quiz already has a running run."
 msgstr ""
 
-#: admin_quizzes.py:624
+#: admin_quizzes.py:634
+msgid "The running stateless run keeps its revision: the new one has a photo question."
+msgstr "Поточний запуск, що нічого не зберігає, залишає свою ревізію: нова містить питання з фото."
+
+#: admin_quizzes.py:648 admin_runs.py:289
 msgid "Publish the quiz first."
 msgstr ""
 
-#: admin_quizzes.py:655
+#: admin_quizzes.py:683
 msgid "A run is in progress. End it before archiving the quiz."
 msgstr ""
 
@@ -396,11 +642,12 @@ msgstr ""
 msgid "Published"
 msgstr ""
 
-#: admin_revisions.py:21
+#: admin_revisions.py:21 jinja2/admin/prize_draw.html:100
 msgid "Superseded"
 msgstr ""
 
-#: admin_revisions.py:22 jinja2/admin/_chips.html:3 jinja2/admin/_chips.html:9
+#: admin_revisions.py:22 admin_runs.py:61 jinja2/admin/_chips.html:3
+#: jinja2/admin/_chips.html:9
 msgid "Archived"
 msgstr ""
 
@@ -421,128 +668,429 @@ msgstr ""
 msgid "Discard all unpublished changes? This cannot be undone."
 msgstr ""
 
-#: admin_runs.py:89
+#: admin_rewards.py:46
+msgid "Threshold"
+msgstr ""
+
+#: admin_rewards.py:47
+msgid "Participation"
+msgstr ""
+
+#: admin_rewards.py:48
+msgid "Manual"
+msgstr ""
+
+#: admin_rewards.py:49 admin_rewards.py:65
+msgid "Draw"
+msgstr ""
+
+#: admin_rewards.py:55
+msgctxt "reward"
+msgid "Granted"
+msgstr ""
+
+#: admin_rewards.py:56
+msgctxt "reward"
+msgid "Handed over"
+msgstr ""
+
+#: admin_rewards.py:57
+msgctxt "reward"
+msgid "Cancelled"
+msgstr ""
+
+#: admin_rewards.py:63
+msgid "Automatic"
+msgstr ""
+
+#: admin_rewards.py:64
+msgid "By an admin"
+msgstr ""
+
+#: admin_rewards.py:70
+msgid "No longer reached"
+msgstr ""
+
+#: admin_rewards.py:170
+msgid "The quiz is archived. Restore it to change its rewards."
+msgstr ""
+
+#: admin_rewards.py:174 jinja2/admin/_reward_rule_form.html:7
+msgid "The kind, threshold and counts can change only while the run is planned."
+msgstr ""
+
+#: admin_rewards.py:373 admin_rewards.py:417
+msgid "Enter a reason, at most 200 characters."
+msgstr ""
+
+#: admin_rewards.py:375
+msgid "The reward has changed in the meantime. Check its status and try again."
+msgstr ""
+
+#: admin_rewards.py:397
+msgid "This reward cannot be granted."
+msgstr ""
+
+#: admin_rewards.py:406
+msgid "A draw is possible only after the run has closed."
+msgstr ""
+
+#: admin_rewards.py:407
+msgid "This run keeps no scores, so there is nobody to draw from."
+msgstr ""
+
+#: admin_rewards.py:408
+msgid "Some answers still wait for grading. Grade them before the draw."
+msgstr ""
+
+#: admin_rewards.py:409
+msgid "This reward is not a draw."
+msgstr ""
+
+#: admin_rewards.py:410
+msgid "Nobody is eligible for this draw."
+msgstr ""
+
+#: admin_rewards.py:411
+msgid "Everybody eligible has already been drawn."
+msgstr ""
+
+#: admin_rewards.py:412
+msgid "No alternate who is still eligible is left. Draw a substitute instead."
+msgstr ""
+
+#: admin_rewards.py:413
+msgid "This reward has already been drawn. A redraw draws it again."
+msgstr ""
+
+#: admin_rewards.py:415
+msgid "This reward has not been drawn yet, or its winners have changed in the meantime."
+msgstr ""
+
+#: admin_rewards.py:423
+msgid "First draw"
+msgstr ""
+
+#: admin_rewards.py:424
+msgid "Redraw"
+msgstr ""
+
+#: admin_rewards.py:425
+msgid "Alternate moved up"
+msgstr ""
+
+#: admin_rewards.py:426
+msgid "Substitute drawn"
+msgstr ""
+
+#: admin_rewards.py:432
+msgid "No longer stored"
+msgstr ""
+
+#: admin_runs.py:58
+msgid "Planned"
+msgstr "Заплановано"
+
+#: admin_runs.py:59 jinja2/admin/grading.html:14
+msgid "Running"
+msgstr ""
+
+#: admin_runs.py:115
+msgid "The start has already passed."
+msgstr "Початок уже минув."
+
+#: admin_runs.py:116
+msgid "The deadline must be after the start."
+msgstr "Кінцевий термін має бути після початку."
+
+#: admin_runs.py:117
+msgid "This quiz already has a running or planned run."
+msgstr "Ця вікторина вже має активний або запланований запуск."
+
+#: admin_runs.py:118
+msgid "This run is no longer planned."
+msgstr "Цей запуск більше не запланований."
+
+#: admin_runs.py:119
+msgid "The deadline must be at least a minute ahead."
+msgstr "Кінцевий термін має бути щонайменше за хвилину."
+
+#: admin_runs.py:120 jinja2/public/quiz.html:67 play.py:92
+msgid "This run has ended."
+msgstr "Цей запуск завершився."
+
+#: admin_runs.py:122
+msgid "This cannot be done now."
+msgstr "Зараз це неможливо."
+
+#: admin_runs.py:324
+msgid "Enter a start. To start now, use Start now."
+msgstr "Вкажіть початок. Щоб почати одразу, скористайтеся кнопкою «Почати зараз»."
+
+#: admin_runs.py:473
+#, python-format
+msgid "Move the deadline to %(when)s? Attempts in progress: %(count)s."
+msgstr "Перенести кінцевий термін на %(when)s? Спроб, що тривають: %(count)s."
+
+#: admin_runs.py:575
+msgid "The revisions have different maximum points, so they cannot share one table."
+msgstr "Редакції мають різний максимум балів, тому не можуть мати спільну таблицю."
+
+#: admin_runs.py:576
+msgid "The run used only one revision, so there is nothing to merge."
+msgstr "Запуск використав лише одну редакцію, тому нема чого об'єднувати."
+
+#: admin_runs.py:675
 #, python-format
 msgid "End run %(no)s? Participants can no longer submit answers."
 msgstr ""
 
-#: play.py:53
+#: admin_runs.py:705
+msgid "Enter a code."
+msgstr "Введіть код."
+
+#: admin_view.py:21
+msgid "Playing"
+msgstr "Проходження"
+
+#: admin_view.py:22
+msgid "Answers and result"
+msgstr "Відповіді та результат"
+
+#: admin_view.py:23 jinja2/admin/run.html:107 jinja2/admin/run.html:148
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:50
+msgid "Participants"
+msgstr "Учасники"
+
+#: admin_view.py:24 jinja2/admin/_quiz_header.html:26 jinja2/admin/run.html:55
+#: jinja2/admin/runs.html:12 jinja2/admin/runs.html:54
+#: jinja2/public/_result.html:5 jinja2/public/quiz.html:23
+#: jinja2/public/result.html:9 jinja2/public/scoreboard.html:2
+#: jinja2/public/scoreboard.html:8 jinja2/public/unavailable.html:6
+msgid "Scoreboard"
+msgstr "Таблиця результатів"
+
+#: admin_view.py:25 jinja2/admin/run.html:37
+msgid "Data"
+msgstr "Дані"
+
+#: admin_view.py:26
+msgid "Look and listing"
+msgstr "Вигляд і список"
+
+#: admin_view.py:27
+msgid "Technical"
+msgstr "Технічне"
+
+#: play.py:88
 msgid "The form could not be read. Please try again."
 msgstr "Не вдалося прочитати форму. Спробуйте ще раз."
 
-#: play.py:54
+#: play.py:89
 msgid "An answer could not be read. Please check your answers."
 msgstr "Не вдалося прочитати відповідь. Перевірте свої відповіді."
 
-#: play.py:55
+#: play.py:90
 msgid "This attempt is not valid. Please start again."
 msgstr "Ця спроба недійсна. Почніть знову."
 
-#: play.py:56
+#: play.py:91
 msgid "This attempt does not exist."
 msgstr "Цієї спроби не існує."
 
-#: jinja2/public/quiz.html:21 play.py:57
-msgid "This run has ended."
-msgstr "Цей запуск завершився."
+#: jinja2/public/quiz.html:64 play.py:93
+msgid "This quiz has not started yet."
+msgstr "Ця вікторина ще не почалася."
 
-#: play.py:58 play.py:59
+#: play.py:94 play.py:95
 msgid "This attempt has already been submitted."
 msgstr "Цю спробу вже надіслано."
 
-#: play.py:61
+#: play.py:97
 msgid "This attempt was replaced by a newer version of the quiz. Please reload the page."
 msgstr "Цю спробу замінила новіша версія вікторини. Будь ласка, перезавантажте сторінку."
 
-#: play.py:63
+#: play.py:99
 msgid "The time for this attempt has run out."
 msgstr "Час на цю спробу вичерпано."
 
-#: play.py:64
+#: play.py:100
+msgid "This attempt has already been submitted or has ended."
+msgstr "Цю спробу вже надіслано або її завершено."
+
+#: play.py:101
 msgid "This quiz is temporarily unavailable."
 msgstr "Ця вікторина тимчасово недоступна."
 
-#: play.py:65
+#: play.py:102
 msgid "This quiz does not show answers now."
 msgstr "Цей квіз зараз не показує відповіді."
 
-#: play.py:66
+#: play.py:103
 msgid "This question is not part of your attempt."
 msgstr "Це питання не є частиною вашої спроби."
 
-#: play.py:67
+#: play.py:104
 msgid "This test has ended."
 msgstr "Цей тест завершився."
 
-#: play.py:228
+#: play.py:105
+msgid "You have already played this run in this browser."
+msgstr "Ви вже проходили цей запуск у цьому браузері."
+
+#: play.py:106
+msgid "Time is up for your attempt. It cannot be started again."
+msgstr "Час вашої спроби вичерпано. Почати знову не можна."
+
+#: play.py:107
+msgid "This attempt was closed because you started again."
+msgstr "Цю спробу закрито, бо ви почали знову."
+
+#: play.py:108
+msgid "Please enter your name."
+msgstr "Введіть своє ім’я."
+
+#: play.py:109
+msgid "The name can have at most 40 characters."
+msgstr "Ім’я може мати щонайбільше 40 символів."
+
+#: play.py:110
+msgid "Please enter your e-mail."
+msgstr "Введіть свою електронну адресу."
+
+#: play.py:111
+msgid "The e-mail address does not look right."
+msgstr "Електронна адреса виглядає неправильно."
+
+#: play.py:112
+msgid "This name is already used in this run. Please choose another one."
+msgstr "Це ім’я вже використовується в цьому запуску. Виберіть інше."
+
+#: play.py:113
+msgid "This run needs an access code. Reload the page and enter it."
+msgstr "Для цього запуску потрібен код доступу. Перезавантажте сторінку й введіть його."
+
+#: play.py:114
+msgid "This attempt belongs to another run."
+msgstr "Ця спроба належить до іншого запуску."
+
+#: play.py:115
+msgid "This quiz does not let you continue an attempt on this device."
+msgstr "Ця вікторина не дозволяє продовжувати спробу на цьому пристрої."
+
+#: play.py:407
+msgid "Too many wrong codes. Please try again in a minute."
+msgstr "Забагато неправильних кодів. Спробуйте ще раз за хвилину."
+
+#: play.py:417
+msgid "The access code is not right. Please try again."
+msgstr "Код доступу неправильний. Спробуйте ще раз."
+
+#: play.py:521
 msgid "A photo can be at most 15 MB."
 msgstr "Фото може мати щонайбільше 15 МБ."
 
-#: public.py:103 public.py:119
+#: public.py:154 public.py:172
 msgid "This quiz does not exist."
 msgstr "Цієї вікторини не існує."
 
-#: public.py:107
+#: public.py:160
 msgid "This quiz is not running right now."
 msgstr "Ця вікторина зараз не проходить."
 
-#: public.py:128
+#: public.py:181
 msgid "This test link does not work."
 msgstr "Це тестове посилання не працює."
 
-#: public.py:234
+#: public.py:331
 msgid "This walkthrough is not available."
 msgstr "Цей огляд недоступний."
 
-#: public.py:333
+#: public.py:435
 msgid "This link does not work."
 msgstr "Це посилання не працює."
 
-#: rendering.py:98
+#: public.py:479
+msgid "This run is archived, so the details can no longer be added."
+msgstr "Цей запуск архівовано, тож дані вже не можна додати."
+
+#: rendering.py:113
 msgid "This is a test. The result does not count."
 msgstr "Це тест. Результат не враховується."
 
-#: rendering.py:257
+#: rendering.py:275
 msgid "This question changed"
 msgstr "Це питання змінилося"
+
+#: scoreboard.py:22
+msgid "The scoreboard is not public."
+msgstr "Таблиця результатів не публічна."
+
+#: scoreboard.py:23
+msgid "The scoreboard appears when the run ends."
+msgstr "Таблиця результатів з'явиться після завершення запуску."
+
+#: scoreboard.py:24
+msgid "The scoreboard appears when all answers are graded."
+msgstr "Таблиця результатів з'явиться, коли всі відповіді буде оцінено."
+
+#: scoreboard.py:25
+msgid "The results of this run are not public."
+msgstr "Результати цього запуску не публічні."
 
 #: jinja2/admin/_actions.html:6 jinja2/admin/publish.html:44
 msgid "Start the quiz"
 msgstr ""
 
-#: jinja2/admin/_actions.html:6
+#: jinja2/admin/_actions.html:6 jinja2/public/quiz.html:49
 msgid "Start again"
-msgstr ""
+msgstr "Почати знову"
 
-#: jinja2/admin/_actions.html:16
+#: jinja2/admin/_actions.html:15
+msgid "Plan…"
+msgstr "Запланувати…"
+
+#: jinja2/admin/_actions.html:19 jinja2/admin/_actions.html:39
+msgid "Start now"
+msgstr "Почати зараз"
+
+#: jinja2/admin/_actions.html:22
 msgid "Publish changes"
 msgstr ""
 
-#: jinja2/admin/_actions.html:18 jinja2/admin/_actions.html:32
-#: jinja2/admin/run.html:15
+#: jinja2/admin/_actions.html:24 jinja2/admin/_actions.html:38
+#: jinja2/admin/run.html:182
 msgid "End the run"
 msgstr ""
 
-#: jinja2/admin/_actions.html:22
+#: jinja2/admin/_actions.html:28
 msgid "Restore from archive"
 msgstr ""
 
-#: jinja2/admin/_actions.html:27 jinja2/admin/bank.html:20
+#: jinja2/admin/_actions.html:33 jinja2/admin/bank.html:20
 #: jinja2/admin/quiz_edit.html:21 jinja2/admin/quiz_edit.html:44
 #: jinja2/admin/revisions.html:17
 msgid "More actions"
 msgstr ""
 
-#: jinja2/admin/_actions.html:30
+#: jinja2/admin/_actions.html:36
 msgid "Publish only"
 msgstr ""
 
-#: jinja2/admin/_actions.html:31
+#: jinja2/admin/_actions.html:37
 msgid "Discard changes"
 msgstr ""
 
-#: jinja2/admin/_actions.html:33 jinja2/admin/quiz_duplicate.html:8
-#: jinja2/admin/quiz_settings.html:31
+#: jinja2/admin/_actions.html:40 jinja2/admin/run.html:12
+msgid "Change the plan"
+msgstr "Змінити план"
+
+#: jinja2/admin/_actions.html:41
+msgid "Cancel the plan"
+msgstr "Скасувати план"
+
+#: jinja2/admin/_actions.html:42 jinja2/admin/quiz_duplicate.html:8
+#: jinja2/admin/quiz_settings.html:33
 msgid "Duplicate"
 msgstr ""
 
@@ -567,12 +1115,50 @@ msgstr ""
 
 #: jinja2/admin/_chips.html:11
 #, python-format
+msgid "Run %(no)s starts %(when)s"
+msgstr "Запуск %(no)s почнеться %(when)s"
+
+#: jinja2/admin/_chips.html:12
+#, python-format
 msgid "Run %(no)s has ended"
 msgstr ""
 
-#: jinja2/admin/_chips.html:12
+#: jinja2/admin/_chips.html:13
 msgid "The quiz is not running"
 msgstr ""
+
+#: jinja2/admin/_clock.html:3
+msgid "The server and browser clocks differ by more than a minute. A schedule follows the server."
+msgstr "Годинники сервера та браузера розходяться більше ніж на хвилину. Розклад іде за сервером."
+
+#: jinja2/admin/_clock.html:3
+msgid "Your browser is in a different time zone. Times here are in the configured one."
+msgstr "Браузер в іншому часовому поясі. Час тут показано в налаштованому поясі."
+
+#: jinja2/admin/_clock.html:3
+msgid "The server runs in a different time zone. Times here are in the configured one."
+msgstr "Сервер працює в іншому часовому поясі. Час тут у налаштованому поясі."
+
+#: jinja2/admin/_clock.html:4 jinja2/admin/prize_draw.html:94
+#: jinja2/admin/prize_draw.html:98
+msgid "Time"
+msgstr "Час"
+
+#: jinja2/admin/_clock.html:5
+msgid "Server"
+msgstr "Сервер"
+
+#: jinja2/admin/_clock.html:6
+msgid "Browser"
+msgstr "Браузер"
+
+#: jinja2/admin/_clock.html:10
+msgid "Time zone of the application"
+msgstr "Часовий пояс застосунку"
+
+#: jinja2/admin/_clock.html:10
+msgid "change in Settings"
+msgstr "змінити в Налаштуваннях"
 
 #: jinja2/admin/_diff.html:4
 msgid "Item"
@@ -635,7 +1221,7 @@ msgstr "Спроба %(number)s"
 msgid "Waiting"
 msgstr "Очікує"
 
-#: jinja2/admin/_grading_photo.html:7 jinja2/public/result.html:20
+#: jinja2/admin/_grading_photo.html:7 jinja2/public/result.html:23
 msgid "The photo was removed."
 msgstr "Фото видалено."
 
@@ -733,37 +1319,88 @@ msgstr ""
 msgid "Grading"
 msgstr "Оцінювання"
 
-#: jinja2/admin/_quiz_header.html:2
-msgid "Test links"
-msgstr "Тестові посилання"
-
-#: jinja2/admin/_quiz_header.html:2 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:24
-msgid "Revisions"
-msgstr ""
-
 #: jinja2/admin/_quiz_header.html:2 jinja2/admin/base.html:12
 #: jinja2/admin/settings.html:3
 msgid "Settings"
 msgstr ""
 
-#: jinja2/admin/_quiz_header.html:18 jinja2/admin/run.html:9
+#: jinja2/admin/_quiz_header.html:3 jinja2/admin/rewards.html:20
+#: jinja2/admin/run.html:52 jinja2/admin/run_plan.html:13
+#: jinja2/public/quiz.html:15
+msgid "Rewards"
+msgstr "Нагороди"
+
+#: jinja2/admin/_quiz_header.html:3
+msgid "Test links"
+msgstr "Тестові посилання"
+
+#: jinja2/admin/_quiz_header.html:3 jinja2/admin/run.html:58
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:30
+msgid "Revisions"
+msgstr ""
+
+#: jinja2/admin/_quiz_header.html:19 jinja2/admin/run.html:9
 #: jinja2/admin/runs.html:9
 msgid "Public address"
 msgstr ""
 
-#: jinja2/admin/_quiz_header.html:20 jinja2/admin/revisions.html:19
+#: jinja2/admin/_quiz_header.html:21 jinja2/admin/revisions.html:19
 msgid "Preview"
 msgstr "Перегляд"
 
-#: jinja2/admin/_quiz_header.html:22
+#: jinja2/admin/_quiz_header.html:24 jinja2/admin/grading.html:14
+#: jinja2/admin/run.html:7
+#, python-format
+msgid "Run %(no)s"
+msgstr ""
+
+#: jinja2/admin/_quiz_header.html:25 jinja2/admin/run.html:104
+#: jinja2/admin/runs.html:11 jinja2/admin/runs.html:54
+msgid "Statistics"
+msgstr "Статистика"
+
+#: jinja2/admin/_quiz_header.html:27 jinja2/admin/run.html:60
+#: jinja2/admin/runs.html:13 jinja2/public/scoreboard.html:15
+msgid "Projector"
+msgstr "Проєктор"
+
+#: jinja2/admin/_quiz_header.html:31
 msgid "Parts of this quiz"
 msgstr ""
+
+#: jinja2/admin/_quiz_header.html:38
+msgid "More"
+msgstr "Більше"
 
 #: jinja2/admin/_requirements.html:7
 #, python-format
 msgid "Use: %(value)s"
 msgstr "Використати: %(value)s"
+
+#: jinja2/admin/_reward_rule_form.html:6
+msgid "Who gets it"
+msgstr ""
+
+#: jinja2/admin/_reward_rule_form.html:11
+msgid "Texts for participants"
+msgstr ""
+
+#: jinja2/admin/_reward_rule_form.html:14
+msgid "Save the reward"
+msgstr ""
+
+#: jinja2/admin/_reward_rule_form.html:15
+msgid "Delete the reward"
+msgstr ""
+
+#: jinja2/admin/_setting_groups.html:2
+msgid "Setting groups"
+msgstr "Групи налаштувань"
+
+#: jinja2/admin/_setting_groups.html:16
+#, python-format
+msgid "More settings in All: %(count)s"
+msgstr "Інші налаштування в «Усе»: %(count)s"
 
 #: jinja2/admin/bank.html:3
 msgid "Back to the banks"
@@ -801,9 +1438,10 @@ msgstr "Назва і видалення"
 
 #: jinja2/admin/bank.html:49 jinja2/admin/draw_form.html:13
 #: jinja2/admin/question_form.html:15 jinja2/admin/quiz_settings.html:13
-#: jinja2/admin/quiz_settings.html:24 jinja2/admin/settings.html:9
+#: jinja2/admin/quiz_settings.html:26 jinja2/admin/run_plan.html:22
+#: jinja2/admin/settings.html:12 jinja2/public/_identity_form.html:10
 msgid "Save"
-msgstr ""
+msgstr "Зберегти"
 
 #: jinja2/admin/bank.html:53
 msgid "Delete the bank"
@@ -817,7 +1455,7 @@ msgstr "Банки питань"
 msgid "A bank holds questions that quizzes can draw from. All administrators share them."
 msgstr "Банк містить питання, з яких квізи можуть вибирати випадково. Спільний для всіх адміністраторів."
 
-#: jinja2/admin/banks.html:11 jinja2/public/quiz.html:15
+#: jinja2/admin/banks.html:11 jinja2/public/quiz.html:26
 #, python-format
 msgid "Questions: %(count)s"
 msgstr "Кількість запитань: %(count)s"
@@ -838,7 +1476,7 @@ msgstr "Створити банк"
 msgid "Menu"
 msgstr "Меню"
 
-#: jinja2/admin/base.html:8 jinja2/public/landing.html:20
+#: jinja2/admin/base.html:8 jinja2/public/landing.html:31
 msgid "Administration"
 msgstr "Адміністрування"
 
@@ -855,7 +1493,19 @@ msgstr "Банки"
 msgid "Admins"
 msgstr "Адміністратори"
 
-#: jinja2/admin/base.html:18
+#: jinja2/admin/base.html:16
+msgid "How much to show"
+msgstr "Скільки показати"
+
+#: jinja2/admin/base.html:19
+msgid "Basic"
+msgstr "Основне"
+
+#: jinja2/admin/base.html:20
+msgid "All"
+msgstr "Усе"
+
+#: jinja2/admin/base.html:27
 msgid "Log out"
 msgstr ""
 
@@ -863,11 +1513,11 @@ msgstr ""
 msgid "Please confirm"
 msgstr ""
 
-#: jinja2/admin/confirm.html:8
+#: jinja2/admin/confirm.html:10
 msgid "Confirm"
 msgstr ""
 
-#: jinja2/admin/confirm.html:9 jinja2/admin/quiz_duplicate.html:9
+#: jinja2/admin/confirm.html:11 jinja2/admin/quiz_duplicate.html:9
 msgid "Cancel"
 msgstr ""
 
@@ -895,19 +1545,10 @@ msgstr "Ще не відкрито жодного запуску, тому не�
 msgid "You are grading a test link. Its results count nowhere."
 msgstr "Ви оцінюєте тестове посилання. Його результати ніде не враховуються."
 
-#: jinja2/admin/grading.html:11 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:20
+#: jinja2/admin/grading.html:11 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:23 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:47
 msgid "Run"
-msgstr ""
-
-#: jinja2/admin/grading.html:14 jinja2/admin/run.html:7
-#, python-format
-msgid "Run %(no)s"
-msgstr ""
-
-#: jinja2/admin/grading.html:14 jinja2/admin/run.html:8
-#: jinja2/admin/runs.html:21
-msgid "Running"
 msgstr ""
 
 #: jinja2/admin/grading.html:18
@@ -1009,7 +1650,8 @@ msgstr "Виберіть, що означає кожен стовпець, аб�
 msgid "Do not use"
 msgstr "Не використовувати"
 
-#: jinja2/admin/import_mapping.html:18
+#: jinja2/admin/import_mapping.html:18 jinja2/public/quiz.html:39
+#: jinja2/public/quiz.html:48
 msgid "Continue"
 msgstr "Продовжити"
 
@@ -1038,7 +1680,7 @@ msgstr "Відкрити імпортоване"
 msgid "Rows that were skipped"
 msgstr "Пропущені рядки"
 
-#: jinja2/admin/import_upload.html:3 jinja2/public/_questions.html:21
+#: jinja2/admin/import_upload.html:3 jinja2/public/_questions.html:22
 msgid "Back"
 msgstr "Назад"
 
@@ -1064,6 +1706,137 @@ msgstr "Завантажити й перевірити"
 
 #: jinja2/admin/login.html:7 jinja2/admin/login.html:13
 msgid "Log in"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:6
+#, python-format
+msgid "Prize draw of run %(no)s"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:7 jinja2/admin/rewards.html:8
+#: jinja2/admin/run_merge.html:6
+msgid "Back to the run"
+msgstr "Назад до запуску"
+
+#: jinja2/admin/prize_draw.html:7 jinja2/admin/run.html:54
+msgid "Rewards and who has them"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:8
+msgid "This run has no draw."
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:15
+#, python-format
+msgid "Winners: %(winners)s, alternates: %(alternates)s"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:20
+#, python-format
+msgid "Eligible: %(count)s"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:21
+msgid "Fingerprint of the eligible set"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:31
+msgid "Draw now"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:44
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:53
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:79 jinja2/admin/run.html:156
+#: jinja2/admin/run.html:160 jinja2/public/_identity_fields.html:3
+#: jinja2/public/_scoreboard_rows.html:12
+#: jinja2/public/_scoreboard_rows.html:25
+msgid "Name"
+msgstr "Ім’я"
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:45
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:54
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:161
+#: jinja2/public/_identity_fields.html:8
+msgid "E-mail"
+msgstr "Електронна пошта"
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:46
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:57
+msgid "Actions"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:51 jinja2/admin/prize_draw.html:94
+#: jinja2/admin/prize_draw.html:101 jinja2/admin/rewards.html:67
+msgid "Reason"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:54
+msgid "Move up an alternate"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:55
+msgid "Draw a substitute"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:67
+msgid "No alternate is left."
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:72
+msgid "Reason for a redraw"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:75
+msgid "Redraw everything"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:83
+msgid "The winners are shown on the public scoreboard."
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:84
+msgid "Hide the winners"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:86
+msgid "The winners are not public."
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:87
+msgid "Publish the winners"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:92
+msgid "History"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:99
+msgid "Admin"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:100
+msgid "Action"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:102
+msgid "Eligible"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:103
+msgid "Fingerprint"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:104
+msgid "Algorithm"
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:100
+#, python-format
+msgid "Drew %(selected)s of %(requested)s requested: not enough eligible."
+msgstr ""
+
+#: jinja2/admin/prize_draw.html:103
+msgid "Full"
 msgstr ""
 
 #: jinja2/admin/publish.html:3 jinja2/admin/publish.html:44
@@ -1166,8 +1939,8 @@ msgstr ""
 msgid "There are no quizzes yet."
 msgstr ""
 
-#: jinja2/admin/quiz_list.html:29 jinja2/public/_result.html:33
-#: jinja2/public/result.html:29 jinja2/public/unavailable.html:6
+#: jinja2/admin/quiz_list.html:29 jinja2/public/_result.html:38
+#: jinja2/public/result.html:32 jinja2/public/unavailable.html:7
 #: jinja2/public/walkthrough.html:42
 msgid "Back to quizzes"
 msgstr "Назад до вікторин"
@@ -1197,18 +1970,18 @@ msgid "Answers after each question need a one-by-one mode, and this quiz shows a
 msgstr "Відповіді після кожного питання потребують режиму по одному, але цей квіз показує всі питання одразу. Учасники побачать відповіді наприкінці."
 
 #: jinja2/admin/quiz_settings.html:20
-msgid "Showing answers to anyone but admins needs all answers stored, and this quiz stores only photos. Answers stay visible to admins only."
-msgstr "Щоб відповіді бачив хтось, крім адміністратора, треба зберігати всі, а ця вікторина зберігає лише фото. Тому відповіді бачать лише адміністратори."
+msgid "Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only."
+msgstr "Показ відповідей будь-кому, крім адміністраторів, потребує профілю, який зберігає всі відповіді, а цей квіз зберігає менше. Відповіді бачать лише адміністратори."
 
-#: jinja2/admin/quiz_settings.html:28
+#: jinja2/admin/quiz_settings.html:30
 msgid "Copy and archive"
 msgstr ""
 
-#: jinja2/admin/quiz_settings.html:29
+#: jinja2/admin/quiz_settings.html:31
 msgid "An archived quiz disappears from the public pages. A running run must end first."
 msgstr ""
 
-#: jinja2/admin/quiz_settings.html:34
+#: jinja2/admin/quiz_settings.html:36
 msgid "Archive this quiz"
 msgstr ""
 
@@ -1226,7 +1999,8 @@ msgid "Number"
 msgstr "Число"
 
 #: jinja2/admin/revisions.html:5 jinja2/admin/revisions.html:10
-#: jinja2/admin/runs.html:16 jinja2/admin/runs.html:21
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:56
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:24
 #: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:47
 msgid "Status"
 msgstr ""
@@ -1243,6 +2017,81 @@ msgstr ""
 msgid "Use as new draft"
 msgstr ""
 
+#: jinja2/admin/rewards.html:7
+#, python-format
+msgid "Rewards of run %(no)s"
+msgstr ""
+
+#: jinja2/admin/rewards.html:8 jinja2/admin/run.html:54
+msgid "Prize draw"
+msgstr ""
+
+#: jinja2/admin/rewards.html:10
+msgid "Rewards of a new run"
+msgstr ""
+
+#: jinja2/admin/rewards.html:11
+msgid "These rewards are a template. A new run copies them when the setting below says so; a change here does not reach runs already planned."
+msgstr ""
+
+#: jinja2/admin/rewards.html:12 jinja2/admin/run_plan.html:11
+msgid "Settings of the quiz"
+msgstr "Налаштування вікторини"
+
+#: jinja2/admin/rewards.html:15 jinja2/admin/run.html:53
+#: jinja2/admin/run_plan.html:16
+msgid "This run has a draw but does not collect e-mail."
+msgstr ""
+
+#: jinja2/admin/rewards.html:21
+msgid "No rewards yet."
+msgstr ""
+
+#: jinja2/admin/rewards.html:26
+msgid "How to claim it"
+msgstr ""
+
+#: jinja2/admin/rewards.html:35
+msgid "Add a reward"
+msgstr ""
+
+#: jinja2/admin/rewards.html:46
+msgid "Who has a reward"
+msgstr ""
+
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:55
+#: jinja2/admin/rewards.html:89
+msgid "Reward"
+msgstr ""
+
+#: jinja2/admin/rewards.html:61
+msgid "Mark as handed over"
+msgstr ""
+
+#: jinja2/admin/rewards.html:70
+msgid "Cancel the reward"
+msgstr ""
+
+#: jinja2/admin/rewards.html:79
+msgid "Nobody has a reward yet."
+msgstr ""
+
+#: jinja2/admin/rewards.html:85
+msgid "Grant a manual reward"
+msgstr ""
+
+#: jinja2/admin/rewards.html:94
+msgid "Participant"
+msgstr ""
+
+#: jinja2/admin/rewards.html:99
+msgid "Grant"
+msgstr ""
+
+#: jinja2/admin/rewards.html:102
+msgid "Nobody has submitted an attempt yet."
+msgstr ""
+
 #: jinja2/admin/run.html:5 jinja2/admin/runs.html:6
 msgid "QR code of the public address"
 msgstr ""
@@ -1252,20 +2101,306 @@ msgstr ""
 msgid "Attempts submitted: %(count)s"
 msgstr ""
 
-#: jinja2/admin/run.html:11 jinja2/public/quiz.html:12
+#: jinja2/admin/run.html:11
+#, python-format
+msgid "Not sent: %(count)s"
+msgstr "Не надіслано: %(count)s"
+
+#: jinja2/admin/run.html:15 jinja2/admin/runs.html:19 jinja2/admin/runs.html:29
+msgid "Time limit"
+msgstr "Обмеження часу"
+
+#: jinja2/admin/run.html:15
+msgid "No limit"
+msgstr "Без обмеження"
+
+#: jinja2/admin/run.html:20
+msgid "The access code is"
+msgstr "Код доступу:"
+
+#: jinja2/admin/run.html:20
+msgid "It is shown only now. Write it down: afterwards it can only be replaced."
+msgstr "Він показується лише зараз. Запишіть його: потім його можна тільки замінити."
+
+#: jinja2/admin/run.html:22
+msgid "An access code is set."
+msgstr "Код доступу встановлено."
+
+#: jinja2/admin/run.html:22
+msgid "No access code: anyone with the address can start."
+msgstr "Без коду доступу: почати може кожен, хто знає адресу."
+
+#: jinja2/admin/run.html:26
+msgid "New code"
+msgstr "Новий код"
+
+#: jinja2/admin/run.html:29
+msgid "A new code stops people who have not started yet. Attempts in progress continue."
+msgstr "Новий код зупиняє тих, хто ще не почав. Спроби, що тривають, тривають далі."
+
+#: jinja2/admin/run.html:30
+msgid "Set the code"
+msgstr "Встановити код"
+
+#: jinja2/admin/run.html:32
+msgid "Remove the code"
+msgstr "Прибрати код"
+
+#: jinja2/admin/run.html:42
+msgid "How long a run keeps its data"
+msgstr "Як довго запуск зберігає дані"
+
+#: jinja2/admin/run.html:47
+msgid "What a run keeps cannot change once it opens, but the period can."
+msgstr "Те, що зберігає запуск, не можна змінити після відкриття, але строк можна."
+
+#: jinja2/admin/run.html:48
+msgid "Save the period"
+msgstr "Зберегти строк"
+
+#: jinja2/admin/run.html:54
+#, python-format
+msgid "Rewards: %(count)s"
+msgstr ""
+
+#: jinja2/admin/run.html:54 jinja2/admin/run_plan.html:15
+msgid "No rewards."
+msgstr ""
+
+#: jinja2/admin/run.html:58
+msgid "Merged into one table"
+msgstr "Об'єднані в одну таблицю"
+
+#: jinja2/admin/run.html:58
+msgid "Only the latest revision"
+msgstr "Лише остання редакція"
+
+#: jinja2/admin/run.html:58
+msgid "One table per revision"
+msgstr "Окрема таблиця для кожної редакції"
+
+#: jinja2/admin/run.html:60
+msgid "Public scoreboard"
+msgstr "Публічна таблиця результатів"
+
+#: jinja2/admin/run.html:65
+msgid "Separate the revisions again"
+msgstr "Знову розділити редакції"
+
+#: jinja2/admin/run.html:68
+msgid "Merge the revisions into one table"
+msgstr "Об'єднати редакції в одну таблицю"
+
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:78
+#: jinja2/public/_scoreboard_rows.html:11
+#: jinja2/public/_scoreboard_rows.html:24
+msgid "Place"
+msgstr "Місце"
+
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:80 jinja2/admin/run.html:156
+#: jinja2/admin/run.html:162 jinja2/admin/test_links.html:43
+#: jinja2/admin/test_links.html:48 jinja2/public/_scoreboard_rows.html:13
+#: jinja2/public/_scoreboard_rows.html:26
+msgid "Score"
+msgstr "Бали"
+
+#: jinja2/admin/run.html:87 jinja2/public/_scoreboard_rows.html:37
+msgid "No results yet."
+msgstr "Поки що немає результатів."
+
+#: jinja2/admin/run.html:100
+msgid "A visible scoreboard remembers each browser with a cookie from its next start on."
+msgstr "Видима таблиця результатів запам'ятовує кожен браузер через cookie від наступного старту."
+
+#: jinja2/admin/run.html:101
+msgid "Save the scoreboard"
+msgstr "Зберегти таблицю результатів"
+
+#: jinja2/admin/run.html:108
+msgid "Started attempts"
+msgstr "Розпочаті спроби"
+
+#: jinja2/admin/run.html:109
+msgid "Submitted attempts"
+msgstr "Надіслані спроби"
+
+#: jinja2/admin/run.html:110 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:32
+msgid "Not sent"
+msgstr "Не надіслано"
+
+#: jinja2/admin/run.html:114 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:52
+msgid "Average"
+msgstr "Середнє"
+
+#: jinja2/admin/run.html:115
+msgid "Median"
+msgstr "Медіана"
+
+#: jinja2/admin/run.html:116
+msgid "Lowest"
+msgstr "Найнижчий"
+
+#: jinja2/admin/run.html:117
+msgid "Highest"
+msgstr "Найвищий"
+
+#: jinja2/admin/run.html:120
+msgid "Scores by tenths of the maximum"
+msgstr "Бали за десятими частками максимуму"
+
+#: jinja2/admin/run.html:129
+#, python-format
+msgid "submitted %(count)s, average %(average)s"
+msgstr "надіслано %(count)s, середнє %(average)s"
+
+#: jinja2/admin/run.html:132
+msgid "Numbers per question need a data profile that keeps all answers."
+msgstr "Дані за питаннями потребують профілю даних, що зберігає всі відповіді."
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:139
+msgid "Question"
+msgstr "Питання"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:140
+msgid "Answered"
+msgstr "Відповідей"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:141
+msgid "Average points"
+msgstr "Середні бали"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:142
+msgid "Full points"
+msgstr "Повні бали"
+
+#: jinja2/admin/run.html:150
+msgid "Attempts"
+msgstr "Спроби"
+
+#: jinja2/admin/run.html:152
+msgid "This run keeps nothing about an attempt, so there is no table of attempts."
+msgstr "Цей запуск нічого не зберігає про спробу, тому таблиці спроб немає."
+
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:164
+#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:49
+#: jinja2/public/_scoreboard_rows.html:17
+#: jinja2/public/_scoreboard_rows.html:30
+msgid "Duration"
+msgstr "Тривалість"
+
+#: jinja2/admin/run.html:160
+msgid "no name"
+msgstr "без імені"
+
+#: jinja2/admin/run.html:169
+msgid "No attempt has been submitted yet."
+msgstr "Поки що ніхто нічого не надіслав."
+
+#: jinja2/admin/run.html:170 jinja2/public/quiz.html:12
 #: jinja2/public/unavailable.html:5
 msgid "See the answers of this run"
 msgstr "Переглянути відповіді цього запуску"
 
-#: jinja2/admin/runs.html:16 jinja2/admin/runs.html:22
+#: jinja2/admin/run.html:177
+msgid "Empty means the run lasts until you end it. It applies to attempts in progress too."
+msgstr "Порожнє поле означає, що запуск триває, доки ви його не завершите. Це стосується і спроб, що тривають."
+
+#: jinja2/admin/run.html:178
+msgid "Save the deadline"
+msgstr "Зберегти кінцевий термін"
+
+#: jinja2/admin/run.html:187
+msgid "Archive this run"
+msgstr "Архівувати запуск"
+
+#: jinja2/admin/run.html:192
+msgid "Restore this run"
+msgstr "Відновити запуск"
+
+#: jinja2/admin/run_merge.html:5
+#, python-format
+msgid "Merge the revisions of run %(no)s"
+msgstr "Об'єднати редакції запуску %(no)s"
+
+#: jinja2/admin/run_merge.html:7
+msgid "Merged revisions share one table. Equal maximum points do not mean equal questions: check what changed."
+msgstr "Об'єднані редакції мають спільну таблицю. Однаковий максимум балів не означає однакових питань: перевірте, що змінилося."
+
+#: jinja2/admin/run_merge.html:9
+#, python-format
+msgid "Revision %(before)s → %(after)s"
+msgstr "Редакція %(before)s → %(after)s"
+
+#: jinja2/admin/run_merge.html:10
+#, python-format
+msgid "Maximum points: %(before)s → %(after)s"
+msgstr "Максимум балів: %(before)s → %(after)s"
+
+#: jinja2/admin/run_merge.html:19
+msgid "Merge into one table"
+msgstr "Об'єднати в одну таблицю"
+
+#: jinja2/admin/run_plan.html:5
+msgid "Plan the run"
+msgstr "Запланувати запуск"
+
+#: jinja2/admin/run_plan.html:5
+msgid "Plan a run"
+msgstr "Запланувати запуск"
+
+#: jinja2/admin/run_plan.html:6
+#, python-format
+msgid "Times are in the time zone %(zone)s."
+msgstr "Час указано в поясі %(zone)s."
+
+#: jinja2/admin/run_plan.html:11
+msgid "The run takes the quiz's settings."
+msgstr "Запуск бере налаштування вікторини."
+
+#: jinja2/admin/run_plan.html:17
+msgid "Change the rewards of this run"
+msgstr ""
+
+#: jinja2/admin/run_plan.html:19
+msgid "The run copies its rewards when it is saved, as the quiz's settings say."
+msgstr ""
+
+#: jinja2/admin/run_plan.html:19
+msgid "Rewards of the quiz"
+msgstr ""
+
+#: jinja2/admin/run_plan.html:21
+msgid "The cookie that tells participants apart does not guarantee one person: someone can clear it or use another browser. \"When to ask\" applies only when a name or an e-mail is on."
+msgstr "Cookie, за яким розрізняють учасників, не гарантує одну особу: його можна видалити або скористатися іншим браузером. «Коли питати» діє лише за ввімкненого імені чи e-mail."
+
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:26
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:48
 msgid "Opened"
 msgstr ""
 
-#: jinja2/admin/runs.html:31
+#: jinja2/admin/runs.html:38
 msgid "There are no runs yet."
 msgstr ""
 
-#: jinja2/admin/settings.html:5
+#: jinja2/admin/runs.html:41
+msgid "Comparison of runs"
+msgstr "Порівняння запусків"
+
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:54
+msgid "Results"
+msgstr "Результати"
+
+#: jinja2/admin/runs.html:61
+msgid "Hide archived runs"
+msgstr "Сховати архівні запуски"
+
+#: jinja2/admin/runs.html:61
+msgid "Show archived runs"
+msgstr "Показати архівні"
+
+#: jinja2/admin/settings.html:10
 msgid "These values apply to every quiz that does not set its own."
 msgstr ""
 
@@ -1286,8 +2421,9 @@ msgid "Version"
 msgstr "Версія"
 
 #: jinja2/admin/test_links.html:24
-msgid "End (UTC, optional)"
-msgstr "Завершення (UTC, необов'язково)"
+#, python-format
+msgid "End (optional, %(zone)s)"
+msgstr "Кінець (необов'язково, %(zone)s)"
 
 #: jinja2/admin/test_links.html:27
 msgid "Create test link"
@@ -1320,14 +2456,6 @@ msgstr "Спроби: %(count)s"
 msgid "Grade"
 msgstr "Оцінити"
 
-#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:48
-msgid "Score"
-msgstr "Бали"
-
-#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:49
-msgid "Duration"
-msgstr "Тривалість"
-
 #: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:50
 msgid "Started"
 msgstr "Початок"
@@ -1352,6 +2480,47 @@ msgstr "Поки немає тестових посилань."
 msgid "New admin"
 msgstr ""
 
+#: jinja2/public/_countdown.html:3
+msgid "Five minutes left."
+msgstr "Залишилося п'ять хвилин."
+
+#: jinja2/public/_countdown.html:3
+msgid "One minute left."
+msgstr "Залишилася одна хвилина."
+
+#: jinja2/public/_countdown.html:3
+msgid "Time is up. Sending your answers."
+msgstr "Час вийшов. Надсилаємо відповіді."
+
+#: jinja2/public/_countdown.html:4
+msgid "Time left"
+msgstr "Залишилося"
+
+#: jinja2/public/_error.html:2
+msgid "One attempt per browser applies."
+msgstr "Діє одна спроба на браузер."
+
+#: jinja2/public/_error.html:3
+msgid "See your result"
+msgstr "Переглянути ваш результат"
+
+#: jinja2/public/_identity_fields.html:3 jinja2/public/_identity_fields.html:8
+msgid "optional"
+msgstr "необов’язково"
+
+#: jinja2/public/_identity_fields.html:12
+msgid "Your name and e-mail are used only by the organiser of this run."
+msgstr "Ім’я та електронна адреса потрібні лише організатору цього запуску."
+
+#: jinja2/public/_identity_fields.html:12 jinja2/public/base.html:10
+#: jinja2/public/privacy.html:2 jinja2/public/privacy.html:4
+msgid "Privacy"
+msgstr "Захист персональних даних"
+
+#: jinja2/public/_identity_form.html:6
+msgid "Add your details"
+msgstr "Додайте свої дані"
+
 #: jinja2/public/_message.html:1
 msgid "The photos are too large to send together. Your answers are still here: choose smaller photos and try again."
 msgstr "Фото разом завеликі для надсилання. Ваші відповіді збережено: виберіть менші фото й спробуйте ще раз."
@@ -1372,49 +2541,75 @@ msgstr "Запустити перегляд"
 msgid "There are no questions to show."
 msgstr "Немає чого показати."
 
-#: jinja2/public/_questions.html:4
+#: jinja2/public/_questions.html:5
 #, python-format
 msgid "Question %(current)s of %(total)s"
 msgstr "Питання %(current)s з %(total)s"
 
-#: jinja2/public/_questions.html:4
+#: jinja2/public/_questions.html:5
 #, python-format
 msgid "Answered %(current)s of %(total)s"
 msgstr "Відповіді: %(current)s з %(total)s"
 
-#: jinja2/public/_questions.html:14
+#: jinja2/public/_questions.html:5
+#, python-format
+msgid "Questions %(first)s–%(last)s of %(total)s"
+msgstr "Питання %(first)s–%(last)s з %(total)s"
+
+#: jinja2/public/_questions.html:5
+msgid "A photo is not kept on this device. Choose it again."
+msgstr "Фото не зберігається на цьому пристрої. Виберіть його знову."
+
+#: jinja2/public/_questions.html:15
 msgid "Check the answer"
 msgstr "Перевірити"
 
-#: jinja2/public/_questions.html:22
+#: jinja2/public/_questions.html:23
 msgid "Next"
 msgstr "Далі"
 
-#: jinja2/public/_questions.html:24
+#: jinja2/public/_questions.html:34
 msgid "Submit answers"
 msgstr "Надіслати відповіді"
+
+#: jinja2/public/_questions.html:35
+msgid "Answers are kept in this browser until you submit, for 24 hours at most."
+msgstr "Відповіді зберігаються в цьому браузері до надсилання, щонайбільше 24 години."
 
 #: jinja2/public/_result.html:3 jinja2/public/result.html:7
 msgid "Your score"
 msgstr "Ваш результат"
 
-#: jinja2/public/_result.html:5 jinja2/public/result.html:10
+#: jinja2/public/_result.html:5 jinja2/public/result.html:9
+#, python-format
+msgid "Your place: %(rank)s. of %(total)s"
+msgstr "Ваше місце: %(rank)s з %(total)s"
+
+#: jinja2/public/_result.html:6
+msgid "The time ran out, so your answers were sent automatically."
+msgstr "Час вийшов, тому ваші відповіді надіслано автоматично."
+
+#: jinja2/public/_result.html:7 jinja2/public/result.html:11
 msgid "This score is provisional: part of the points is waiting for grading."
 msgstr "Цей результат попередній: частина балів очікує на оцінювання."
 
 #: jinja2/public/_result.html:8
+msgid "This result cannot be shown again, and it is not saved anywhere."
+msgstr "Результат не можна показати знову, і він ніде не зберігається."
+
+#: jinja2/public/_result.html:11
 msgid "Your private result link"
 msgstr "Ваше приватне посилання на результат"
 
-#: jinja2/public/_result.html:9
+#: jinja2/public/_result.html:12
 msgid "Save this link. It shows your final score and is the only way back to it from another device. Anyone with the link can open it."
 msgstr "Збережіть це посилання. Воно показує остаточний результат і є єдиним шляхом до нього з іншого пристрою. Відкрити його може кожен, хто його має."
 
-#: jinja2/public/_result.html:14 jinja2/public/result.html:16
+#: jinja2/public/_result.html:19 jinja2/public/result.html:19
 msgid "Your answers"
 msgstr "Ваші відповіді"
 
-#: jinja2/public/_result.html:22
+#: jinja2/public/_result.html:27
 msgid "Sources"
 msgstr "Джерела"
 
@@ -1443,6 +2638,32 @@ msgstr "Неправильно"
 #: jinja2/public/_reveal.html:3
 msgid "No answer"
 msgstr "Без відповіді"
+
+#: jinja2/public/_rewards.html:3
+msgid "Your rewards"
+msgstr "Ваші нагороди"
+
+#: jinja2/public/_rewards.html:8
+msgid "Handed over"
+msgstr "Передана"
+
+#: jinja2/public/_rewards.html:8
+msgid "Granted"
+msgstr "Надана"
+
+#: jinja2/public/_rewards.html:10
+#, python-format
+msgid "How to claim it: %(text)s"
+msgstr "Як її отримати: %(text)s"
+
+#: jinja2/public/_scoreboard_rows.html:6
+#, python-format
+msgid "of %(points)s points"
+msgstr "з %(points)s балів"
+
+#: jinja2/public/_scoreboard_rows.html:25
+msgid "you"
+msgstr "ви"
 
 #: jinja2/public/_switch_notice.html:1
 msgid "A new version of this quiz is available. Your answers to unchanged questions stay."
@@ -1474,11 +2695,6 @@ msgstr "Організатори запускають Kvízotron на власн
 msgid "How it works"
 msgstr "Як це працює"
 
-#: jinja2/public/base.html:10 jinja2/public/privacy.html:2
-#: jinja2/public/privacy.html:4
-msgid "Privacy"
-msgstr "Захист персональних даних"
-
 #: jinja2/public/how_it_works.html:7
 msgid "Choose a quiz on the home page, or open its link or QR code."
 msgstr "Виберіть вікторину на головній сторінці або відкрийте її посилання чи QR-код."
@@ -1499,17 +2715,26 @@ msgstr "Свій результат ви побачите одразу."
 msgid "You do not need to register or install anything."
 msgstr "Вам не потрібно реєструватися чи щось встановлювати."
 
-#: jinja2/public/landing.html:4
+#: jinja2/public/landing.html:5
 msgid "Turn on your brain. Start Kvízotron."
 msgstr "Увімкни мозок. Запусти Kvízotron."
 
-#: jinja2/public/landing.html:5
+#: jinja2/public/landing.html:6
 msgid "Quizzes and contests without registration, right on your phone."
 msgstr "Вікторини й змагання без реєстрації, просто у вашому телефоні."
 
-#: jinja2/public/landing.html:17
+#: jinja2/public/landing.html:18
 msgid "No quiz is running right now."
 msgstr "Зараз не проходить жодна вікторина."
+
+#: jinja2/public/landing.html:23
+msgid "Coming up"
+msgstr "Незабаром"
+
+#: jinja2/public/landing.html:26
+#, python-format
+msgid "Starts %(when)s"
+msgstr "Починається %(when)s"
 
 #: jinja2/public/privacy.html:6
 msgid "This notice covers the current version of Kvízotron and will be completed as new features arrive."
@@ -1532,37 +2757,94 @@ msgid "An organiser can choose to store all answers, and to show them to you or,
 msgstr "Організатор може зберігати всі відповіді й показувати їх вам або після завершення запуску всім, не називаючи, хто їх дав."
 
 #: jinja2/public/privacy.html:12
+msgid "What an attempt leaves behind depends on the quiz: an organiser can keep nothing but a count, only your score, all answers, or answers with the time you took."
+msgstr "Що залишається після спроби, залежить від вікторини: організатор може зберігати лише кількість, лише ваш результат, усі відповіді або відповіді з часом, який ви витратили."
+
+#: jinja2/public/privacy.html:13
+#, python-format
+msgid "A run's data are kept for %(period)s after it ends unless the quiz sets another period. Deleting them after that arrives in a later version."
+msgstr "Дані запуску зберігаються %(period)s після його завершення, якщо вікторина не задає інший строк. Видалення після цього строку з'явиться в одній з наступних версій."
+
+#: jinja2/public/privacy.html:14
+msgid "While an attempt is unfinished, your answers may stay in this browser, without photos, name and e-mail, until the attempt ends and at most 24 hours. Submitting deletes them. An organiser can turn this off."
+msgstr "Поки спробу не завершено, ваші відповіді можуть залишатися в цьому браузері, без фото, імені та e-mail, до кінця спроби і щонайбільше 24 години. Надсилання їх видаляє. Організатор може це вимкнути."
+
+#: jinja2/public/privacy.html:15
+msgid "If an organiser makes a run's scoreboard public, it shows your nickname or an anonymous label with your score, never your e-mail. Such a run remembers this browser with a cookie, so that playing again does not add a second row."
+msgstr "Якщо організатор зробить таблицю результатів запуску публічною, у ній буде ваш псевдонім або анонімна позначка з балами, але ніколи не e-mail. Такий запуск запам'ятовує цей браузер через cookie, щоб повторна гра не додала другий рядок."
+
+#: jinja2/public/privacy.html:16
 msgid "When a result has a private link, this browser remembers it on your device so that you can return to it. Nothing about that is sent anywhere."
 msgstr "Коли результат має приватне посилання, цей браузер запам'ятовує його на вашому пристрої, щоб ви могли повернутися до нього. Нікуди нічого не надсилається."
 
-#: jinja2/public/privacy.html:13
+#: jinja2/public/privacy.html:17
 msgid "Answers and personal data are not written to the application logs."
 msgstr "Відповіді та персональні дані не записуються до журналів застосунку."
 
-#: jinja2/public/privacy.html:14
+#: jinja2/public/privacy.html:18
 msgid "Pages load nothing from other services, with one exception: an organiser can have a quiz load its images from another server, which then sees your IP address."
 msgstr "Сторінки нічого не завантажують з інших сервісів, за одним винятком: організатор може налаштувати вікторину так, щоб зображення завантажувалися з іншого сервера, який тоді бачить вашу IP-адресу."
 
-#: jinja2/public/privacy.html:15
+#: jinja2/public/privacy.html:19
 msgid "The organiser who runs this installation is responsible for its data."
 msgstr "За дані відповідає організатор, який керує цією інсталяцією."
 
-#: jinja2/public/quiz.html:18
+#: jinja2/public/quiz.html:27 jinja2/public/quiz.html:61
+#, python-format
+msgid "Time for the quiz: %(time)s"
+msgstr "Час на вікторину: %(time)s"
+
+#: jinja2/public/quiz.html:28 jinja2/public/quiz.html:62
+#, python-format
+msgid "Deadline: %(when)s"
+msgstr "Кінцевий термін: %(when)s"
+
+#: jinja2/public/quiz.html:29
+#, python-format
+msgid "The deadline comes sooner, so you will have only %(time)s."
+msgstr "Кінцевий термін настане раніше, тому у вас буде лише %(time)s."
+
+#: jinja2/public/quiz.html:30
+msgid "The result is shown only once after you submit, and it is not saved anywhere."
+msgstr "Результат після надсилання показується лише раз і ніде не зберігається."
+
+#: jinja2/public/quiz.html:43
+msgid "You have an unfinished attempt on this device."
+msgstr "На цьому пристрої є незавершена спроба."
+
+#: jinja2/public/quiz.html:55
 msgid "Start"
 msgstr "Почати"
 
-#: jinja2/public/result.html:12
+#: jinja2/public/quiz.html:60
+#, python-format
+msgid "This quiz starts %(when)s."
+msgstr "Ця вікторина починається %(when)s."
+
+#: jinja2/public/result.html:13
 msgid "This score is final."
 msgstr "Цей результат остаточний."
 
-#: jinja2/public/result.html:21
+#: jinja2/public/result.html:24
 msgid "Your photo"
 msgstr "Ваше фото"
 
-#: jinja2/public/result.html:22
+#: jinja2/public/result.html:25
 #, python-format
 msgid "Points: %(earned)s of %(maximum)s"
 msgstr "Бали: %(earned)s із %(maximum)s"
+
+#: jinja2/public/scoreboard.html:12
+msgid "Normal view"
+msgstr "Звичайний вигляд"
+
+#: jinja2/public/scoreboard.html:13
+msgid "Full screen"
+msgstr "На весь екран"
+
+#: jinja2/public/scoreboard.html:16
+msgid "Back to the quiz"
+msgstr "Назад до вікторини"
 
 #: jinja2/public/walkthrough.html:6
 msgid "The answers of this run."

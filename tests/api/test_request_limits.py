@@ -27,6 +27,8 @@ ARGUMENTS = {
     "revision_no": 1,
     "bank_id": uuid7(),
     "draw_id": "x",
+    "rule_id": uuid7(),
+    "entitlement_id": uuid7(),
 }
 
 
@@ -57,7 +59,7 @@ def test_only_play_routes_are_csrf_exempt():
         for pattern in get_resolver().url_patterns
         if getattr(getattr(pattern, "callback", None), "csrf_exempt", False)
     }
-    assert exempt == {"start", "submit", "switch", "check"}
+    assert exempt == {"start", "resume", "submit", "switch", "check", "attempt_time"}
 
 
 @pytest.mark.parametrize("pattern", admin_urls.urlpatterns, ids=lambda p: p.name)

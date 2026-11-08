@@ -3,5 +3,6 @@
 <div class="hero"><h1>{{ message }}</h1></div>
 {% include "public/_result_slot.html" %}
 {% if walkthrough_url %}<p class="card"><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+{% if scoreboard_url %}<p class="card"><a href="{{ scoreboard_url }}?lang={{ locale }}">{{ _("Scoreboard") }}</a></p>{% endif %}
 <div class="card"><a href="/">{{ _("Back to quizzes") }}</a></div>
 {% endblock %}

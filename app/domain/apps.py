@@ -13,4 +13,5 @@ class DomainConfig(AppConfig):
         settings.register_modules(load_modules())
 
         lifecycle.register_usage_check(usage.question_type_usage)
+        lifecycle.register_usage_check(usage.reward_rule_usage)
         lifecycle.register_startup_check(usage.missing_plugin_problems)

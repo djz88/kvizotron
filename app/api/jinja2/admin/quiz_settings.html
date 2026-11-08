@@ -17,10 +17,12 @@
   <h2>{{ _("Address and behaviour") }}</h2>
   <p>{{ _("These changes apply immediately, without publishing.") }}</p>
   {% if flow_conflict %}<p class="notice" role="status">{{ _("Answers after each question need a one-by-one mode, and this quiz shows all questions at once. Participants see the answers at the end.") }}</p>{% endif %}
-  {% if visibility_conflict %}<p class="notice" role="status">{{ _("Showing answers to anyone but admins needs all answers stored, and this quiz stores only photos. Answers stay visible to admins only.") }}</p>{% endif %}
+  {% if visibility_conflict %}<p class="notice" role="status">{{ _("Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only.") }}</p>{% endif %}
   <form method="post" class="watch-changes" action="{{ url('admin_quiz_settings', args=[quiz.id]) }}">
     {{ csrf_input }}
-    {{ behaviour_form.as_div() }}
+    {{ behaviour_form.non_field_errors() }}
+    {% for field in ungrouped %}{{ field.as_field_group() }}{% endfor %}
+    {% include "admin/_setting_groups.html" %}
     <button type="submit">{{ _("Save") }}</button>
   </form>
 </section>

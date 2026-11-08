@@ -6,17 +6,20 @@ import json
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
 from app.contracts import IMAGE_MODE_COPY, JSON, QuestionTypePlugin, ScoringStrategyPlugin
-from app.domain import banks, requirements, selection, settings
+from app.domain import banks, data_policy, participants, requirements, selection, settings
 from app.domain import questions as question_rules
+from app.domain import results as run_results
+from app.domain import rewards as run_rewards
 from app.domain.models import QuestionBank, Quiz, QuizRevision, QuizRun, RunRevision
 from app.kernel import audit, events, registry
 
@@ -430,6 +433,23 @@ def round_outcome(quiz: Quiz) -> str | None:
     return settings.resolve(settings.REVISION_SWITCH_POLICY, quiz)
 
 
+def _is_stateless(run: QuizRun) -> bool:
+    return data_policy.is_stateless(data_policy.of(run)[data_policy.PROFILE])
+
+
+def stateless_held_back(quiz: Quiz) -> bool:
+    """A running stateless run kept its revision because the newest one has a photo question."""
+    run = _open_round(quiz)
+    latest = latest_published(quiz)
+    return bool(
+        run is not None
+        and latest is not None
+        and run.current_revision_id != latest.id
+        and _is_stateless(run)
+        and data_policy.has_photo_question(latest.snapshot_json)
+    )
+
+
 def _open_round(quiz: Quiz) -> QuizRun | None:
     return quiz.runs.filter(status=QuizRun.Status.OPEN).first()
 
@@ -508,8 +528,12 @@ def publish(
         if expected_hash is not None and expected_hash != snapshot_hash(quiz):
             raise StalePublication(str(quiz.id))
         open_round = _open_round(quiz)
-        round_decision = _round_decision(quiz, decision) if open_round else None
         _freeze(draft, quiz)
+        keep_stateless = data_policy.has_photo_question(draft.snapshot_json)
+        round_decision = None
+        if open_round is not None:
+            held = keep_stateless and _is_stateless(open_round)
+            round_decision = Decision.STAY.value if held else _round_decision(quiz, decision)
         quiz.revisions.filter(status=QuizRevision.Status.PUBLISHED).update(
             status=QuizRevision.Status.SUPERSEDED
         )
@@ -517,6 +541,10 @@ def publish(
         draft.save()
         if open_round is not None and round_decision is not None:
             _move_round(open_round, draft, round_decision)
+        planned = quiz.runs.filter(status=QuizRun.Status.SCHEDULED)
+        for planned_run in planned:
+            if not (keep_stateless and _is_stateless(planned_run)):
+                QuizRun.objects.filter(pk=planned_run.pk).update(current_revision=draft)
         audit.record(
             actor_type="admin",
             actor_id=admin_id,
@@ -623,7 +651,17 @@ def discard_draft(quiz: Quiz, *, admin_id: str) -> None:
         _audit_quiz("quiz.draft_discarded", quiz, admin_id, {"revision_no": draft.revision_no})
 
 
-def open_run(quiz: Quiz, *, admin_id: str) -> QuizRun:
+def open_run(
+    quiz: Quiz,
+    *,
+    admin_id: str,
+    deadline_at: datetime | None = None,
+    limit_sec: int | None | Literal["inherit"] = "inherit",
+    rules: Mapping[str, str] | None = None,
+    data: Mapping[str, str] | None = None,
+    results: Mapping[str, str] | None = None,
+    rewards: Mapping[str, str] | None = None,
+) -> QuizRun:
     ensure_editable(quiz)
     revision = latest_published(quiz)
     if revision is None:
@@ -632,15 +670,34 @@ def open_run(quiz: Quiz, *, admin_id: str) -> QuizRun:
     if missing:
         raise RequirementUnmet([item.text for item in missing])
     last = quiz.runs.aggregate(last=Max("run_no"))["last"] or 0
+    chosen_rules = participants.snapshot(quiz, rules)
+    chosen_data = data_policy.snapshot(quiz, data)
+    data_policy.ensure_run_allowed(quiz, chosen_data, chosen_rules, revision.snapshot_json)
+    chosen_results = run_results.snapshot(quiz, results)
+    run_results.ensure_run_allowed(quiz, chosen_results, chosen_data[data_policy.PROFILE])
     try:
         with transaction.atomic():
-            run = QuizRun.objects.create(quiz=quiz, run_no=last + 1, current_revision=revision)
+            run = QuizRun.objects.create(
+                quiz=quiz,
+                run_no=last + 1,
+                current_revision=revision,
+                deadline_at=deadline_at,
+                attempt_limit_sec=(
+                    settings.attempt_limit_seconds(quiz) if limit_sec == "inherit" else limit_sec
+                ),
+                participant_rules_json=chosen_rules,
+                retention_json=chosen_data,
+                results_json=chosen_results,
+                rewards_json=run_rewards.snapshot(quiz, rewards),
+            )
             RunRevision.objects.create(
                 run=run,
                 revision=revision,
                 active_from=run.opened_at,
                 max_score=revision.max_score,
             )
+            run_rewards.copy_rules(run)
+            run_rewards.ensure_allowed(run)
             audit.record(
                 actor_type="admin",
                 actor_id=admin_id,
@@ -682,7 +739,7 @@ def duplicate_quiz(quiz: Quiz, slug: str, *, admin_id: str) -> Quiz:
 def archive_quiz(quiz: Quiz, *, admin_id: str) -> None:
     """Only the status of the published revision changes, never its content."""
     with transaction.atomic():
-        if quiz.runs.filter(status=QuizRun.Status.OPEN).exists():
+        if quiz.runs.filter(status__in=(QuizRun.Status.OPEN, QuizRun.Status.SCHEDULED)).exists():
             raise RunStillOpen(str(quiz.id))
         quiz.archived_at = timezone.now()
         quiz.save(update_fields=["archived_at"])

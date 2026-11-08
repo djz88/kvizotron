@@ -22,6 +22,10 @@ dependencies = [
 [project.entry-points."kvizotron.modules"]
 "auth.local" = "app.providers.auth_local.manifest:MANIFEST"
 "flow.basic" = "app.plugins.quiz_flow.manifest:MANIFEST"
+"participants.basic" = "app.plugins.participants.manifest:MANIFEST"
+"results.local" = "app.plugins.results.manifest:MANIFEST"
+"rewards.threshold" = "app.plugins.rewards.manifest:MANIFEST"
+"drawings.manual" = "app.plugins.drawings.manifest:MANIFEST"
 "media.local" = "app.providers.media_local.manifest:MANIFEST"
 "csv.io" = "app.providers.csv_io.manifest:MANIFEST"
 "persistence.sqlite" = "app.providers.persistence_sqlite.manifest:MANIFEST"

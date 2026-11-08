@@ -8,12 +8,15 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
+from zoneinfo import ZoneInfo, available_timezones
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy
 
 from app.contracts import (
+    ADVANCED,
     ALLOW_INTERNAL_IMAGE_ADDRESSES,
+    BASIC,
     EXTERNAL_IMAGE_MODE,
     IMAGE_MODE_COPY,
     PHOTO_ADMINS,
@@ -29,13 +32,21 @@ COLOR_PALETTE = "color_palette"
 NONE_OPTION = "none_option"
 SHOW_SOURCES = "show_sources"
 NAVIGATION_MODE = "navigation_mode"
+PAGE_SIZE = "page_size"
 REVEAL_MOMENT = "reveal_moment"
 REVEAL_LEVEL = "reveal_level"
 SHUFFLE_QUESTIONS = "shuffle_questions"
 SHUFFLE_OPTIONS = "shuffle_options"
-STORE_ANSWERS = "store_answers"
+DATA_PROFILE = "data_profile"
+RETENTION_PERIOD = "retention_period"
 ANSWERS_VISIBILITY = "answers_visibility"
 GRADING_VIEW = "grading_view"
+TIME_ZONE = "time_zone"
+ATTEMPT_LIMIT = "attempt_limit"
+ANNOUNCE_PLANNED = "announce_planned"
+NO_LIMIT = "0"
+MAX_LIMIT_MINUTES = 1440
+DEFAULT_TIME_ZONE = "Europe/Prague"
 ALL_SCOPES = ("global", "quiz", "question")
 QUIZ_WIDE = ("global", "quiz")
 # Offered on a question of any type; the rest only on types that name them.
@@ -76,6 +87,7 @@ class Navigation(StrEnum):
     ALL_AT_ONCE = "all_at_once"
     STEP_BACK = "step_back"
     STEP_NO_BACK = "step_no_back"
+    PAGES = "pages"
 
 
 class RevealMoment(StrEnum):
@@ -92,9 +104,22 @@ class RevealLevel(StrEnum):
     EXPLANATIONS = "explanations"
 
 
-class StoreAnswers(StrEnum):
-    IMAGES = "images"
-    ALL = "all"
+class DataProfile(StrEnum):
+    """What a run keeps about an attempt, from nothing to everything."""
+
+    NONE = "none"
+    SCORE = "score"
+    ANSWERS = "answers"
+    DETAILED = "detailed"
+
+
+class RetentionPeriod(StrEnum):
+    D30 = "30d"
+    D90 = "90d"
+    D180 = "180d"
+    Y1 = "1y"
+    Y3 = "3y"
+    PERMANENT = "permanent"
 
 
 class AnswersVisibility(StrEnum):
@@ -133,6 +158,8 @@ class SettingDefinition:
     scopes: tuple[str, ...] = ALL_SCOPES
     scope_reason: str | None = None  # required when `scopes` is narrower than the whole chain
     help: Any = None
+    group: str = "technical"  # one of SETTING_GROUPS
+    level: str = ADVANCED  # BASIC shows it in the "Basic" view
 
 
 _YES_NO: dict[str, Any] = {Switch.OFF: gettext_lazy("No"), Switch.ON: gettext_lazy("Yes")}
@@ -149,6 +176,7 @@ CATALOGUE = {
         },
         QUIZ_WIDE,
         "A new revision replaces the whole quiz, not one question.",
+        group="technical",
     ),
     COLOR_PALETTE: SettingDefinition(
         COLOR_PALETTE,
@@ -164,6 +192,8 @@ CATALOGUE = {
         },
         QUIZ_WIDE,
         "Colours belong to the quiz's pages, and a page holds many questions.",
+        group="look",
+        level=BASIC,
     ),
     NONE_OPTION: SettingDefinition(
         NONE_OPTION,
@@ -176,18 +206,40 @@ CATALOGUE = {
             ),
             NoneOption.TRICK_QUESTIONS: gettext_lazy("Only on trick questions"),
         },
+        group="answers",
     ),
-    STORE_ANSWERS: SettingDefinition(
-        STORE_ANSWERS,
-        tuple(StoreAnswers),
-        StoreAnswers.IMAGES.value,
-        gettext_lazy("Stored answers"),
+    DATA_PROFILE: SettingDefinition(
+        DATA_PROFILE,
+        tuple(DataProfile),
+        DataProfile.SCORE.value,
+        gettext_lazy("What a run keeps"),
         {
-            StoreAnswers.IMAGES: gettext_lazy("Only photos"),
-            StoreAnswers.ALL: gettext_lazy("All answers"),
+            DataProfile.NONE: gettext_lazy("Nothing: only counts"),
+            DataProfile.SCORE: gettext_lazy("Score and photos"),
+            DataProfile.ANSWERS: gettext_lazy("Score and all answers"),
+            DataProfile.DETAILED: gettext_lazy("Score, all answers and times"),
         },
         QUIZ_WIDE,
-        "An attempt is stored as a whole, and it freezes this at its start.",
+        "A run copies this when it opens, and an attempt is stored as a whole.",
+        group="data",
+        level=BASIC,
+    ),
+    RETENTION_PERIOD: SettingDefinition(
+        RETENTION_PERIOD,
+        tuple(RetentionPeriod),
+        RetentionPeriod.D90.value,
+        gettext_lazy("How long a run keeps its data"),
+        {
+            RetentionPeriod.D30: gettext_lazy("30 days"),
+            RetentionPeriod.D90: gettext_lazy("90 days"),
+            RetentionPeriod.D180: gettext_lazy("180 days"),
+            RetentionPeriod.Y1: gettext_lazy("1 year"),
+            RetentionPeriod.Y3: gettext_lazy("3 years"),
+            RetentionPeriod.PERMANENT: gettext_lazy("Permanently"),
+        },
+        QUIZ_WIDE,
+        "A run copies this when it opens, and the whole run is kept or removed together.",
+        group="data",
     ),
     ANSWERS_VISIBILITY: SettingDefinition(
         ANSWERS_VISIBILITY,
@@ -202,9 +254,10 @@ CATALOGUE = {
         QUIZ_WIDE,
         "A walkthrough shows a run as a whole, so one quiz has one answer to this.",
         gettext_lazy(
-            "Needs all answers stored. Free text can say anything: in a public walkthrough a "
-            "value is shown until an admin hides it."
+            "Needs a profile that keeps all answers. Free text can say anything: "
+            "in a public walkthrough a value is shown until an admin hides it."
         ),
+        group="answers",
     ),
     GRADING_VIEW: SettingDefinition(
         GRADING_VIEW,
@@ -217,6 +270,7 @@ CATALOGUE = {
         },
         QUIZ_WIDE,
         "It arranges a whole page of a quiz, not one question.",
+        group="technical",
     ),
     SHOW_SOURCES: SettingDefinition(
         SHOW_SOURCES,
@@ -227,19 +281,35 @@ CATALOGUE = {
             ShowSources.ON: gettext_lazy("Show"),
             ShowSources.OFF: gettext_lazy("Hide"),
         },
+        group="answers",
     ),
     NAVIGATION_MODE: SettingDefinition(
         NAVIGATION_MODE,
         tuple(Navigation),
-        Navigation.ALL_AT_ONCE.value,
+        Navigation.STEP_BACK.value,  # existing installations keep all at once (0015)
         gettext_lazy("Moving through the questions"),
         {
             Navigation.ALL_AT_ONCE: gettext_lazy("All questions at once"),
             Navigation.STEP_BACK: gettext_lazy("One by one, with going back"),
             Navigation.STEP_NO_BACK: gettext_lazy("One by one, without going back"),
+            Navigation.PAGES: gettext_lazy("Pages of questions"),
         },
         QUIZ_WIDE,
         "An attempt is walked through in one way from start to end.",
+        group="playing",
+        level=BASIC,
+    ),
+    PAGE_SIZE: SettingDefinition(
+        PAGE_SIZE,
+        tuple(str(size) for size in range(2, 21)),
+        "5",
+        gettext_lazy("Questions per page"),
+        {str(size): str(size) for size in range(2, 21)},
+        QUIZ_WIDE,
+        "Applies to the whole attempt, not to one question.",
+        help=gettext_lazy("Only for pages of questions."),
+        group="playing",
+        level=BASIC,
     ),
     REVEAL_MOMENT: SettingDefinition(
         REVEAL_MOMENT,
@@ -253,6 +323,8 @@ CATALOGUE = {
         },
         QUIZ_WIDE,
         "It depends on how the whole attempt is walked through.",
+        group="answers",
+        level=BASIC,
     ),
     REVEAL_LEVEL: SettingDefinition(
         REVEAL_LEVEL,
@@ -266,6 +338,7 @@ CATALOGUE = {
         },
         QUIZ_WIDE,
         "An attempt reveals one level of detail throughout.",
+        group="answers",
     ),
     SHUFFLE_QUESTIONS: SettingDefinition(
         SHUFFLE_QUESTIONS,
@@ -275,6 +348,7 @@ CATALOGUE = {
         _YES_NO,
         QUIZ_WIDE,
         "It orders the whole attempt, not one question.",
+        group="playing",
     ),
     SHUFFLE_OPTIONS: SettingDefinition(
         SHUFFLE_OPTIONS,
@@ -282,6 +356,42 @@ CATALOGUE = {
         Switch.OFF.value,
         gettext_lazy("Shuffle the options"),
         _YES_NO,
+        group="playing",
+    ),
+    ATTEMPT_LIMIT: SettingDefinition(
+        ATTEMPT_LIMIT,
+        (NO_LIMIT, *map(str, range(1, MAX_LIMIT_MINUTES + 1))),
+        NO_LIMIT,
+        gettext_lazy("Time limit for an attempt (minutes)"),
+        {
+            NO_LIMIT: gettext_lazy("No limit"),
+            **{str(minutes): str(minutes) for minutes in range(1, MAX_LIMIT_MINUTES + 1)},
+        },
+        QUIZ_WIDE,
+        "It counts from the start of an attempt, so a question has no use for it.",
+        group="playing",
+        level=BASIC,
+    ),
+    ANNOUNCE_PLANNED: SettingDefinition(
+        ANNOUNCE_PLANNED,
+        tuple(Switch),
+        Switch.OFF.value,
+        gettext_lazy('Show a planned quiz under "Coming up" on the public list'),
+        _YES_NO,
+        QUIZ_WIDE,
+        "It concerns a whole quiz on the public list, not one question.",
+        group="look",
+    ),
+    TIME_ZONE: SettingDefinition(
+        TIME_ZONE,
+        tuple(sorted(available_timezones())),
+        DEFAULT_TIME_ZONE,
+        gettext_lazy("Time zone"),
+        {name: name for name in available_timezones()},
+        ("global",),
+        "One installation serves one place, and different zones in one list would mislead.",
+        group="technical",
+        level=BASIC,
     ),
 }
 
@@ -304,6 +414,8 @@ def register_modules(modules: Sequence[Manifest]) -> None:
                 tuple(declared.scopes),
                 declared.scope_reason,
                 gettext_lazy(declared.help) if declared.help else None,  # noqa: INT001
+                declared.group,
+                declared.level,
             )
     check_requirements(modules)
 
@@ -334,6 +446,7 @@ class Flow:
     shuffle_questions: bool
     shuffle_options: bool
     conflict: bool  # a later global change broke the combination; `moment` has fallen back
+    page_size: int = 1  # questions per step; more than one only for pages
 
 
 def _definition(key: str) -> SettingDefinition:
@@ -373,6 +486,15 @@ def resolve(key: str, quiz: Quiz | None = None, question: Mapping[str, Any] | No
     return stored.value_json if stored and _offered(definition, stored) else definition.default
 
 
+def attempt_limit_seconds(quiz: Quiz) -> int | None:
+    minutes = int(resolve(ATTEMPT_LIMIT, quiz))
+    return minutes * 60 or None
+
+
+def zone() -> ZoneInfo:
+    return ZoneInfo(resolve(TIME_ZONE))
+
+
 def image_mode(quiz: Quiz | None = None, question: Mapping[str, Any] | None = None) -> str:
     """Without a media provider the setting does not exist, and neither do images."""
     if EXTERNAL_IMAGE_MODE not in CATALOGUE:
@@ -389,16 +511,22 @@ def internal_addresses_allowed() -> bool:
 
 def is_flow_conflict(navigation: str, moment: str) -> bool:
     """Showing answers after each question needs a next question to go on to."""
-    return moment == RevealMoment.AFTER_EACH and navigation == Navigation.ALL_AT_ONCE
+    return moment == RevealMoment.AFTER_EACH and navigation in (
+        Navigation.ALL_AT_ONCE,
+        Navigation.PAGES,
+    )
 
 
-def is_visibility_conflict(store: str, visibility: str) -> bool:
+def is_visibility_conflict(profile: str, visibility: str) -> bool:
     """What was not stored cannot be shown."""
-    return visibility != AnswersVisibility.ADMINS and store != StoreAnswers.ALL
+    return visibility != AnswersVisibility.ADMINS and profile not in (
+        DataProfile.ANSWERS,
+        DataProfile.DETAILED,
+    )
 
 
 def visibility_conflict(quiz: Quiz) -> bool:
-    return is_visibility_conflict(resolve(STORE_ANSWERS, quiz), resolve(ANSWERS_VISIBILITY, quiz))
+    return is_visibility_conflict(resolve(DATA_PROFILE, quiz), resolve(ANSWERS_VISIBILITY, quiz))
 
 
 def answers_visibility(quiz: Quiz) -> str:
@@ -426,6 +554,7 @@ def flow(quiz: Quiz) -> Flow:
         shuffle_questions=resolve(SHUFFLE_QUESTIONS, quiz) == Switch.ON,
         shuffle_options=resolve(SHUFFLE_OPTIONS, quiz) == Switch.ON,
         conflict=conflict,
+        page_size=int(resolve(PAGE_SIZE, quiz)),
     )
 
 

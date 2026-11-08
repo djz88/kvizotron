@@ -30,3 +30,6 @@ build/
 
 # Pracovní kopie git worktree.
 .worktrees/
+
+# Skripty a uložené přihlášení z průchodů v prohlížeči.
+.playwright-mcp/

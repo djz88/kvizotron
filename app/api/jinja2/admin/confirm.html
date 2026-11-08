@@ -4,6 +4,8 @@
 <p>{{ message }}</p>
 <form method="post" action="{{ action }}">
   {{ csrf_input }}
+    {% for name, value in (hidden|default({})).items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
   <input type="hidden" name="confirm" value="1">
   <button type="submit">{{ _("Confirm") }}</button>
   <a href="{{ cancel|default(url('admin_quiz_edit', args=[quiz.id])) }}" role="button" class="secondary">{{ _("Cancel") }}</a>

@@ -12,13 +12,13 @@ from tests.support.graded import add_graded
 pytestmark = pytest.mark.django_db
 
 
-def running(*, store="images", questions=1, build=None):
+def running(*, store="score", questions=1, build=None):
     quiz = make_quiz()
     for _ in range(questions):
         add_question(quiz)
     if build:
         build(quiz)
-    settings.set_override(settings.STORE_ANSWERS, quiz, store, admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, store, admin_id=ADMIN_ID)
     authoring.publish(quiz, admin_id=ADMIN_ID)
     return authoring.open_run(quiz, admin_id=ADMIN_ID)
 
@@ -37,14 +37,14 @@ def test_default_stores_nothing_for_types_without_a_file():
     assert AttemptAnswer.objects.count() == 0
 
 
-def test_default_value_is_images():
-    assert settings.resolve(settings.STORE_ANSWERS) == "images"
+def test_default_value_is_score():
+    assert settings.resolve(settings.DATA_PROFILE) == "score"
     assert settings.resolve(settings.ANSWERS_VISIBILITY) == "admins"
     assert settings.resolve(settings.GRADING_VIEW) == "by_question"
 
 
 def test_store_all_stores_each_answered_question_with_its_points():
-    started = attempts.start(running(store="all", questions=2))
+    started = attempts.start(running(store="answers", questions=2))
     first, second = question_ids(started)
     submit(started, {first: {"options": [OPTION_A]}, second: {"options": [OPTION_B]}})
     rows = {row.question_id: row for row in AttemptAnswer.objects.all()}
@@ -55,15 +55,15 @@ def test_store_all_stores_each_answered_question_with_its_points():
 
 @pytest.mark.parametrize("answer", [{}, {"options": []}])
 def test_blank_answers_are_not_stored(answer):
-    started = attempts.start(running(store="all"))
+    started = attempts.start(running(store="answers"))
     submit(started, {question_ids(started)[0]: answer})
     assert AttemptAnswer.objects.count() == 0
 
 
 def test_setting_is_frozen_at_start():
-    run = running(store="all")
+    run = running(store="answers")
     started = attempts.start(run)
-    settings.set_override(settings.STORE_ANSWERS, run.quiz, "images", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, run.quiz, "score", admin_id=ADMIN_ID)
     submit(started, {question_ids(started)[0]: {"options": [OPTION_A]}})
     assert AttemptAnswer.objects.count() == 1
 
@@ -76,7 +76,7 @@ def test_attempt_without_the_frozen_value_counts_as_images():
 
 
 def test_replaced_attempt_keeps_no_rows():
-    run = running(store="all")
+    run = running(store="answers")
     started = attempts.start(run)
     question = question_ids(started)[0]
     authoring.save_question(
@@ -122,17 +122,19 @@ def test_visibility_conflict_behaves_as_admins():
     quiz = make_quiz()
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "public", admin_id=ADMIN_ID)
     assert settings.answers_visibility(quiz) == "admins"
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     assert settings.answers_visibility(quiz) == "public"
 
 
 @pytest.mark.parametrize(
     "store,visibility,conflict",
     [
-        ("images", "admins", False),
-        ("images", "participant", True),
-        ("images", "public", True),
-        ("all", "public", False),
+        ("score", "admins", False),
+        ("score", "participant", True),
+        ("score", "public", True),
+        ("none", "public", True),
+        ("answers", "public", False),
+        ("detailed", "participant", False),
     ],
 )
 def test_is_visibility_conflict(store, visibility, conflict):

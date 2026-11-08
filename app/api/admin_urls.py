@@ -10,9 +10,11 @@ from app.api import (
     admin_preview,
     admin_quizzes,
     admin_revisions,
+    admin_rewards,
     admin_runs,
     admin_settings,
     admin_users,
+    admin_view,
 )
 
 urlpatterns = [
@@ -122,8 +124,39 @@ urlpatterns = [
         admin_links.link_attempts_delete,
         name="admin_test_link_attempts_delete",
     ),
+    path("quizzes/<uuid:quiz_id>/plan", admin_runs.run_plan, name="admin_run_plan"),
+    path("runs/<uuid:run_id>/plan", admin_runs.plan_edit, name="admin_plan_edit"),
+    path("runs/<uuid:run_id>/plan/cancel", admin_runs.plan_cancel, name="admin_plan_cancel"),
+    path("runs/<uuid:run_id>/plan/start", admin_runs.plan_start, name="admin_plan_start"),
     path("runs/<uuid:run_id>", admin_runs.run_detail, name="admin_run"),
+    path("quizzes/<uuid:quiz_id>/rewards", admin_rewards.quiz_rewards, name="admin_quiz_rewards"),
+    path(
+        "quizzes/<uuid:quiz_id>/rewards/new",
+        admin_rewards.quiz_reward_new,
+        name="admin_quiz_reward_new",
+    ),
+    path("runs/<uuid:run_id>/rewards", admin_rewards.run_rewards, name="admin_run_rewards"),
+    path(
+        "runs/<uuid:run_id>/rewards/new", admin_rewards.run_reward_new, name="admin_run_reward_new"
+    ),
+    path("runs/<uuid:run_id>/rewards/grant", admin_rewards.reward_grant, name="admin_reward_grant"),
+    path("runs/<uuid:run_id>/draw", admin_rewards.run_draw, name="admin_run_draw"),
+    path(
+        "runs/<uuid:run_id>/draw/<uuid:rule_id>",
+        admin_rewards.run_draw_action,
+        name="admin_run_draw_action",
+    ),
+    path("rewards/<uuid:rule_id>", admin_rewards.reward_rule, name="admin_reward_rule"),
+    path("entitlements/<uuid:entitlement_id>", admin_rewards.entitlement, name="admin_entitlement"),
+    path("runs/<uuid:run_id>/code", admin_runs.run_code, name="admin_run_code"),
     path("runs/<uuid:run_id>/close", admin_runs.run_close, name="admin_run_close"),
+    path("runs/<uuid:run_id>/archive", admin_runs.run_archive, name="admin_run_archive"),
+    path("runs/<uuid:run_id>/restore", admin_runs.run_restore, name="admin_run_restore"),
+    path("runs/<uuid:run_id>/period", admin_runs.run_period, name="admin_run_period"),
+    path("runs/<uuid:run_id>/scoreboard", admin_runs.run_scoreboard, name="admin_run_scoreboard"),
+    path("runs/<uuid:run_id>/merge", admin_runs.run_merge, name="admin_run_merge"),
+    path("runs/<uuid:run_id>/unmerge", admin_runs.run_unmerge, name="admin_run_unmerge"),
+    path("runs/<uuid:run_id>/deadline", admin_runs.run_deadline, name="admin_run_deadline"),
     path("quizzes/<uuid:quiz_id>/draws/new", admin_banks.draw_new, name="admin_draw_new"),
     path(
         "quizzes/<uuid:quiz_id>/draws/<str:draw_id>/edit",
@@ -163,5 +196,6 @@ urlpatterns = [
         name="admin_bank_question_delete",
     ),
     path("settings", admin_settings.settings_page, name="admin_settings"),
+    path("view", admin_view.switch, name="admin_view"),
     path("users", admin_users.users, name="admin_users"),
 ]

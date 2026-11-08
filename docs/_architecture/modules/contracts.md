@@ -30,9 +30,9 @@ manifest allows it.
 | `ScoringStrategyPlugin` | Weighing a type's grade, breakdown, max points | [basic and partial](../plugins/scoring.md) |
 | `QuizFlowPlugin` | Navigation modes and what the page offers | [all-at-once / step](../plugins/quiz-flow.md) |
 | `ParticipantPolicyPlugin` | Attempts, cookie identity, repetition rules | [browser-anonymous](../plugins/participants.md) |
-| `ResultViewPlugin` | Result projections, scoreboard, statistics and dashboards; storage stays in the domain | [local-results](../plugins/results-scoreboard.md) |
-| `RewardPlugin` | Performance thresholds and entitlement records | [threshold-rewards](../plugins/rewards.md) |
-| `DrawingPlugin` | Eligible selection, draw, audit | [manual-draw](../plugins/drawing.md) |
+| `ResultViewPlugin` | Official attempt, scoreboard order and ties, score summaries; storage and visibility stay in the domain | [results.local](../plugins/results.md) |
+| `RewardPlugin` | Which thresholds an attempt reaches, on exact values, and the tier choice; rules and entitlements stay in the domain | [rewards.threshold](../plugins/rewards.md) |
+| `DrawingPlugin` | Snapshot order, fingerprint and CSPRNG selection; eligibility, records and audit stay in the domain | [drawings.manual](../plugins/drawings.md) |
 | `ThemePlugin` | Templates, components, branding tokens | [default-theme](../plugins/theme-default.md) |
 
 `QuestionTypePlugin` renders its editor (`render_admin`) and reads the submitted form back

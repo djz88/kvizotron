@@ -87,7 +87,8 @@ def test_add_question_menu_uses_readable_names(logged_in):
     assert ">Yes or no<" in html
 
 
-def test_settings_tab_has_three_parts_and_says_when_changes_apply(logged_in):
+def test_settings_tab_has_three_parts_and_says_when_changes_apply(showing_all):
+    logged_in = showing_all
     quiz = make_quiz()
     html = text(logged_in.get(f"{base(quiz)}/settings?lang=en"))
     assert "after you publish" in html and "apply immediately" in html
@@ -170,12 +171,54 @@ def test_runs_tab_shows_running_panel_and_history(logged_in):
     html = text(logged_in.get(f"{base(quiz)}/runs"))
     assert 'class="panel"' in html and f"{base(quiz)}/qr.svg" in html
     assert f"/admin/runs/{run.id}" in html
-    assert html.count("<tr>") == 3  # header and two runs
+    history = html.split("</table>")[0]  # the comparison of runs follows in its own table
+    assert history.count("<tr>") == 3  # header and two runs
 
 
 def test_runs_tab_without_a_running_run_has_no_panel(logged_in):
     html = text(logged_in.get(f"{base(published_quiz())}/runs"))
     assert 'class="panel"' not in html
+
+
+def test_header_links_results_of_the_running_run_next_to_preview(logged_in):
+    quiz = published_quiz()
+    authoring.close_run(authoring.open_run(quiz, admin_id=ADMIN_ID), admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"{base(quiz)}/settings"))
+    meta = html[html.index('class="quiz-meta"') : html.index('class="tabs"')]
+    assert f"/admin/runs/{run.id}#statistics" in meta
+    assert f"/admin/runs/{run.id}#scoreboard" in meta
+    assert f"/q/{quiz.slug}/r/{run.id}/scoreboard?view=projector" in meta
+
+
+def test_header_links_results_of_the_last_ended_run(logged_in):
+    quiz = published_quiz()
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"{base(quiz)}/edit"))
+    meta = html[html.index('class="quiz-meta"') : html.index('class="tabs"')]
+    assert f"/admin/runs/{run.id}#statistics" in meta
+
+
+def test_header_without_runs_has_no_result_links(logged_in):
+    html = text(logged_in.get(f"{base(published_quiz())}/edit"))
+    assert "#statistics" not in html
+
+
+def test_runs_tab_links_statistics_and_scoreboard_of_each_run(logged_in):
+    quiz = published_quiz()
+    first = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    authoring.close_run(first, admin_id=ADMIN_ID)
+    running = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"{base(quiz)}/runs"))
+    panel = html[html.index('class="panel"') : html.index("<table")]
+    assert f"/admin/runs/{running.id}#statistics" in panel
+    assert f"/admin/runs/{running.id}#scoreboard" in panel
+    history, comparison = html[html.index("<table") :].split("</table>")[:2]
+    assert "#statistics" not in history  # the history table is already as wide as a page
+    for run in (first, running):
+        assert f"/admin/runs/{run.id}#statistics" in comparison
+        assert f"/admin/runs/{run.id}#scoreboard" in comparison
 
 
 def test_revisions_tab_lists_only_revisions(logged_in):
@@ -371,3 +414,57 @@ def test_settings_tab_survives_a_stored_palette_no_longer_offered(logged_in):
     response = logged_in.get(f"{base(quiz)}/settings")
     assert response.status_code == 200
     assert 'data-palette="blue_teal"' in text(response)
+
+
+def test_quiz_form_refuses_pages_with_inherited_after_each(logged_in):
+    """AC-88"""
+    quiz = published_quiz()
+    settings.set_global(settings.REVEAL_MOMENT, "after_each", admin_id=None)
+    response = logged_in.post(f"{base(quiz)}/settings", behaviour(quiz, navigation_mode="pages"))
+    assert response.status_code == 200
+    assert settings.quiz_override(settings.NAVIGATION_MODE, quiz) is None
+
+
+def test_tabs_are_four_and_more(logged_in):
+    """AC-86: Questions, Runs, Grading, Settings, and More with test links and revisions."""
+    quiz = make_quiz()
+    html = text(logged_in.get(f"{base(quiz)}/edit"))
+    nav = html.split('class="tabs"')[1].split("</nav>")[0]
+    top, more = nav.split('class="tab-more')
+    assert re.findall(r'<li><a href="[^"]+/(\w+)"', top) == ["edit", "runs", "grading", "settings"]
+    assert f"{base(quiz)}/tests" in more and f"{base(quiz)}/revisions" in more
+
+
+def test_more_is_marked_on_its_pages(logged_in):
+    quiz = make_quiz()
+    for tab in ("tests", "revisions"):
+        nav = text(logged_in.get(f"{base(quiz)}/{tab}")).split('class="tabs"')[1]
+        assert re.search(r'<summary aria-current="page"', nav)
+    nav = text(logged_in.get(f"{base(quiz)}/edit")).split('class="tabs"')[1]
+    assert not re.search(r'<summary aria-current="page"', nav)
+
+
+def test_run_page_basic_hides_deeper_sections(logged_in):
+    run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert 'id="statistics"' in html and 'id="scoreboard"' in html and 'id="attempts"' in html
+    assert f"/admin/runs/{run.id}/period" not in html
+    assert f"/admin/runs/{run.id}/code" not in html
+    assert f"/admin/runs/{run.id}/deadline" in html  # the deadline is common work
+
+
+def test_run_page_basic_shows_a_set_code(logged_in):
+    from app.domain import access_codes
+
+    run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
+    access_codes.set_code(run, "ABC123", admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert "An access code is set." in html
+    assert f"/admin/runs/{run.id}/code" in html
+
+
+def test_run_page_all_shows_everything(showing_all):
+    run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
+    html = text(showing_all.get(f"/admin/runs/{run.id}?lang=en"))
+    assert f"/admin/runs/{run.id}/period" in html
+    assert f"/admin/runs/{run.id}/code" in html

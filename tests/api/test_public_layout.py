@@ -1,6 +1,10 @@
 """Public pages: menu, information pages, descriptions and colours (FR-51, FR-52, FR-53)."""
 
+import re
+from io import BytesIO
+
 import pytest
+from PIL import Image
 
 from app.domain import settings
 from app.domain.models import QuizRevision
@@ -25,6 +29,18 @@ def test_information_page_exists_in_every_language(client, path, lang):
 def test_privacy_page_says_what_it_covers(client):
     html = text(client.get("/privacy?lang=en"))
     assert "current version" in html and "register" in html
+
+
+def test_privacy_page_shows_the_default_period_and_the_browser_copy(client):
+    # AC-79, AC-80
+    html = text(client.get("/privacy?lang=en"))
+    assert "90 days" in html and "another period" in html and "later version" in html
+    assert "at most 24 hours" in html
+
+
+def test_privacy_page_follows_the_global_period(client):
+    settings.set_global(settings.RETENTION_PERIOD, "1y", admin_id=None)
+    assert "1 year" in text(client.get("/privacy?lang=en"))
 
 
 @pytest.mark.parametrize("path", ["/", "/about", "/q/kviz"])
@@ -130,3 +146,55 @@ def test_starting_replaces_the_heading_too(client):
     open_quiz_run()
     html = text(client.get("/q/kviz"))
     assert html.index('id="play"') < html.index('class="hero"') < html.index("</form>")
+
+
+@pytest.mark.parametrize(("name", "size"), [("favicon-32.png", 32), ("apple-touch-icon.png", 180)])
+def test_the_logo_icons_are_served_at_their_size(client, name, size):
+    response = client.get(f"/assets/{name}")
+    assert response.status_code == 200
+    assert response["Content-Type"] == "image/png"
+    assert Image.open(BytesIO(b"".join(response.streaming_content))).size == (size, size)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("address", ["/", "/admin/login"])
+def test_public_and_admin_pages_name_the_icons(client, address):
+    html = text(client.get(address))
+    assert 'rel="icon"' in html and "/assets/favicon-32.png" in html
+    assert 'rel="apple-touch-icon"' in html and "/assets/apple-touch-icon.png" in html
+
+
+def test_logo_is_served(client):
+    response = client.get("/assets/logo.svg")
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("image/svg+xml")
+
+
+def test_logo_has_no_script_or_outside_reference(client):
+    """An SVG served as an image cannot run a script anyway; the file stays plain all the same."""
+    svg = b"".join(client.get("/assets/logo.svg").streaming_content).decode()
+    assert "<script" not in svg and "href=" not in svg and "on" + "load" not in svg
+
+
+def test_logo_is_the_designers_drawing(client):
+    """The served logo is the designer's file (1254 square, sparkle in the middle), not a redraw."""
+    svg = b"".join(client.get("/assets/logo.svg").streaming_content).decode()
+    assert 'viewBox="0 0 1254 1254"' in svg
+    assert 'data-shape="white-192-0"' in svg
+
+
+@pytest.mark.parametrize("path", ["/", "/about", "/how-it-works"])
+def test_bar_shows_the_logo(client, path):
+    assert re.search(
+        r'<a class="site-name"[^>]*>\s*<img class="site-logo" src="/assets/logo.svg"',
+        text(client.get(path)),
+    )
+
+
+def test_about_and_home_show_the_logo_large(client):
+    assert 'class="about-logo"' in text(client.get("/about"))
+    assert 'class="about-logo"' in text(client.get("/"))
+
+
+def test_logo_is_the_icon(client):
+    assert '<link rel="icon" type="image/svg+xml" href="/assets/logo.svg">' in text(client.get("/"))

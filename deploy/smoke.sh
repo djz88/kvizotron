@@ -137,7 +137,15 @@ question=${quiz#* }
 check "public quiz page" "$(status "$BASE/q/smoke")" "200"
 check "run page for admin" "$(status -b "$JAR" "$BASE/admin/runs/$run_id")" "200"
 check "privacy page" "$(status "$BASE/privacy")" "200"
-check "flag is served" "$(status "$BASE/assets/flag-cs.svg")" "200"
+for asset in app/api/assets/*; do
+    check "$(basename "$asset") is served" "$(status "$BASE/assets/$(basename "$asset")")" "200"
+done
+expected=$(sed -n '/kvizotron.modules/,/^$/p' pyproject.toml | grep -c ' = ')
+modules=$(compose exec -T app python manage.py shell -v 0 -c "
+from app.kernel.discovery import installed_modules
+print(len(installed_modules()))
+" | tail -n 1)
+check "the image has every module of pyproject.toml" "$modules" "$expected"
 
 started=$(web -X POST -e "$BASE/q/smoke" -d lang=cs "$BASE/r/$run_id/start")
 case "$started" in

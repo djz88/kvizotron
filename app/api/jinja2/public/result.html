@@ -6,11 +6,14 @@
 <section class="card result">
   <h2>{{ _("Your score") }}</h2>
   <p class="score"><strong>{{ earned|number }} / {{ maximum|number }}</strong> <span>{{ percentage|number }} %</span></p>
+  {% if place is defined %}<p role="status">{{ _("Your place: %(rank)s. of %(total)s", rank=place[0], total=place[1]) }} · <a href="{{ scoreboard_url }}?lang={{ locale }}">{{ _("Scoreboard") }}</a></p>{% endif %}
   {% if pending %}
   <p class="notice" role="status">{{ _("This score is provisional: part of the points is waiting for grading.") }}</p>
   {% else %}
   <p role="status">{{ _("This score is final.") }}</p>
   {% endif %}
+  {% include "public/_rewards.html" %}
+  {% include "public/_identity_form.html" %}
   {% if answers %}
   <div class="reveal-list">
     <h3>{{ _("Your answers") }}</h3>

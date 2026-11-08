@@ -48,7 +48,8 @@ ATTEMPTS_PAGE = 20
 def _runs(quiz: Quiz) -> list[QuizRun]:
     """The running one first, then from the newest. Test runs are reached from their link."""
     return sorted(
-        quiz.runs.all(), key=lambda run: (run.status != QuizRun.Status.OPEN, -(run.run_no or 0))
+        quiz.runs.exclude(status=QuizRun.Status.SCHEDULED),
+        key=lambda run: (run.status != QuizRun.Status.OPEN, -(run.run_no or 0)),
     )
 
 

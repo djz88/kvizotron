@@ -1,0 +1,96 @@
+#: manifest.py:19
+msgid "Do not ask"
+msgstr "Neptat se"
+
+#: manifest.py:20
+msgid "Ask, may be left empty"
+msgstr "Zeptat se, jde nechat prázdné"
+
+#: manifest.py:21
+msgid "Require"
+msgstr "Vyžadovat"
+
+#: manifest.py:40
+msgid "Attempt repeats"
+msgstr "Opakování pokusu"
+
+#: manifest.py:42
+msgid "Anyone may play again"
+msgstr "Každý může hrát znovu"
+
+#: manifest.py:43
+msgid "One attempt per browser"
+msgstr "Jeden pokus na prohlížeč"
+
+#: manifest.py:46
+msgid "The browser is recognised by a cookie, so another browser or a cleared cookie starts a new attempt."
+msgstr "Prohlížeč se pozná podle cookie, takže jiný prohlížeč nebo smazané cookie začne nový pokus."
+
+#: manifest.py:56
+msgid "An unfinished attempt"
+msgstr "Nedokončený pokus"
+
+#: manifest.py:58
+msgid "The participant continues it"
+msgstr "Účastník v něm pokračuje"
+
+#: manifest.py:59
+msgid "It counts as the one attempt"
+msgstr "Počítá se jako jediný pokus"
+
+#: manifest.py:60
+msgid "It is closed and a new one may start"
+msgstr "Uzavře se a může začít nový"
+
+#: manifest.py:62
+msgid "Only matters when an attempt may not be repeated."
+msgstr "Záleží jen tehdy, když se pokus nesmí opakovat."
+
+#: manifest.py:70
+msgid "Nickname"
+msgstr "Přezdívka"
+
+#: manifest.py:73
+msgid "The administration of this run shows it, and so does the run's public scoreboard when the admin turns it on."
+msgstr "Ukazuje ji administrace tohoto běhu a také veřejný žebříček běhu, když ho správce zapne."
+
+#: manifest.py:83
+msgid "E-mail"
+msgstr "E-mailová adresa"
+
+#: manifest.py:85
+msgid "An e-mail is shown only to logged-in administrators, never publicly."
+msgstr "E-mail vidí jen přihlášení správci, nikdy veřejnost."
+
+#: manifest.py:93
+msgid "When to ask"
+msgstr "Kdy se ptát"
+
+#: manifest.py:95
+msgid "After the last question"
+msgstr "Po poslední otázce"
+
+#: manifest.py:96
+msgid "Before the first question"
+msgstr "Před první otázkou"
+
+#: manifest.py:98
+msgid "Applies to the nickname and the e-mail."
+msgstr "Platí pro přezdívku i e-mail."
+
+#: manifest.py:106
+msgid "Same nickname twice"
+msgstr "Stejná přezdívka dvakrát"
+
+#: manifest.py:107
+msgid "Allow"
+msgstr "Povolit"
+
+#: manifest.py:107
+msgid "Refuse within one run"
+msgstr "Odmítnout v rámci jednoho běhu"
+
+#: manifest.py:108
+msgid "Names differing only by case or inner spaces count as the same."
+msgstr "Jména lišící se jen velikostí písmen nebo mezerami uvnitř se berou jako stejná."
+

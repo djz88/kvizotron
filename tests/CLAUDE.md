@@ -7,7 +7,8 @@ Struktura kopíruje `app/`. Pravidla pro testy jsou v kořenovém `CLAUDE.md`; t
 - `contracts/`: sady, které musí projít každý modul. `question_type.py` je základ, `test_<typ>.py` ho dědí.
 - `domain/`, `api/`, `kernel/`, `providers/`: testy jednotlivých vrstev.
 - `integration/`: celé toky přes HTTP a testy v samostatném procesu.
-- `support/`: `FormClient`, `run_manage`, `make_module`. `fixtures/`: ukázkové moduly a instalace pro AC-01 a AC-02.
+- `test_docs.py`: ID v dokumentaci, odkazy, cesty a jména skillů a AC, které žádný test nejmenuje; ten seznam se smí jen zmenšovat, nové AC potřebuje test se svým ID. `test_agent_hooks.py`: hook proti mazání svazků. `test_wiring.py`: moduly, šablony, adresy, skripty, styly a nastavení jsou napojené.
+- `support/`: `FormClient`, `run_manage`, `make_module`, `waiting` (`busy.py`: opakuje volání při zámku sdílené testovací databáze, kde SQLite nečeká jako v provozu). `fixtures/`: ukázkové moduly a instalace pro AC-01 a AC-02.
 - `domain/helpers.py`: staví kvízy přes tytéž služby jako administrace.
 
 ## Pozor

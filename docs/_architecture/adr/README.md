@@ -51,3 +51,9 @@ Format: [MADR 4](https://adr.github.io/madr/). Template: [0000-template.md](0000
 | [ADR-0045](0045-csv-one-file-and-failed-images.md) | One import file with a quiz row, question export in Stage B, and a failed image keeps its question | accepted |
 | [ADR-0046](0046-stored-answers-and-who-sees-them.md) | Stored answers, who sees them, a private link and a public walkthrough | accepted |
 | [ADR-0047](0047-image-answer-photo-visibility.md) | Photo visibility chosen by the admin, automatic points as a share, grading in Stage B | accepted |
+| [ADR-0048](0048-run-timing.md) | Run schedule without a background process, a limit fixed on the run, one time zone | accepted |
+| [ADR-0049](0049-participants-and-access-code.md) | Participants identified per run only when needed, an access code per run | accepted |
+| [ADR-0050](0050-data-profile-and-local-resume.md) | One data profile per run, a retention period without a job, local resume on by default | accepted |
+| [ADR-0051](0051-scoreboard-participants-and-official-attempt.md) | A visible scoreboard identifies browsers, one official attempt each, anonymised live names | accepted |
+| [ADR-0052](0052-setting-groups-levels-and-step-default.md) | Settings in named groups with a basic level, pages of questions, one question at a time by default | accepted |
+| [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md) | Rewards copied onto the run, tiers by setting, alternates drawn at once, a draw history that only grows | accepted |

@@ -1,6 +1,6 @@
 # Modul: app/plugins
 
-Funkce, které se dají zapínat a vypínat: `questions/` (typy otázek), `scoring/` (bodování), `quiz_flow/` (režimy navigace), `theme_default/` (téma). Infrastruktura je v `app/providers/`.
+Funkce, které se dají zapínat a vypínat: `questions/` (typy otázek), `scoring/` (bodování), `quiz_flow/` (režimy navigace), `theme_default/` (téma), `participants/` (pravidla účastníků, ADR-0049), `results/` (oficiální pokus, pořadí žebříčku a souhrny, ADR-0051), `rewards/` (dosažené prahy odměn a tři nastavení odměn, ADR-0053), `drawings/` (pořadí, otisk a výběr losování, ADR-0013 a ADR-0053). Infrastruktura je v `app/providers/`.
 
 ## Co modul obsahuje
 

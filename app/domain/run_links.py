@@ -11,6 +11,7 @@ from app.domain import authoring
 from app.domain.models import (
     Attempt,
     AttemptAnswer,
+    Participant,
     Quiz,
     QuizRevision,
     QuizRun,
@@ -81,6 +82,7 @@ def delete_attempts(link: RunTestLink, *, admin_id: str) -> list[str]:
     with transaction.atomic():
         assets = _assets_of(link)
         Attempt.objects.filter(run=link.run_id).delete()
+        Participant.objects.filter(run=link.run_id).delete()  # after the attempts: protected
         _audit("attempts_deleted", link, admin_id)
     return assets
 
@@ -96,6 +98,7 @@ def delete(link: RunTestLink, *, admin_id: str) -> list[str]:
         revision_id = run.current_revision_id
         _audit("deleted", link, admin_id)
         Attempt.objects.filter(run=run).delete()
+        Participant.objects.filter(run=run).delete()
         RunRevision.objects.filter(run=run).delete()
         link.delete()
         run.delete()

@@ -8,26 +8,56 @@
     <h2>{{ _("Run %(no)s is running", no=running.run_no) }}</h2>
     <p>{{ _("Public address") }}: <a href="{{ public_url }}">{{ public_url }}</a></p>
     <p>{{ _("Attempts submitted: %(count)s", count=running.submitted) }}</p>
+    <p><a href="{{ url('admin_run', args=[running.id]) }}#statistics">{{ _("Statistics") }}</a> ·
+      <a href="{{ url('admin_run', args=[running.id]) }}#scoreboard">{{ _("Scoreboard") }}</a> ·
+      <a href="{{ url('scoreboard', args=[quiz.slug, running.id]) }}?view=projector">{{ _("Projector") }}</a></p>
   </div>
 </div>
 {% endif %}
 {% if rows %}
 <table class="stack">
-  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Revisions") }}</th><th>{{ _("Submitted") }}</th></tr></thead>
+  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Start time") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Deadline") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Time limit") }}</th><th>{{ _("Revisions") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Not sent") }}</th></tr></thead>
   <tbody>
     {% for item in rows %}
     <tr>
       <td data-label="{{ _('Run') }}"><a href="{{ url('admin_run', args=[item.run.id]) }}">{{ item.run.run_no }}</a></td>
-      <td data-label="{{ _('Status') }}">{{ _("Running") if item.run.status == "OPEN" else _("Ended") }}</td>
-      <td data-label="{{ _('Opened') }}">{{ item.run.opened_at.strftime("%Y-%m-%d %H:%M") }}</td>
-      <td data-label="{{ _('Ended') }}">{{ item.run.closed_at.strftime("%Y-%m-%d %H:%M") if item.run.closed_at else "–" }}</td>
+      <td data-label="{{ _('Status') }}">{{ item.status }}</td>
+      <td data-label="{{ _('Start time') }}">{{ item.run.starts_at|when }}</td>
+      <td data-label="{{ _('Opened') }}">{{ item.run.opened_at|when }}</td>
+      <td data-label="{{ _('Deadline') }}">{{ item.run.deadline_at|when }}</td>
+      <td data-label="{{ _('Ended') }}">{{ item.run.closed_at|when }}</td>
+      <td data-label="{{ _('Time limit') }}">{% if item.limit_minutes %}{{ item.limit_minutes }} min{% else %}–{% endif %}</td>
       <td data-label="{{ _('Revisions') }}">{{ item.revisions }}</td>
       <td data-label="{{ _('Submitted') }}">{{ item.run.submitted }}</td>
+      <td data-label="{{ _('Not sent') }}">{{ item.unsent }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 {% else %}
 <p>{{ _("There are no runs yet.") }}</p>
+{% endif %}
+{% if comparison %}
+<h2>{{ _("Comparison of runs") }}</h2>
+<table class="stack">
+  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Participants") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Average") }}</th><th>%</th><th>{{ _("Results") }}</th></tr></thead>
+  <tbody>
+    {% for row in comparison %}
+    <tr>
+      <td data-label="{{ _('Run') }}">{{ row.run_no }}</td>
+      <td data-label="{{ _('Opened') }}">{{ row.opened_at|when }}</td>
+      <td data-label="{{ _('Ended') }}">{{ row.closed_at|when }}</td>
+      <td data-label="{{ _('Participants') }}">{{ row.participants }}</td>
+      <td data-label="{{ _('Submitted') }}">{{ row.submitted }}</td>
+      <td data-label="{{ _('Average') }}">{{ row.average|number if row.average is not none else "–" }}</td>
+      <td data-label="%">{{ "%s %%"|format(row.percent) if row.percent is not none else "–" }}</td>
+      <td data-label="{{ _('Results') }}"><a href="{{ url('admin_run', args=[row.run_id]) }}#statistics">{{ _("Statistics") }}</a> · <a href="{{ url('admin_run', args=[row.run_id]) }}#scoreboard">{{ _("Scoreboard") }}</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% if has_archived %}
+<p><a href="?{% if not show_archived %}archived=1{% endif %}">{{ _("Hide archived runs") if show_archived else _("Show archived runs") }}</a></p>
 {% endif %}
 {% endblock %}

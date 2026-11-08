@@ -1,8 +1,8 @@
-# Plugin: results & scoreboard (local-results)
+# Plugin: results & scoreboard (results.local)
 
 | | |
 |---|---|
-| Contract | `ResultViewPlugin` |
+| Contract | `ResultViewPlugin` (port `result_view`) |
 | Package | `app/plugins/results/` |
 | Stage | C |
 | Decision | [ADR-0008](../adr/0008-scoreboard-revision-modes-default-separate.md), [ADR-0012](../adr/0012-configurable-retention-profiles-and-stateless-mode.md) |
@@ -28,12 +28,12 @@ additional `ResultViewPlugin` modules.
 
 ## Behaviour
 
-- Scoreboard is a projection (`scoreboard_policy`), not a source of truth.
+- Scoreboard is a projection, not a source of truth: settings in `quiz_run.results_json`, the board computed from attempts by `app/domain/results.py` with this module's `pick_official`, `rank` and `summarize` ([ADR-0051](../adr/0051-scoreboard-participants-and-official-attempt.md)).
+- One row per browser: a visible board sets the participant cookie whatever the repeat rule. Live names can be anonymised with the quiz's anonymous label.
 - Ties remaining after the admin's sorting follow the run's `tie_break_policy`: shared place, earlier
   submission or random order ([ADR-0026](../adr/0026-scoreboard-tie-break-rule.md)).
 - `MERGE_COMPATIBLE` is refused when max points differ ([AC-06](../acceptance-criteria.md)).
-- With pending manual grading the public scoreboard stays hidden until the run is closed and nothing
-  is pending ([ADR-0033](../adr/0033-image-answer-question-type.md)). This limits FR-29 through the
+- With pending manual grading the public scoreboard stays hidden while anything is pending ([ADR-0033](../adr/0033-image-answer-question-type.md)). This limits FR-29 through the
   module's requirements (FR-46).
 - Test attempts excluded from all public projections and real statistics.
 - Public links to archived results are off by default, with a per-run switch ([ADR-0031](../adr/0031-public-links-to-archived-results.md)).

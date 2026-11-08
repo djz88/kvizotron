@@ -2,7 +2,7 @@
 
 `AGENTS.md` je symlink na tento soubor.
 
-Typ projektu: self-hosted webová aplikace v Pythonu (Django) — **etapa A a milníky B1, B1.5, B2, B3, B4, B5 a B6 hotové: admin UI, kvízy ve třech jazycích, bezpečné změny kvízu za běhu, navigace a vzhled, typy otázek Výběr a Přiřazení, obrázky, bodování a zdroje, banky otázek, režimy průchodu, odhalení odpovědí, obrázky z adresy, náhled, testovací odkazy, import a export otázek, typy Číslo, Text a Fotka, hodnocení fotek, uložené odpovědi, soukromý odkaz na výsledek a veřejný průchod**
+Typ projektu: self-hosted webová aplikace v Pythonu (Django) — **etapa A, milníky B1, B1.5, B2, B3, B4, B5, B6, C1, C2, C3, C4, C4.5 a C5 hotové: admin UI, kvízy ve třech jazycích, bezpečné změny kvízu za běhu, navigace a vzhled, typy otázek Výběr a Přiřazení, obrázky, bodování a zdroje, banky otázek, režimy průchodu, odhalení odpovědí, obrázky z adresy, náhled, testovací odkazy, import a export otázek, typy Číslo, Text a Fotka, hodnocení fotek, uložené odpovědi, soukromý odkaz na výsledek, veřejný průchod, plán běhu, uzávěrka, časový limit s odpočtem, archivace běhu, účastníci a přístupový kód, profil dat, stav bez ukládání, doba uchování, pokračování v prohlížeči, veřejný žebříček, statistiky a porovnání běhů, zjednodušená administrace, průchod po stránkách, logo, odměny a losování**
 Manifesty: `pyproject.toml`, `uv.lock`
 
 ## Dokumentace
@@ -28,7 +28,7 @@ Kvízotron je platforma pro vícejazyčné kvízy (cs/en/uk) a soutěže. Veřej
 
 Architektura je modulární monolit s minimálním kernelem: všechny funkční oblasti včetně autentizace a persistence jsou moduly za kontrakty. Moduly jsou dvou druhů: provideři (infrastruktura: databáze, auth, import/export) a pluginy (funkce: typy otázek, témata, zobrazení výsledků). Stack: Django, gunicorn, Jinja2, HTMX, Pydantic, SQLite (WAL), Caddy, Docker Compose.
 
-Stav: hotová etapa A (milníky A1–A4), B1, B1.5, B2, B3, B4, B5 a B6: kernel, provideři, admin UI, hraní kvízu v cs/en/uk s typy Výběr a Přiřazení, nahrávání obrázků, bodování část za část, zdroje u výsledku, QR, skóre na serveru, nastavení s přepsáním u kvízu, přepnutí běžícího kola na novou revizi, přehled změn, návrat ke starší revizi, duplikace a archivace kvízu, popis kvízu, hlavní tlačítko podle stavu, pět sad barev, veřejné menu, banky otázek s losováním bez opakování, míchání, tři režimy průchodu s ukazatelem postupu, odhalení odpovědí, přeložené vysvětlení, obrázky z adresy jako kopie nebo z jejich serveru, nastavení s přepsáním u otázky, náhled bez ukládání, testovací odkazy na vybranou verzi, import otázek z CSV a ZIP a jejich export, typy Číslo, Text a Fotka, hodnocení fotek po otázkách nebo po pokusech, volba ukládání a viditelnosti odpovědí, soukromý odkaz na výsledek, veřejný průchod po skončení běhu a požadavky modulů na nastavení. Není určeno na veřejné nasazení, dokud nejsou limity požadavků (D5). Další je etapa C (`docs/_architecture/roadmap.md`).
+Stav: hotová etapa A (milníky A1–A4), B1, B1.5, B2, B3, B4, B5, B6, C1, C2, C3, C4, C4.5 a C5: kernel, provideři, admin UI, hraní kvízu v cs/en/uk s typy Výběr a Přiřazení, nahrávání obrázků, bodování část za část, zdroje u výsledku, QR, skóre na serveru, nastavení s přepsáním u kvízu, přepnutí běžícího kola na novou revizi, přehled změn, návrat ke starší revizi, duplikace a archivace kvízu, popis kvízu, hlavní tlačítko podle stavu, pět sad barev, veřejné menu, banky otázek s losováním bez opakování, míchání, tři režimy průchodu s ukazatelem postupu, odhalení odpovědí, přeložené vysvětlení, obrázky z adresy jako kopie nebo z jejich serveru, nastavení s přepsáním u otázky, náhled bez ukládání, testovací odkazy na vybranou verzi, import otázek z CSV a ZIP a jejich export, typy Číslo, Text a Fotka, hodnocení fotek po otázkách nebo po pokusech, volba ukládání a viditelnosti odpovědí, soukromý odkaz na výsledek, veřejný průchod po skončení běhu, požadavky modulů na nastavení, plán běhu se začátkem a uzávěrkou, časový limit pokusu s odpočtem a automatickým odesláním, archivace běhu, jedno nastavené časové pásmo, pravidla opakování s anonymní cookie jen tam, kde je běh potřebuje, sběr jména a e-mailu před startem nebo na konci, zákaz stejných přezdívek, přístupový kód k běhu uložený jen jako hash a tabulka pokusů u běhu, jeden profil dat u běhu (nic, skóre, odpovědi, podrobně) místo `store_answers`, režim bez ukládání, který po odeslání smaže pokus a započítá ho, doba uchování uložená u běhu bez mazání do D3 a pokračování po obnovení stránky z kopie v prohlížeči, která není delší než 24 hodin, veřejný žebříček běhu (skrytý, během běhu, po skončení) s jedním oficiálním pokusem na prohlížeč, anonymními jmény během běhu, shodami podle ADR-0026, režimy revizí se sloučením a projektorem, statistiky běhu, porovnání běhů a řazení tabulky pokusů, přepínač Základní / Vše se sedmi skupinami nastavení, plán běhu ukazující jen rozdíly, záložky s „Více“, průchod po stránkách N otázek, výchozí průchod po otázce pro nové instalace, logo v liště a na stránce O aplikaci, odměny za práh, účast, ručně a losováním kopírované do běhu ze šablony kvízu nebo z předchozího běhu, nároky z oficiálního pokusu s pokyny k vyzvednutí u výsledku, nastavení více prahů a kontaktu s výherci a ruční losování s náhradníky, posunem, náhradním výhercem a novým losováním v historii, která se nemění, se zveřejněním výherců na žebříčku. Není určeno na veřejné nasazení, dokud nejsou limity požadavků (D5). Další je D1 (`docs/_architecture/roadmap.md`).
 
 ## Příkazy
 
@@ -45,6 +45,8 @@ Funguje teď:
 - `make secrets` — gitleaks ve staged změnách a v historii gitu; soubory mimo git nekontroluje
 - `make quality` — lint, testy, gitleaks a kontrola `TECH_DEBT.md`; totéž běží v CI
 - `make smoke` — spustí nasazení v Dockeru a ověří ho
+- `make wiring` — jen kontroly napojení (`tests/test_wiring.py`); běží i v `make test`
+- `make plan-check plan=… base=main` — změnily se soubory, které plán jmenuje?
 - `make messages` — vytáhne texty k překladu a zkompiluje katalogy; `.po` i `.mo` jsou v gitu
 - `make worktree`, `make worktree-create JMÉNO`, `make worktree-remove JMÉNO` — pracovní kopie v `.worktrees/`; větev se smaže, jen když je mergnutá
 - `make tech-debt-check`, `tech-debt-tidy`, `tech-debt-create title="…"`, `tech-debt-resolve id=TD-NNN` — práce s `TECH_DEBT.md` a archivem
@@ -75,7 +77,19 @@ Návrh, který musí implementace dodržet:
 - Publikovaná revize je neměnná. Restart soutěže vytvoří nové kolo, nikdy nepřebírá výsledky.
 - Skóre počítá vždy server, klientskému skóre, řešení ani časům se nevěří. `public_payload()` nikdy neobsahuje klíč odpovědí.
 - Každý modul musí projít sdílenými kontraktovými testy v `tests/contracts/`.
-- Nové nastavení se dědí global → kvíz → otázka, užší rozsah musí mít napsaný důvod (ADR-0042). Každý modul uvádí pole `settings` v manifestu, a pokud žádné nemá, tak `[]`; bez toho testy neprojdou. Kam nastavení patří, rozhoduje ten, kdo ho přidává: agent se zeptá uživatele, pokud to zadání neříká.
+- Nové nastavení se dědí global → kvíz → otázka, užší rozsah musí mít napsaný důvod (ADR-0042). Každý modul uvádí pole `settings` v manifestu, a pokud žádné nemá, tak `[]`; bez toho testy neprojdou. Kam nastavení patří, rozhoduje ten, kdo ho přidává: agent se zeptá uživatele, pokud to zadání neříká. Postup je ve skillu `kvizotron-add-setting`.
+
+## Profil pro dev-workflow
+
+Profil: `kvizotron`. Zpřísňuje klasifikaci skillu `dev-workflow`; agent ho čte odsud, nic ho nevymáhá.
+
+- Vždy VELKÁ: `app/contracts/`, `app/kernel/`, `app/domain/models.py` a migrace, `manifest.py` modulů, `app/providers/auth_local/`, `deploy/compose.yaml`.
+- Aspoň STŘEDNÍ: `app/api/play.py`, `app/api/run_clock.py`, `app/domain/attempts.py`, `app/domain/tokens.py`. Řídí, co se přijme a jak se počítá čas a skóre.
+- Vždy VELKÁ je i změna, která se dotkne UI a domény zároveň, nebo mění chování popsané v ADR.
+
+## Skilly projektu
+
+V `.claude/skills/`: `kvizotron-milestone` (návrh a uzavření milníku), `kvizotron-add-setting` (nové nastavení), `kvizotron-add-module` (nový plugin nebo provider), `kvizotron-browser-walkthrough` (průchod v prohlížeči a stack `kvizotron-browser`), `kvizotron-check-applied` (je všechno použité a napojené, před `review-roles`), `kvizotron-check-integration` (toky napříč vrstvami). Skilly tohoto repozitáře se jmenují `kvizotron-*`; hlídá to `tests/test_docs.py`. Profil pro `review-roles` je `.claude/review-profile.md`.
 
 ## Pravidla
 
@@ -83,7 +97,7 @@ Návrh, který musí implementace dodržet:
 - Vstupy zvenčí (uživatel, síť, soubory) se ověřují; chyby se ošetřují, nepotlačují.
 - Nová závislost jen s důvodem a z důvěryhodného zdroje, s pevnou verzí.
 - Před commitem projdou kontroly repozitáře (pre-commit, lint, testy), pokud je repozitář má.
-- Příkazy, které mažou data, přepisují historii gitu nebo něco nasazují, se spouštějí jen se souhlasem člověka.
+- Příkazy, které mažou data, přepisují historii gitu nebo něco nasazují, se spouštějí jen se souhlasem člověka. Hook `.claude/hooks/guard_docker_volumes.py` odmítá mazání svazků stacku `kvizotron-browser` a stacku bez jména, u jiných se ptá.
 - Do logů nepatří odpovědi účastníků ani osobní údaje; e-mail se nikdy nezveřejňuje.
 
 ## Testy

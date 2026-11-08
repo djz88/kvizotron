@@ -9,6 +9,10 @@
     <li>{{ _("Your answers and score are stored so that the result can be computed. They belong to one attempt, not to your name.") }}</li>
     <li>{{ _("If a quiz asks for a photo, it is stored without its metadata until an admin deletes it. The organiser chooses who sees it: admins, you through a private link, or everyone after approving that photo. A question tells you before uploading if its photo may become public.") }}</li>
     <li>{{ _("An organiser can choose to store all answers, and to show them to you or, after the run ends, to everyone, without naming who gave them.") }}</li>
+    <li>{{ _("What an attempt leaves behind depends on the quiz: an organiser can keep nothing but a count, only your score, all answers, or answers with the time you took.") }}</li>
+    <li>{{ _("A run's data are kept for %(period)s after it ends unless the quiz sets another period. Deleting them after that arrives in a later version.", period=retention_period) }}</li>
+    <li>{{ _("While an attempt is unfinished, your answers may stay in this browser, without photos, name and e-mail, until the attempt ends and at most 24 hours. Submitting deletes them. An organiser can turn this off.") }}</li>
+    <li>{{ _("If an organiser makes a run's scoreboard public, it shows your nickname or an anonymous label with your score, never your e-mail. Such a run remembers this browser with a cookie, so that playing again does not add a second row.") }}</li>
     <li>{{ _("When a result has a private link, this browser remembers it on your device so that you can return to it. Nothing about that is sent anywhere.") }}</li>
     <li>{{ _("Answers and personal data are not written to the application logs.") }}</li>
     <li>{{ _("Pages load nothing from other services, with one exception: an organiser can have a quiz load its images from another server, which then sees your IP address.") }}</li>

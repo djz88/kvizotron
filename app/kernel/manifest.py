@@ -5,6 +5,8 @@ from typing import Literal
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from app.contracts import ADVANCED, BASIC, SETTING_GROUPS
+
 Scope = Literal["global", "quiz", "question"]
 ALL_SCOPES: list[Scope] = ["global", "quiz", "question"]
 
@@ -22,9 +24,15 @@ class SettingDeclaration(BaseModel):
     label: str  # msgids in the module's own catalogue
     value_labels: dict[str, str]
     help: str | None = None
+    group: str = "technical"
+    level: str = ADVANCED
 
     @model_validator(mode="after")
     def _consistent(self) -> SettingDeclaration:
+        if self.group not in SETTING_GROUPS:
+            raise ValueError(f"{self.key}: unknown group {self.group}")
+        if self.level not in (BASIC, ADVANCED):
+            raise ValueError(f"{self.key}: unknown level {self.level}")
         if self.default not in self.choices:
             raise ValueError(f"{self.key}: the default is not among the choices")
         if set(self.value_labels) != set(self.choices):

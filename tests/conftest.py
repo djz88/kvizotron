@@ -18,3 +18,11 @@ def graded_type():
     registry._ports[key] = (GradedQuestion(), "question.number")
     yield TYPE_ID
     del registry._ports[key]
+
+
+@pytest.fixture(autouse=True)
+def _empty_cache():
+    """The public scoreboard is cached for seconds; a test starts without what another left."""
+    from django.core.cache import cache
+
+    cache.clear()

@@ -15,6 +15,7 @@ class MainAction(StrEnum):
     START_AGAIN = "start_again"
     PUBLISH_CHANGES = "publish_changes"
     END_RUN = "end_run"
+    START_NOW = "start_now"
     RESTORE = "restore"
 
 
@@ -23,6 +24,9 @@ class SecondaryAction(StrEnum):
     DISCARD = "discard"
     END_RUN = "end_run"
     DUPLICATE = "duplicate"
+    START_NOW = "start_now"
+    EDIT_PLAN = "edit_plan"
+    CANCEL_PLAN = "cancel_plan"
 
 
 @dataclass(frozen=True)
@@ -32,6 +36,7 @@ class QuizState:
     has_changes: bool
     published_no: int | None
     open_run: QuizRun | None
+    planned_run: QuizRun | None
     last_run: QuizRun | None
     archived: bool
     needs_publication_page: bool
@@ -42,6 +47,7 @@ def _actions(
     has_changes: bool,
     can_discard: bool,
     open_run: QuizRun | None,
+    planned_run: QuizRun | None,
     last_run: QuizRun | None,
 ) -> tuple[MainAction, tuple[SecondaryAction, ...]]:
     discard = (SecondaryAction.DISCARD,) if can_discard else ()
@@ -51,6 +57,11 @@ def _actions(
         return MainAction.PUBLISH_CHANGES, (*discard, SecondaryAction.END_RUN)
     if open_run is not None:
         return MainAction.END_RUN, ()
+    if planned_run is not None:
+        plan = (SecondaryAction.EDIT_PLAN, SecondaryAction.CANCEL_PLAN)
+        if has_changes:
+            return MainAction.PUBLISH_CHANGES, (*discard, SecondaryAction.START_NOW, *plan)
+        return MainAction.START_NOW, plan
     main = MainAction.START if last_run is None else MainAction.START_AGAIN
     return main, ((SecondaryAction.PUBLISH_ONLY, *discard) if has_changes else ())
 
@@ -60,15 +71,17 @@ def of(quiz: Quiz) -> QuizState:
     published = authoring.latest_published(quiz)
     published_no = published.revision_no if published else None
     open_run = quiz.runs.filter(status=QuizRun.Status.OPEN).first()
-    last_run = quiz.runs.order_by("-run_no").first()
+    planned_run = quiz.runs.filter(status=QuizRun.Status.SCHEDULED).first()
+    last_run = quiz.runs.exclude(status=QuizRun.Status.SCHEDULED).order_by("-run_no").first()
     can_discard = authoring.has_draft(quiz) and published_no is not None
-    main, secondary = _actions(quiz, has_changes, can_discard, open_run, last_run)
+    main, secondary = _actions(quiz, has_changes, can_discard, open_run, planned_run, last_run)
     return QuizState(
         main=main,
         secondary=secondary,
         has_changes=has_changes,
         published_no=published_no,
         open_run=open_run,
+        planned_run=planned_run,
         last_run=last_run,
         archived=quiz.archived_at is not None,
         needs_publication_page=has_changes or published_no is None,

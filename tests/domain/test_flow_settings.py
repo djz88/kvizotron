@@ -12,8 +12,9 @@ def quiz():
 
 
 def test_defaults_leave_a_quiz_as_it_is(quiz):
+    """AC-89: a new installation steps one question at a time."""
     flow = settings.flow(quiz)
-    assert (flow.navigation, flow.moment, flow.level) == ("all_at_once", "never", "verdict")
+    assert (flow.navigation, flow.moment, flow.level) == ("step_back", "never", "verdict")
     assert not flow.shuffle_questions
     assert not flow.shuffle_options
     assert not flow.conflict
@@ -27,6 +28,7 @@ def test_after_each_with_all_at_once_is_a_conflict():
 
 
 def test_conflict_from_a_global_change_falls_back_to_at_end(quiz):
+    settings.set_global(settings.NAVIGATION_MODE, "all_at_once", admin_id=None)
     settings.set_override(settings.REVEAL_MOMENT, quiz, "after_each", admin_id=None)
     flow = settings.flow(quiz)
     assert flow.moment == "at_end"
@@ -47,3 +49,19 @@ def test_switches_read_as_booleans(quiz):
     flow = settings.flow(quiz)
     assert flow.shuffle_questions
     assert flow.shuffle_options
+
+
+def test_after_each_conflicts_with_pages():
+    """AC-88"""
+    assert settings.is_flow_conflict("pages", "after_each")
+    assert not settings.is_flow_conflict("pages", "at_end")
+
+
+def test_page_size_defaults_to_five_and_follows_the_quiz(quiz):
+    assert settings.flow(quiz).page_size == 5
+    settings.set_override(settings.PAGE_SIZE, quiz, "12", admin_id=None)
+    assert settings.flow(quiz).page_size == 12
+
+
+def test_page_size_offers_two_to_twenty():
+    assert settings.CATALOGUE[settings.PAGE_SIZE].choices == tuple(str(n) for n in range(2, 21))

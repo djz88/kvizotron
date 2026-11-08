@@ -80,6 +80,7 @@ def test_new_attempt_inherits_start_and_expiry(run, started):
 
 def test_duration_counts_from_the_original_start(run, started):
     publish(run)
+    Attempt.objects.update(settings_json={**started.attempt.settings_json, "profile": "detailed"})
     result = attempts.switch(started.attempt.id, started.token, {})
     later = started.attempt.started_at + timedelta(minutes=5)
     with mock.patch("app.domain.attempts.timezone.now", return_value=later):

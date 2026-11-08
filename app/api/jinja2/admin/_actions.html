@@ -12,6 +12,12 @@
     <button type="submit">{{ start_label }}</button>
   </form>
   {% endif %}
+  <a href="{{ url('admin_run_plan', args=[quiz.id]) }}" class="secondary">{{ _("Plan…") }}</a>
+  {% elif state.main == "start_now" %}
+  <form method="post" action="{{ url('admin_plan_start', args=[state.planned_run.id]) }}">
+    {{ csrf_input }}
+    <button type="submit">{{ _("Start now") }}</button>
+  </form>
   {% elif state.main == "publish_changes" %}
   <a href="{{ publish_url }}" role="button">{{ _("Publish changes") }}</a>
   {% elif state.main == "end_run" %}
@@ -30,6 +36,9 @@
       {% if action == "publish_only" %}<li><a href="{{ publish_url }}">{{ _("Publish only") }}</a></li>
       {% elif action == "discard" %}<li><a href="{{ url('admin_draft_discard', args=[quiz.id]) }}">{{ _("Discard changes") }}</a></li>
       {% elif action == "end_run" %}<li><a href="{{ end_url }}">{{ _("End the run") }}</a></li>
+      {% elif action == "start_now" %}<li><form method="post" action="{{ url('admin_plan_start', args=[state.planned_run.id]) }}">{{ csrf_input }}<button type="submit" class="secondary outline">{{ _("Start now") }}</button></form></li>
+      {% elif action == "edit_plan" %}<li><a href="{{ url('admin_plan_edit', args=[state.planned_run.id]) }}">{{ _("Change the plan") }}</a></li>
+      {% elif action == "cancel_plan" %}<li><form method="post" action="{{ url('admin_plan_cancel', args=[state.planned_run.id]) }}">{{ csrf_input }}<button type="submit" class="secondary outline">{{ _("Cancel the plan") }}</button></form></li>
       {% elif action == "duplicate" %}<li><a href="{{ url('admin_quiz_duplicate', args=[quiz.id]) }}">{{ _("Duplicate") }}</a></li>
       {% endif %}
       {% endfor %}

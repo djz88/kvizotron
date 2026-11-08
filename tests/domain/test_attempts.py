@@ -72,6 +72,7 @@ def test_submission_key_is_random_and_not_uuid(run):
 
 
 def test_correct_answer_scores_full_points(run, started):
+    Attempt.objects.update(settings_json={**started.attempt.settings_json, "profile": "detailed"})
     result = submit(run, started, OPTION_A)
     assert (result.earned_points, result.max_points) == (1, 1)
     assert (result.percentage, result.correct_count) == (100, 1)

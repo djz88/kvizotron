@@ -1,6 +1,7 @@
 {% extends "public/base.html" %}
 {% block content %}
 <div class="hero">
+  <img class="about-logo" src="/assets/logo.svg" alt="" width="96" height="96">
   <h1>{{ _("Turn on your brain. Start Kvízotron.") }}</h1>
   <p>{{ _("Quizzes and contests without registration, right on your phone.") }}</p>
 </div>
@@ -17,5 +18,15 @@
   <p>{{ _("No quiz is running right now.") }}</p>
   {% endif %}
 </div>
+{% if coming_up %}
+<section class="card">
+  <h2>{{ _("Coming up") }}</h2>
+  <ul class="quiz-list">
+    {% for quiz in coming_up %}
+    <li><a href="/q/{{ quiz.slug }}?lang={{ locale }}"><strong>{{ quiz.title }}</strong><span>{{ _("Starts %(when)s", when=quiz.starts) }}</span></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 <p class="admin-link"><a href="{{ url('admin_quizzes') }}?lang={{ locale }}">{{ _("Administration") }}</a></p>
 {% endblock %}

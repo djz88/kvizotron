@@ -1,6 +1,6 @@
 """The admin's side of test links (ADR-0044). The tester's side is in `public.test_link`."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -16,11 +16,10 @@ from app.api.admin_auth import admin_required
 from app.api.admin_quizzes import problem_text
 from app.api.admin_workspace import workspace
 from app.api.rendering import delete_images, page
-from app.domain import authoring, run_links
+from app.domain import authoring, clock, run_links
 from app.domain.models import Attempt, Quiz, QuizRevision, QuizRun, RunTestLink
 
 DRAFT = "draft"
-TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
 def _versions(quiz: Quiz) -> list[tuple[str, str]]:
@@ -45,7 +44,7 @@ def _attempt_row(attempt: Attempt) -> dict[str, str]:
         else (_("Submitted") if submitted else _("In progress")),
         "score": f"{_plain(attempt.score)} / {_plain(attempt.max_score)}" if submitted else "",
         "duration": f"{attempt.duration_ms // 1000} s" if attempt.duration_ms is not None else "",
-        "started": attempt.started_at.astimezone(UTC).strftime(TIME_FORMAT),
+        "started": clock.shown(attempt.started_at),
     }
 
 
@@ -62,16 +61,15 @@ def _row(request: HttpRequest, link: RunTestLink) -> dict[str, Any]:
         "id": link.id,
         "run_id": link.run_id,
         "version": (
-            _("Copy of the draft from %(when)s")
-            % {"when": revision.published_at.astimezone(UTC).strftime(TIME_FORMAT)}
+            _("Copy of the draft from %(when)s") % {"when": clock.shown(revision.published_at)}
             if is_copy
             else _("Revision %(no)s") % {"no": revision.revision_no}
         ),
         "address": request.build_absolute_uri(reverse("test_link", args=[link.token])),
         "state": _state(link),
         "is_active": link.run.status == QuizRun.Status.OPEN,
-        "created": link.created_at.astimezone(UTC).strftime(TIME_FORMAT),
-        "end": link.expires_at.astimezone(UTC).strftime(TIME_FORMAT) if link.expires_at else None,
+        "created": clock.shown(link.created_at),
+        "end": clock.shown(link.expires_at) if link.expires_at else None,
         "attempts": [
             _attempt_row(attempt)
             for attempt in Attempt.objects.filter(run=link.run_id).order_by("-started_at")
@@ -96,10 +94,10 @@ def _links_page(
 
 
 def _end(value: str) -> datetime | None:
-    """Admin times are in UTC everywhere. Raises ValueError for what cannot be used."""
+    """Raises ValueError for what cannot be used."""
     if not value:
         return None
-    end = datetime.fromisoformat(value).replace(tzinfo=UTC)
+    end = clock.parse_local(value)
     if end <= timezone.now():
         raise ValueError("in the past")
     return end

@@ -37,6 +37,6 @@ Chosen option: "localStorage with short TTL, opt-in per quiz, server re-validate
 
 ## More Information
 
-FR-22; [../plugins/quiz-flow.md](../plugins/quiz-flow.md).
+Refined by [ADR-0050](0050-data-profile-and-local-resume.md): local resume is on by default, and a copy is resumed through its token. FR-22; [../plugins/quiz-flow.md](../plugins/quiz-flow.md).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)

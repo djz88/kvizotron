@@ -1,0 +1,7 @@
+{# The server's count, in seconds. The script only shows it; whether time is up is the server's call. #}
+{% if time_left is defined and time_left is not none %}
+<div class="countdown" id="countdown" data-remaining="{{ time_left }}"{% if time_url is defined and time_url %} data-time-url="{{ time_url }}"{% endif %} data-five="{{ _('Five minutes left.') }}" data-one="{{ _('One minute left.') }}" data-sending="{{ _('Time is up. Sending your answers.') }}">
+  <span>{{ _("Time left") }}:</span> <strong role="timer" aria-live="off" data-countdown-value>{{ time_left // 60 }} min</strong>
+  <span class="visually-hidden" role="status" data-countdown-announce></span>
+</div>
+{% endif %}

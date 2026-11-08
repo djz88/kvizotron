@@ -1,0 +1,148 @@
+#: manifest.py:24
+msgid "Show"
+msgstr "Zobrazit"
+
+#: manifest.py:24
+msgid "Hide"
+msgstr "Skrýt"
+
+#: manifest.py:25
+msgid "Needs the data profile that keeps times."
+msgstr "Potřebuje profil dat, který ukládá časy."
+
+#: manifest.py:55
+msgid "Public scoreboard"
+msgstr "Veřejný žebříček"
+
+#: manifest.py:57
+msgid "Hidden"
+msgstr "Skrytý"
+
+#: manifest.py:58
+msgid "Visible during the run"
+msgstr "Viditelný během běhu"
+
+#: manifest.py:59
+msgid "Visible after the run ends"
+msgstr "Viditelný po skončení běhu"
+
+#: manifest.py:62
+msgid "A visible scoreboard remembers each browser with a cookie, so one person is one row."
+msgstr "Viditelný žebříček si každý prohlížeč pamatuje přes cookie, aby byl jeden člověk jeden řádek."
+
+#: manifest.py:70
+msgid "Names during the run"
+msgstr "Jména během běhu"
+
+#: manifest.py:71
+msgid "Show nicknames"
+msgstr "Ukázat přezdívky"
+
+#: manifest.py:71
+msgid "Show anonymous labels"
+msgstr "Ukázat anonymní označení"
+
+#: manifest.py:72
+msgid "After the run ends, nicknames are shown."
+msgstr "Po skončení běhu se ukážou přezdívky."
+
+#: manifest.py:78
+msgid "Participant without a nickname"
+msgstr "Účastník bez přezdívky"
+
+#: manifest.py:79
+msgid "Show with the anonymous label"
+msgstr "Ukázat s anonymním označením"
+
+#: manifest.py:79
+msgid "Leave out"
+msgstr "Neuvádět"
+
+#: manifest.py:85
+msgid "Attempt that counts"
+msgstr "Pokus, který se počítá"
+
+#: manifest.py:86
+msgid "Best valid attempt"
+msgstr "Nejlepší platný pokus"
+
+#: manifest.py:86
+msgid "First valid attempt"
+msgstr "První platný pokus"
+
+#: manifest.py:87
+msgid "Of equal scores of one participant the earlier counts."
+msgstr "Ze stejných skóre jednoho účastníka se počítá dřívější."
+
+#: manifest.py:89
+msgid "Column: score"
+msgstr "Sloupec: skóre"
+
+#: manifest.py:90
+msgid "Column: percent"
+msgstr "Sloupec: procenta"
+
+#: manifest.py:91
+msgid "Column: submission time"
+msgstr "Sloupec: čas odeslání"
+
+#: manifest.py:96
+msgid "Column: duration"
+msgstr "Sloupec: doba trvání"
+
+#: manifest.py:104
+msgid "Equal scores ordered by"
+msgstr "Stejné skóre řadit podle"
+
+#: manifest.py:105
+msgid "Earlier submission"
+msgstr "Dřívějšího odeslání"
+
+#: manifest.py:105
+msgid "Shorter duration"
+msgstr "Kratší doby trvání"
+
+#: manifest.py:112
+msgid "Remaining ties"
+msgstr "Zbylé shody"
+
+#: manifest.py:114
+msgid "Shared place"
+msgstr "Sdílené místo"
+
+#: manifest.py:115
+msgid "Earlier submission first"
+msgstr "Dřívější odeslání výš"
+
+#: manifest.py:116
+msgid "Random order, the same on every load"
+msgstr "Náhodné pořadí, při každém načtení stejné"
+
+#: manifest.py:123
+msgid "Runs with more revisions"
+msgstr "Běhy s více revizemi"
+
+#: manifest.py:124
+msgid "One table per revision"
+msgstr "Tabulka pro každou revizi"
+
+#: manifest.py:124
+msgid "Only the latest revision"
+msgstr "Jen poslední revize"
+
+#: manifest.py:125
+msgid "Revisions with equal maximum points can be merged on the run page."
+msgstr "Revize se stejným maximem bodů lze sloučit na stránce běhu."
+
+#: manifest.py:131
+msgid "Public results of an archived run"
+msgstr "Veřejné výsledky archivovaného běhu"
+
+#: manifest.py:132
+msgid "Not public"
+msgstr "Neveřejné"
+
+#: manifest.py:132
+msgid "Public"
+msgstr "Veřejné"
+

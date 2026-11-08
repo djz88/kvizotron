@@ -87,7 +87,7 @@ def test_question_can_be_chosen_in_the_gallery(logged_in):
 def test_by_attempt_shows_all_stored_answers_and_grades_only_photos(logged_in):
     quiz = photo_quiz(plain=True)
     settings.set_override(settings.GRADING_VIEW, quiz, "by_attempt", admin_id=ADMIN_ID)
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     run = run_of(quiz)
     player = Player(run)
     player.submit(

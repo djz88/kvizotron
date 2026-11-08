@@ -6,7 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH=/opt/venv/bin:$PATH \
     DJANGO_SETTINGS_MODULE=app.settings \
-    KVZ_DB_PATH=/data/db/kvizotron.sqlite3
+    KVZ_DB_PATH=/data/db/kvizotron.sqlite3 \
+    TZ=Europe/Prague
 
 RUN pip install --quiet --disable-pip-version-check --no-cache-dir --root-user-action=ignore uv==0.13.7
 

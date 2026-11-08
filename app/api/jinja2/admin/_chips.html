@@ -8,6 +8,7 @@
 {% macro run_status(state) %}
 {% if state.archived %}{{ _("Archived") }}
 {% elif state.open_run %}{{ _("Run %(no)s is running", no=state.open_run.run_no) }}
+{% elif state.planned_run %}{{ _("Run %(no)s starts %(when)s", no=state.planned_run.run_no, when=state.planned_run.starts_at|when) }}
 {% elif state.last_run %}{{ _("Run %(no)s has ended", no=state.last_run.run_no) }}
 {% else %}{{ _("The quiz is not running") }}{% endif %}
 {% endmacro %}

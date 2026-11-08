@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from django.utils import timezone
 
-from app.domain import attempts, authoring, quiz_state, run_links
+from app.domain import attempts, authoring, quiz_state, run_links, settings
 from app.domain.models import Attempt, QuizRun, RunTestLink
 from tests.domain.helpers import ADMIN_ID, OPTION_A, add_question, make_quiz, published_quiz
 from tests.support.client import FormClient
@@ -200,7 +200,7 @@ def test_end_date_is_stored_as_utc(logged_in):
         f"/admin/quizzes/{quiz.id}/tests", {"version": "1", "expires_at": "2099-01-01T10:00"}
     )
     expires = RunTestLink.objects.get().expires_at
-    assert expires.isoformat().startswith("2099-01-01T10:00:00+00:00")
+    assert expires.isoformat().startswith("2099-01-01T09:00:00+00:00")
 
 
 def test_tab_lists_links_with_version_end_state_and_attempt_count(logged_in):
@@ -276,3 +276,24 @@ def test_quiz_with_an_active_link_looks_the_same_on_runs_page(logged_in):
     assert text(logged_in.get(f"/admin/quizzes/{quiz.id}/runs?lang=en")).count("<tr") == page.count(
         "<tr"
     )
+
+
+def test_a_link_end_is_read_and_shown_in_the_configured_zone(logged_in):
+    quiz = published_quiz(locales=("cs", "en"))
+    revision = authoring.latest_published(quiz)
+    logged_in.post(
+        f"/admin/quizzes/{quiz.id}/tests",
+        {"version": str(revision.revision_no), "expires_at": "2099-01-01T12:00"},
+    )
+    link = RunTestLink.objects.get(run__quiz=quiz)
+    assert link.expires_at.isoformat() == "2099-01-01T11:00:00+00:00"
+    assert "2099-01-01 12:00 CET" in text(logged_in.get(f"/admin/quizzes/{quiz.id}/tests"))
+
+
+def test_a_test_link_counts_down(client):
+    quiz = published_quiz(locales=("cs", "en"))
+    settings.set_override(settings.ATTEMPT_LIMIT, quiz, "10", admin_id=None)
+    link = a_link(quiz)
+    html = text(started(client, link))
+    assert 'id="countdown"' in html
+    assert "data-time-url" in html

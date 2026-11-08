@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 
 class ImmutableRevision(Exception):
@@ -16,6 +17,7 @@ class Quiz(models.Model):
     slug = models.SlugField(max_length=80, unique=True)
     title = models.JSONField(default=dict)  # locale -> text
     description = models.JSONField(default=dict)  # locale -> text
+    anonymous_label = models.JSONField(default=dict)  # locale -> text with NN; lives with the quiz
     default_locale = models.CharField(max_length=5)
     supported_locales = models.JSONField(default=list)
     featured = models.BooleanField(default=False)
@@ -122,8 +124,13 @@ class _NormalRuns(models.Manager):
         return super().get_queryset().filter(kind="normal")
 
 
+def _now() -> datetime:
+    return timezone.now()
+
+
 class QuizRun(models.Model):
     class Status(models.TextChoices):
+        SCHEDULED = "SCHEDULED"
         OPEN = "OPEN"
         CLOSED = "CLOSED"
         ARCHIVED = "ARCHIVED"
@@ -138,8 +145,19 @@ class QuizRun(models.Model):
     run_no = models.PositiveIntegerField(null=True, blank=True)  # a test run has none
     current_revision = models.ForeignKey(QuizRevision, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
-    opened_at = models.DateTimeField(auto_now_add=True)
+    opened_at = models.DateTimeField(null=True, blank=True, default=_now)  # planned: not yet
     closed_at = models.DateTimeField(null=True, blank=True)
+    starts_at = models.DateTimeField(null=True, blank=True)  # when a plan opens
+    deadline_at = models.DateTimeField(null=True, blank=True)
+    attempt_limit_sec = models.PositiveIntegerField(null=True, blank=True)  # fixed once it opens
+    # Rules about participants, copied from the settings when planned or opened.
+    participant_rules_json = models.JSONField(default=dict)
+    # What the run keeps and for how long, copied from the settings when planned or opened.
+    retention_json = models.JSONField(default=dict)
+    results_json = models.JSONField(default=dict)  # scoreboard settings and tie seed (ADR-0051)
+    rewards_json = models.JSONField(default=dict)  # reward settings fixed when planned or opened
+    stateless_submitted = models.PositiveIntegerField(default=0)
+    access_code_hash = models.CharField(max_length=128, blank=True)
 
     # The default also serves `quiz.runs`, so results and statistics never meet a test run.
     objects = _NormalRuns()
@@ -153,7 +171,7 @@ class QuizRun(models.Model):
             ),
             models.UniqueConstraint(
                 fields=["quiz"],
-                condition=Q(status="OPEN", kind="normal"),
+                condition=Q(status__in=("SCHEDULED", "OPEN"), kind="normal"),
                 name="one_open_run_per_quiz",
             ),
         ]
@@ -187,17 +205,43 @@ class RunRevision(models.Model):
         ]
 
 
+class Participant(models.Model):
+    """One browser in one run. The cookie is stored only as a hash; it is not one person."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    run = models.ForeignKey(QuizRun, on_delete=models.CASCADE, related_name="participants")
+    anonymous_key_hash = models.CharField(max_length=64)
+    display_name = models.CharField(max_length=40, blank=True)
+    name_key = models.CharField(max_length=80, blank=True)  # casefold() can lengthen a name
+    name_dropped = models.BooleanField(default=False)  # a taken name was left out of a submission
+    email = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "participant"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["run", "anonymous_key_hash"], name="participant_key_per_run"
+            )
+        ]
+        indexes = [models.Index(fields=["run", "name_key"], name="participant_run_name")]
+
+
 class Attempt(models.Model):
     class Status(models.TextChoices):
         IN_PROGRESS = "IN_PROGRESS"
         SUBMITTED = "SUBMITTED"
         SWITCHED = "SWITCHED"
         PENDING_GRADING = "PENDING_GRADING"
+        ABANDONED = "abandoned"  # a person started again; counts for nothing
 
     FINISHED = (Status.SUBMITTED, Status.PENDING_GRADING)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
     run = models.ForeignKey(QuizRun, on_delete=models.PROTECT, related_name="attempts")
+    participant = models.ForeignKey(
+        "Participant", null=True, blank=True, on_delete=models.PROTECT, related_name="attempts"
+    )
     revision = models.ForeignKey(QuizRevision, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.IN_PROGRESS)
     started_at = models.DateTimeField(auto_now_add=True)
@@ -222,7 +266,8 @@ class Attempt(models.Model):
 class AttemptAnswer(models.Model):
     """One question of a submitted attempt, kept when settings say so or when a person must grade.
 
-    `store_answers` decides, and a photo is always kept. A replaced attempt has none.
+    The data profile decides: "answers" and "detailed" keep every answered question, and what a
+    person must grade is always kept. A replaced attempt has none.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
@@ -287,3 +332,127 @@ class RunTestLink(models.Model):
             and (self.expires_at is None or now <= self.expires_at)
             and run.quiz.archived_at is None
         )
+
+
+class RewardRule(models.Model):
+    """A reward of a run, or of the quiz's template when `run` is empty. A run gets copies."""
+
+    class Kind(models.TextChoices):
+        THRESHOLD = "threshold"
+        PARTICIPATION = "participation"
+        MANUAL = "manual"
+        DRAW = "draw"
+
+    class Unit(models.TextChoices):
+        PERCENT = "percent"
+        POINTS = "points"
+        CORRECT = "correct"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    quiz = models.ForeignKey(Quiz, on_delete=models.PROTECT, related_name="reward_rules")
+    run = models.ForeignKey(
+        QuizRun, null=True, blank=True, on_delete=models.CASCADE, related_name="reward_rules"
+    )
+    position = models.PositiveIntegerField(default=0)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    threshold_unit = models.CharField(max_length=10, choices=Unit.choices, null=True, blank=True)
+    threshold_value = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    # Who may be drawn; both empty means everyone with an official attempt.
+    min_unit = models.CharField(max_length=10, choices=Unit.choices, null=True, blank=True)
+    min_value = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    winners = models.PositiveIntegerField(null=True, blank=True)
+    alternates = models.PositiveIntegerField(null=True, blank=True)
+    texts_json = models.JSONField(default=dict)  # {locale: {"name", "description", "claim"}}
+    winners_public = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reward_rule"
+        indexes = [models.Index(fields=["quiz", "run"], name="reward_rule_owner")]
+
+
+class RewardEntitlement(models.Model):
+    class Status(models.TextChoices):
+        GRANTED = "granted"
+        HANDED_OVER = "handed_over"
+        CANCELLED = "cancelled"
+
+    class Source(models.TextChoices):
+        AUTO = "auto"
+        MANUAL = "manual"
+        DRAW = "draw"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    run = models.ForeignKey(QuizRun, on_delete=models.CASCADE, related_name="entitlements")
+    rule = models.ForeignKey(RewardRule, on_delete=models.PROTECT, related_name="entitlements")
+    participant = models.ForeignKey(
+        Participant, on_delete=models.CASCADE, related_name="entitlements"
+    )
+    attempt = models.ForeignKey(Attempt, null=True, blank=True, on_delete=models.SET_NULL)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.GRANTED)
+    source = models.CharField(max_length=10, choices=Source.choices)
+    reason = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    changed_at = models.DateTimeField(null=True, blank=True)
+    changed_by = models.CharField(max_length=64, null=True, blank=True)
+
+    class Meta:
+        db_table = "reward_entitlement"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rule", "participant"],
+                condition=~Q(status="cancelled"),
+                name="entitlement_once_per_rule",
+            )
+        ]
+
+
+class Draw(models.Model):
+    """One action of a draw. Never updated after insert: a later action is a new row."""
+
+    class Action(models.TextChoices):
+        DRAW = "draw"
+        REDRAW = "redraw"
+        MOVE_UP = "move_up"
+        SUBSTITUTE = "substitute"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    run = models.ForeignKey(QuizRun, on_delete=models.PROTECT, related_name="draws")
+    rule = models.ForeignKey(RewardRule, on_delete=models.PROTECT, related_name="draws")
+    action = models.CharField(max_length=20, choices=Action.choices)
+    # The draw or redraw this action amends; a redraw points at the one it supersedes.
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="children"
+    )
+    admin_id = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    eligible_count = models.PositiveIntegerField()
+    eligible_set_hash = models.CharField(max_length=64)
+    algorithm = models.CharField(max_length=64)
+    rules_version = models.CharField(max_length=64)  # sha256 of the rule's structure fields
+    reason = models.CharField(max_length=200, blank=True)  # required except for `draw`
+    audit_json = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "draw"
+
+
+class DrawEntry(models.Model):
+    """Who a draw picked. `pseudonym` stays when the participant link is dropped."""
+
+    class Role(models.TextChoices):
+        WINNER = "winner"
+        ALTERNATE = "alternate"
+        OUT = "out"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    draw = models.ForeignKey(Draw, on_delete=models.CASCADE, related_name="entries")
+    participant = models.ForeignKey(
+        Participant, null=True, blank=True, on_delete=models.SET_NULL, related_name="draw_entries"
+    )
+    pseudonym = models.CharField(max_length=64)  # salted_hmac("kvz-draw", participant id)
+    position = models.PositiveIntegerField()
+    role = models.CharField(max_length=10, choices=Role.choices)
+
+    class Meta:
+        db_table = "draw_entry"

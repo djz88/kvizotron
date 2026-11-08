@@ -1,0 +1,56 @@
+#: manifest.py:42
+msgid "Rewards of a new run"
+msgstr "Odměny nového běhu"
+
+#: manifest.py:44
+msgid "None"
+msgstr "Žádné"
+
+#: manifest.py:45
+msgid "From the previous run"
+msgstr "Z předchozího běhu"
+
+#: manifest.py:46
+msgid "From the quiz template"
+msgstr "Ze šablony kvízu"
+
+#: manifest.py:48
+msgid "Only fills a new run; the run then keeps its own rewards."
+msgstr "Jen vyplní nový běh; běh pak má vlastní odměny."
+
+#: manifest.py:54
+msgid "Several thresholds"
+msgstr "Více prahů"
+
+#: manifest.py:55
+msgid "Only the highest reached"
+msgstr "Jen nejvyšší dosažený"
+
+#: manifest.py:55
+msgid "All reached"
+msgstr "Všechny dosažené"
+
+#: manifest.py:56
+msgid "Which threshold rewards one participant gets when several are reached."
+msgstr "Které odměny za práh účastník dostane, když dosáhne více prahů."
+
+#: manifest.py:62
+msgid "Contacting winners"
+msgstr "Kontakt s výherci"
+
+#: manifest.py:64
+msgid "Warn when e-mail is not collected"
+msgstr "Upozornit, když se e-mail nesbírá"
+
+#: manifest.py:65
+msgid "A draw requires an e-mail"
+msgstr "Losování vyžaduje e-mail"
+
+#: manifest.py:66
+msgid "No warning"
+msgstr "Bez upozornění"
+
+#: manifest.py:68
+msgid "The system sends no e-mails; winners are contacted by the admin."
+msgstr "Systém neposílá e-maily; výherce kontaktuje admin."
+

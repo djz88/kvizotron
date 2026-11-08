@@ -30,6 +30,19 @@ SESSION_COOKIE_AGE = 12 * 60 * 60
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
+
+def _positive_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, "")
+    if not raw:
+        return default
+    if not raw.isdecimal() or int(raw) < 1:
+        raise ImproperlyConfigured(f"Environment variable {name} must be a positive integer")
+    return int(raw)
+
+
+# ADR-0030: failed access codes per client address and minute.
+KVZ_CODE_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_CODE_ATTEMPTS_PER_MINUTE", 10)
+
 KVZ_MODULES = load_modules()
 KVZ_PERSISTENCE = load_persistence(KVZ_MODULES)
 
@@ -68,6 +81,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "app.kernel.middleware.ModuleGateMiddleware",
+    "app.api.run_clock.RunClockMiddleware",
 ]
 # data: only for images, which Pico CSS uses for its icons. https: for images a quiz loads from
 # their own server (ADR-0043).
@@ -92,6 +106,9 @@ TEMPLATES = [
     }
 ]
 USE_TZ = True
+# Django would otherwise set the process zone to its default, America/Chicago. Quiz times use the
+# zone chosen in the global settings; this is only the zone the server runs in (`TZ`).
+TIME_ZONE = os.environ.get("TZ") or "UTC"
 USE_I18N = True
 LANGUAGE_CODE = "cs"
 LANGUAGES = [("cs", "Čeština"), ("en", "English"), ("uk", "Українська")]

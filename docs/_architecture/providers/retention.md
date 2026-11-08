@@ -22,3 +22,7 @@ implements them.
 - Verified by [AC-14](../acceptance-criteria.md).
 - Targeted admin deletion uses the same code path and is audited.
 - Default retention period: 90 days after close ([ADR-0029](../adr/0029-default-retention.md)).
+
+## Status
+
+The C3 part is done: the run holds its period and data profile in `quiz_run.retention_json` ([ADR-0050](../adr/0050-data-profile-and-local-resume.md)), and under profile `none` nothing per attempt is kept. This provider, its job and `retention_job` come in D3; until then nothing is deleted when a period ends.

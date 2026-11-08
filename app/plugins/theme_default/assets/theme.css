@@ -354,11 +354,34 @@ h2 {
 }
 
 .site-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-right: auto;
   color: inherit;
   font-size: 1.125rem;
   font-weight: 800;
   text-decoration: none;
+}
+
+/* The mark is drawn on a black square, so it is shown as a rounded tile */
+.site-logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+}
+
+.about-logo {
+  display: block;
+  width: 6rem;
+  height: auto;
+  margin-bottom: 1rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 25%);
+}
+
+.about-logo[width="160"] {
+  width: 10rem;
 }
 
 .site-bar {
@@ -711,6 +734,23 @@ body.public {
   overflow-wrap: anywhere;
 }
 
+.rewards-held {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--kvz-line);
+}
+
+.rewards li,
+.winners li {
+  margin-bottom: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.draw-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
 .question-image {
   display: block;
   width: 100%;
@@ -845,12 +885,28 @@ body.public {
   color: var(--pico-del-color);
 }
 
+#identity-error:not(:empty),
 #revision-notice:not(:empty),
 .notice {
   padding: 0.75rem 1rem;
   border-left: 0.375rem solid var(--kvz-accent);
   background: var(--kvz-tile);
   color: var(--kvz-text);
+}
+
+.identity-form {
+  margin: 1rem 0;
+}
+
+.identity-fields label {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.identity-fields input {
+  display: block;
+  width: 100%;
+  max-width: 24rem;
 }
 
 .score strong {
@@ -1048,6 +1104,35 @@ main:not(.page) {
   color: var(--kvz-link);
   font-weight: 700;
 }
+/* "More" opens in the row: the tab bar scrolls sideways, so a dropdown would be cut off */
+.tab-more[open] {
+  display: flex;
+}
+.tab-more {
+  margin: 0;
+}
+.tab-more > summary {
+  margin: 0;
+  line-height: inherit;
+  padding: 0.5rem 0.875rem;
+  border-bottom: 2px solid transparent;
+  color: var(--kvz-muted);
+  cursor: pointer;
+}
+.tab-more[open] > summary {
+  margin-bottom: 0;
+}
+.tab-more > summary[aria-current],
+.tab-more[open] > summary[aria-current]:not([role]):not(:focus) {
+  border-bottom-color: var(--kvz-link);
+  color: var(--kvz-link);
+  font-weight: 700;
+}
+.tab-more > ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
 
 .rows {
   margin: 0 0 1rem;
@@ -1084,6 +1169,50 @@ ul.rows-plain > li {
 .form-section {
   max-width: 40rem;
   margin-bottom: 2.5rem;
+}
+
+/* "Basic / All" in the admin bar (ADR-0052) */
+.view-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+/* Setting groups: links at the top, then one heading or <details> per group */
+.group-links ul,
+.group-links ul:first-of-type,
+.group-links ul:last-of-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.group-links li {
+  margin: 0;
+  padding: 0;
+}
+
+.setting-group {
+  margin-bottom: 2rem;
+  scroll-margin-top: 1rem;
+}
+
+details.setting-group {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--kvz-line);
+}
+
+details.setting-group > summary {
+  font-weight: 700;
+}
+
+.group-hidden {
+  color: var(--kvz-muted);
+  font-size: 0.875rem;
 }
 
 .actions {
@@ -1335,3 +1464,75 @@ ul.rows-plain > li {
 .inline-form { display: inline; }
 .inline-form button { display: inline-block; width: auto; padding: .1rem .5rem; margin: 0 0 0 .5rem; font-size: .85em; }
 .grading-photo .photo-thumb { display: block; max-height: 26rem; width: auto; }
+
+.countdown {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.25rem 0.75rem;
+  background: var(--pico-background-color);
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.countdown strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-resume-offer] form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+[data-resume-offer] form button {
+  width: auto;
+}
+
+[data-resume-device] {
+  margin-top: 0.75rem;
+}
+
+/* Scoreboard (C4). The projector view is read from the back of a room. */
+.scoreboard [data-mine] td {
+  font-weight: 700;
+  background: var(--pico-primary-focus);
+}
+
+.scoreboard-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.projector {
+  font-size: clamp(1.25rem, 2.5vw, 2.5rem);
+}
+
+.projector table td,
+.projector table th {
+  padding: 0.4em 0.6em;
+}
+
+.projector:fullscreen {
+  overflow: auto;
+  padding: 2rem;
+  background: var(--pico-background-color);
+}
+
+.scoreboard-tools,
+.scoreboard-tools a {
+  color: var(--kvz-on-page);
+}

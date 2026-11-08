@@ -12,21 +12,31 @@ from typing import Any, cast
 from uuid import UUID
 
 from django.db import IntegrityError, OperationalError, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from app.contracts import (
     JSON,
+    LOCAL_RESUME,
     PHOTO_PUBLIC,
+    REPEAT_ATTEMPTS,
     QuestionTypePlugin,
     ScoreBreakdown,
     ScoringStrategyPlugin,
 )
+from app.domain import clock, data_policy, participants, selection, settings, tokens
 from app.domain import questions as question_rules
-from app.domain import selection, settings, tokens
-from app.domain.models import Attempt, AttemptAnswer, QuizRevision, QuizRun, RunRevision
+from app.domain.models import (
+    Attempt,
+    AttemptAnswer,
+    Participant,
+    QuizRevision,
+    QuizRun,
+    RunRevision,
+)
 from app.kernel import events, registry
 
-# Until C1 brings deadlines and attempt limits.
+# The token outlives any limit or deadline, which `_check_still_valid` enforces on its own.
 ATTEMPT_LIFETIME = timedelta(hours=24)
 DEFAULT_FLOW: dict[str, Any] = {
     "navigation": settings.Navigation.ALL_AT_ONCE.value,
@@ -151,15 +161,80 @@ def _check_test_link(run: QuizRun, now: datetime) -> None:
         raise AttemptError("test_link_ended")
 
 
-def start(run: QuizRun) -> StartedAttempt:
-    _check_test_link(run, timezone.now())
-    if run.status != QuizRun.Status.OPEN:
+def limit_for(run: QuizRun) -> int | None:
+    """A test run has no plan, so it follows the quiz as it is now."""
+    if run.kind == QuizRun.Kind.TEST:
+        return settings.attempt_limit_seconds(run.quiz)
+    return run.attempt_limit_sec
+
+
+def ends_at(attempt: Attempt) -> datetime | None:
+    """`min(deadline_at, started_at + limit)` (FR-11). The deadline can move, the limit cannot."""
+    limit = flow_of(attempt).get("limit_sec")
+    own = attempt.started_at + timedelta(seconds=limit) if limit else None
+    return min((end for end in (attempt.run.deadline_at, own) if end is not None), default=None)
+
+
+def time_left(attempt: Attempt) -> int | None:
+    """Whole seconds to show. None when no time applies, 0 when it is over."""
+    if attempt.run.status != QuizRun.Status.OPEN:
+        return 0
+    ends = ends_at(attempt)
+    if ends is None:
+        return None
+    return max(0, int((ends - timezone.now()).total_seconds()))
+
+
+def remaining(attempt_id: UUID, token: str) -> int | None:
+    """What an open page asks every 30 s. None when nothing is left to count down."""
+    claims = _verify(token, attempt_id)
+    attempt = _load_for(claims)
+    _check_claims(attempt, claims)
+    return time_left(attempt) if attempt.status == Attempt.Status.IN_PROGRESS else None
+
+
+def start(
+    run: QuizRun, *, participant: Participant | None = None, unlocked: bool = True
+) -> StartedAttempt:
+    """What the run's rules say about this participant is decided in the transaction that acts.
+
+    `unlocked` says the caller holds proof of the run's access code. A test run has no code.
+    """
+    return with_retry(lambda: _start(run, participant, unlocked))
+
+
+def _start(run: QuizRun, participant: Participant | None, unlocked: bool) -> StartedAttempt:
+    with transaction.atomic():  # IMMEDIATE: a second tab waits and sees the first one's attempt
+        return _begin_attempt(run, participant, unlocked)
+
+
+def _begin_attempt(run: QuizRun, participant: Participant | None, unlocked: bool) -> StartedAttempt:
+    now = timezone.now()
+    _check_test_link(run, now)
+    if run.status == QuizRun.Status.SCHEDULED:
+        raise AttemptError("run_not_started")
+    if run.status != QuizRun.Status.OPEN or _past(now, run.deadline_at):
         raise AttemptError("run_closed")
+    begun = participants.begin(run, participant)
+    locked = bool(run.access_code_hash) and not unlocked and run.kind != QuizRun.Kind.TEST
+    if locked and not (begun.decision == "resume" and begun.attempt is not None):
+        raise AttemptError("code_required")  # only an attempt already begun carries on
+    if begun.decision == "played":
+        raise AttemptError("already_played")
+    if begun.decision == "time_up":
+        raise AttemptError("time_is_up")
+    if begun.decision == "resume" and begun.attempt is not None:
+        return resume(begun.attempt)
+    if begun.decision == "replace" and begun.attempt is not None:
+        Attempt.objects.filter(pk=begun.attempt.pk, status=Attempt.Status.IN_PROGRESS).update(
+            status=Attempt.Status.ABANDONED
+        )
     revision = run.current_revision
     _require_modules(revision)
     flow = settings.flow(run.quiz)
     attempt = Attempt(
         run=run,
+        participant=participant,
         revision=revision,
         selection_json={
             "items": selection.choose(revision.snapshot_json, flow.shuffle_questions),
@@ -170,13 +245,77 @@ def start(run: QuizRun) -> StartedAttempt:
             "moment": flow.moment,
             "level": flow.level,
             "shuffle_questions": flow.shuffle_questions,
-            "store_answers": settings.resolve(settings.STORE_ANSWERS, run.quiz),
+            "page_size": flow.page_size,
+            "profile": effective_profile(run),
+            "limit_sec": limit_for(run),
+            LOCAL_RESUME: settings.resolve(LOCAL_RESUME, run.quiz),
         },
     )
     attempt.settings_json["told_public"] = _told_public(attempt)
     attempt.save()
     token = _issue(attempt, attempt.started_at + ATTEMPT_LIFETIME)
     return StartedAttempt(attempt, token, secrets.token_urlsafe(16))
+
+
+def effective_profile(run: QuizRun) -> str:
+    """What an attempt of this run keeps. One answer for freezing at start and for "gone".
+
+    A test link follows the quiz as it is now, except that a photo cannot be kept statelessly.
+    """
+    profile = data_policy.of(run)[data_policy.PROFILE]
+    if (
+        run.kind == QuizRun.Kind.TEST
+        and data_policy.is_stateless(profile)
+        and data_policy.has_photo_question(run.current_revision.snapshot_json)
+    ):
+        return settings.DataProfile.SCORE.value
+    return profile
+
+
+def resume(attempt: Attempt) -> StartedAttempt:
+    """The same attempt, questions and time, with a token and a submission key that work now."""
+    token = _issue(attempt, attempt.started_at + ATTEMPT_LIFETIME)
+    return StartedAttempt(attempt, token, secrets.token_urlsafe(16))
+
+
+COPY_LIFETIME = timedelta(hours=24)
+
+
+def copy_expiry(attempt: Attempt) -> datetime:
+    """When the browser's copy of an unsubmitted attempt must be gone: its end, else 24 h."""
+    latest = attempt.started_at + COPY_LIFETIME
+    end = ends_at(attempt)
+    return min(latest, end) if end is not None else latest
+
+
+def resume_by_token(run: QuizRun, attempt_id: UUID, token: str) -> StartedAttempt:
+    """The attempt a browser kept a copy of, as long as it is still open and may carry on.
+
+    Needs no access code: a changed code still lets a running attempt carry on (ADR-0049).
+    """
+    claims = _verify(token, attempt_id)
+    if claims.run_id != run.id:
+        raise AttemptError("not_in_run")
+    return with_retry(lambda: _resume_by_token(claims))
+
+
+def _resume_by_token(claims: tokens.AttemptClaims) -> StartedAttempt:
+    with transaction.atomic():
+        attempt = _load_for(claims)
+        _check_claims(attempt, claims)
+        current = attempt
+        while current.replaced_by_id is not None:
+            current = _load(current.replaced_by_id)
+        if current.status == Attempt.Status.ABANDONED:
+            raise AttemptError("attempt_closed")
+        if current.status in Attempt.FINISHED:
+            raise AttemptError("already_submitted")
+        _check_still_valid(current, claims, timezone.now())
+        if current.run.status != QuizRun.Status.OPEN:
+            raise AttemptError("run_closed")  # a closed run takes no new page, only a late send
+        if flow_of(current).get(LOCAL_RESUME) != "on":
+            raise AttemptError("resume_off")
+        return resume(current)
 
 
 def _told_public(attempt: Attempt) -> list[str]:
@@ -203,26 +342,44 @@ def _issue(attempt: Attempt, expires_at: datetime) -> str:
 
 
 def submit(
-    attempt_id: UUID, token: str, answers: Mapping[str, JSON], submission_key: str
+    attempt_id: UUID,
+    token: str,
+    answers: Mapping[str, JSON],
+    submission_key: str,
+    received_at: datetime | None = None,
+    lenient: bool = False,
+    identity: participants.Identity | None = None,
 ) -> AttemptResult:
+    """`received_at` is when the request arrived: that time counts, not when storing ends.
+
+    `lenient` is for the automatic submission when time runs out, as a half-filled answer must not
+    cost the whole attempt. An answer that cannot be read counts as unanswered, so it gains nothing.
+    The same goes for a name that is taken: it is left out and the score stays.
+    """
     claims = _verify(token, attempt_id)
-    attempt = _load(attempt_id)
+    attempt = _load_for(claims)
     _check_claims(attempt, claims)
+    if attempt.status == Attempt.Status.ABANDONED:
+        raise AttemptError("attempt_closed")
     if attempt.status != Attempt.Status.IN_PROGRESS:
         return _stored_result(attempt, submission_key)
-    now = timezone.now()
+    now = received_at or timezone.now()
     _check_still_valid(attempt, claims, now)
-    result, rows = _score(attempt, answers)
-    stored = with_retry(lambda: _store(attempt, result, rows, submission_key, now))
-    return result if stored else _stored_result(_load(attempt_id), submission_key)
+    result, rows = _score(attempt, answers, lenient)
+    stored = with_retry(
+        lambda: _store(attempt, result, rows, submission_key, now, identity, lenient)
+    )
+    return result if stored else _stored_result(_load_for(claims), submission_key)
 
 
-def verify_open(attempt_id: UUID, token: str) -> None:
+def verify_open(attempt_id: UUID, token: str, received_at: datetime | None = None) -> None:
     """What a submission will need, for what must happen before it, such as storing a photo."""
     claims = _verify(token, attempt_id)
-    attempt = _load(attempt_id)
+    attempt = _load_for(claims)
     _check_claims(attempt, claims)
-    _check_still_valid(attempt, claims, timezone.now())
+    if attempt.status == Attempt.Status.ABANDONED:
+        raise AttemptError("attempt_closed")
+    _check_still_valid(attempt, claims, received_at or timezone.now())
 
 
 def check(attempt_id: UUID, token: str, question_id: str) -> tuple[Mapping[str, Any], str]:
@@ -231,7 +388,7 @@ def check(attempt_id: UUID, token: str, question_id: str) -> tuple[Mapping[str, 
     Stores nothing. The final submission is still what counts.
     """
     claims = _verify(token, attempt_id)
-    attempt = _load(attempt_id)
+    attempt = _load_for(claims)
     _check_claims(attempt, claims)
     if attempt.status == Attempt.Status.SWITCHED:
         raise AttemptError("attempt_switched")
@@ -274,11 +431,13 @@ def _switch(
     attempt_id: UUID, claims: tokens.AttemptClaims, answers: Mapping[str, JSON]
 ) -> SwitchedAttempt:
     with transaction.atomic():  # IMMEDIATE, so a repeated request sees the first one's result
-        attempt = _load(attempt_id)
+        attempt = _load_for(claims)
         _check_claims(attempt, claims)
         current = attempt
         while current.replaced_by_id is not None:
             current = _load(current.replaced_by_id)
+        if current.status == Attempt.Status.ABANDONED:
+            raise AttemptError("attempt_closed")
         if current.status in Attempt.FINISHED:
             raise AttemptError("already_submitted")
         _check_still_valid(current, claims, timezone.now())
@@ -297,6 +456,7 @@ def _replacement(attempt: Attempt) -> Attempt:
     flow = flow_of(attempt)
     replacement = Attempt.objects.create(
         run=run,
+        participant_id=attempt.participant_id,
         revision=run.current_revision,
         selection_json={
             "items": selection.carry_over(
@@ -311,6 +471,7 @@ def _replacement(attempt: Attempt) -> Attempt:
         settings_json=flow,
     )
     Attempt.objects.filter(pk=replacement.pk).update(started_at=attempt.started_at)
+    replacement.started_at = attempt.started_at
     Attempt.objects.filter(pk=attempt.pk).update(
         status=Attempt.Status.SWITCHED, replaced_by=replacement
     )
@@ -355,13 +516,23 @@ def _check_claims(attempt: Attempt, claims: tokens.AttemptClaims) -> None:
         or manifest_hash([item["id"] for item in items_of(attempt)]) != claims.manifest_hash
     ):
         raise AttemptError("invalid_token")
+    if attempt.status == Attempt.Status.ABANDONED:  # every token-based entry stops here
+        raise AttemptError("attempt_closed")
+
+
+def _past(now: datetime, end: datetime | None) -> bool:
+    """Compared in whole seconds, so the boundary second still counts (ADR-0025)."""
+    return end is not None and clock.whole_second(now) > clock.whole_second(end)
 
 
 def _check_still_valid(attempt: Attempt, claims: tokens.AttemptClaims, now: datetime) -> None:
-    _check_test_link(attempt.run, now)
-    if _whole_second(now) > _whole_second(claims.expires_at):
+    run = attempt.run
+    _check_test_link(run, now)
+    if _past(now, claims.expires_at) or _past(now, ends_at(attempt)):
         raise AttemptError("attempt_expired")
-    if attempt.run.status != QuizRun.Status.OPEN:
+    if run.status == QuizRun.Status.OPEN or (run.deadline_at and run.closed_at == run.deadline_at):
+        return  # closing at the deadline must not refuse what arrived within it
+    if run.closed_at is None or now > run.closed_at:
         raise AttemptError("run_closed")
 
 
@@ -384,11 +555,35 @@ def _load(attempt_id: UUID) -> Attempt:
         raise AttemptError("not_found") from exc
 
 
-def _whole_second(moment: datetime) -> datetime:
-    return moment.replace(microsecond=0)
+def _load_for(claims: tokens.AttemptClaims) -> Attempt:
+    """A valid token whose row is gone: after a stateless submission that is the normal answer."""
+    try:
+        return _load(claims.attempt_id)
+    except AttemptError as error:
+        if error.code == "not_found" and _is_stateless_run(claims.run_id):
+            raise AttemptError("attempt_gone") from error
+        raise
+
+
+def _is_stateless_run(run_id: UUID) -> bool:
+    run = QuizRun.all_kinds.select_related("quiz", "current_revision").filter(pk=run_id).first()
+    return run is not None and data_policy.is_stateless(effective_profile(run))
+
+
+def missing_code(attempt_id: UUID, token: str) -> str:
+    """What to say about an attempt id with no row: gone only if the token proves it existed."""
+    try:
+        claims = tokens.verify(token)
+    except tokens.InvalidToken:
+        return "not_found"
+    if claims.attempt_id == attempt_id and _is_stateless_run(claims.run_id):
+        return "attempt_gone"
+    return "not_found"
 
 
 def _stored_result(attempt: Attempt, submission_key: str) -> AttemptResult:
+    if attempt.status == Attempt.Status.ABANDONED:  # closed after the checks, before storing
+        raise AttemptError("attempt_closed")
     if attempt.status == Attempt.Status.SWITCHED:
         raise AttemptError("attempt_switched")
     if attempt.submission_key != submission_key:
@@ -424,11 +619,13 @@ def _asset(question: Mapping[str, Any], answer: JSON) -> str | None:
 
 
 def _row(
-    question: Mapping[str, Any], answer: JSON, breakdown: ScoreBreakdown, store: str
+    question: Mapping[str, Any], answer: JSON, breakdown: ScoreBreakdown, profile: str
 ) -> _AnswerRow | None:
-    """A person's part needs the answer, so it is kept whatever `store_answers` says."""
+    """A person's part needs the answer, so it is kept whatever the profile says."""
     graded = needs_grading(question, answer)
-    if not graded and (store != settings.StoreAnswers.ALL or question_rules.is_blank(answer)):
+    if not graded and (
+        not data_policy.keeps_all_answers(profile) or question_rules.is_blank(answer)
+    ):
         return None
     manual_max = breakdown.max_points - breakdown.earned_points if graded else Decimal(0)
     return _AnswerRow(
@@ -436,20 +633,28 @@ def _row(
     )
 
 
-def _score(attempt: Attempt, answers: Mapping[str, JSON]) -> tuple[AttemptResult, list[_AnswerRow]]:
+def _score(
+    attempt: Attempt, answers: Mapping[str, JSON], lenient: bool = False
+) -> tuple[AttemptResult, list[_AnswerRow]]:
     """Outside the transaction, so a slow plugin does not hold the write lock."""
     earned = Decimal(0)
     correct = 0
     rows: list[_AnswerRow] = []
-    store = (attempt.settings_json or {}).get("store_answers", settings.StoreAnswers.IMAGES)
+    profile = data_policy.profile_of_attempt(attempt)
+    stateless = data_policy.is_stateless(profile)
     for question in questions_of(attempt):
         answer = answers.get(question["id"])
         if answer is None:
             continue
-        breakdown = evaluate(question, answer)
+        try:
+            breakdown = evaluate(question, answer)
+        except AttemptError as error:
+            if lenient and error.code == "invalid_answer":
+                continue
+            raise
         earned += breakdown.earned_points
         correct += breakdown.correct_count or 0
-        row = _row(question, answer, breakdown, store)
+        row = None if stateless else _row(question, answer, breakdown, profile)
         if row is not None:
             rows.append(row)
     pending = any(row.manual_max > 0 for row in rows)
@@ -476,12 +681,36 @@ def evaluate(question: Mapping[str, Any], answer: JSON) -> ScoreBreakdown:
     return strategy.evaluate(grade, question["settings"])
 
 
+def _check_not_played(attempt: Attempt) -> None:
+    """Under "forbid" a participant keeps one finished attempt, even when two tabs got this far."""
+    if attempt.participant_id is None:
+        return
+    if participants.rules_of(attempt.run).get(REPEAT_ATTEMPTS) != "forbid":
+        return
+    others = Attempt.objects.filter(
+        participant_id=attempt.participant_id, status__in=Attempt.FINISHED
+    )
+    if others.exclude(pk=attempt.pk).exists():
+        raise AttemptError("already_played")
+
+
 def _store(
-    attempt: Attempt, result: AttemptResult, rows: Sequence[_AnswerRow], key: str, now: datetime
+    attempt: Attempt,
+    result: AttemptResult,
+    rows: Sequence[_AnswerRow],
+    key: str,
+    now: datetime,
+    identity: participants.Identity | None = None,
+    automatic: bool = False,
 ) -> bool:
     """False when a concurrent request stored its result first."""
+    profile = data_policy.profile_of_attempt(attempt)
+    if data_policy.is_stateless(profile):
+        return _store_stateless(attempt, result)
+    keep_duration = data_policy.keeps_duration(profile)
     try:
         with transaction.atomic():
+            _check_not_played(attempt)
             changed = Attempt.objects.filter(
                 pk=attempt.pk, status=Attempt.Status.IN_PROGRESS
             ).update(
@@ -493,10 +722,14 @@ def _store(
                 auto_score=result.earned_points,
                 max_score=result.max_points,
                 correct_count=result.correct_count,
-                duration_ms=int((now - attempt.started_at).total_seconds() * 1000),
+                duration_ms=int((now - attempt.started_at).total_seconds() * 1000)
+                if keep_duration
+                else None,
                 submission_key=key,
             )
             if changed:
+                if identity is not None and attempt.participant is not None:
+                    participants.claim_name(attempt.participant, identity, automatic=automatic)
                 AttemptAnswer.objects.bulk_create(
                     AttemptAnswer(
                         attempt_id=attempt.pk,
@@ -508,6 +741,10 @@ def _store(
                     )
                     for row in rows
                 )
+                if attempt.participant_id is not None:
+                    from app.domain import rewards  # rewards reads this module back
+
+                    rewards.refresh(cast(Participant, attempt.participant))
                 events.emit(
                     "attempt.submitted",
                     {
@@ -520,3 +757,33 @@ def _store(
     except IntegrityError as exc:
         raise AttemptError("submission_key_used") from exc
     return bool(changed)
+
+
+def _store_stateless(attempt: Attempt, result: AttemptResult) -> bool:
+    """Nothing stays but a count. Only the request that finds the attempt in progress counts."""
+    with transaction.atomic():  # IMMEDIATE: of two racing submissions one finds it taken
+        claimed = Attempt.objects.filter(pk=attempt.pk, status=Attempt.Status.IN_PROGRESS).update(
+            status=Attempt.Status.SUBMITTED
+        )
+        if not claimed:
+            return False
+        chain = [attempt.pk]
+        while previous := list(
+            Attempt.objects.filter(replaced_by_id=chain[0]).values_list("pk", flat=True)
+        ):
+            chain = [*previous, *chain]
+        for attempt_id in chain:  # oldest first: a replaced attempt protects its successor
+            Attempt.objects.filter(pk=attempt_id).delete()
+        if attempt.run.kind != QuizRun.Kind.TEST:  # test data stay apart from the public count
+            QuizRun.objects.filter(pk=attempt.run_id).update(
+                stateless_submitted=F("stateless_submitted") + 1
+            )
+        events.emit(
+            "attempt.submitted",
+            {
+                "run_id": str(attempt.run_id),
+                "score": str(result.earned_points),
+                "max_score": str(result.max_points),
+            },
+        )
+    return True

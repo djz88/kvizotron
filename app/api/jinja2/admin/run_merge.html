@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<section class="form-section">
+  <h2>{{ _("Merge the revisions of run %(no)s", no=run.run_no) }}</h2>
+  <p><a href="{{ url('admin_run', args=[run.id]) }}#scoreboard">{{ _("Back to the run") }}</a></p>
+  <p>{{ _("Merged revisions share one table. Equal maximum points do not mean equal questions: check what changed.") }}</p>
+  {% for pair in pairs %}
+  <h3>{{ _("Revision %(before)s → %(after)s", before=pair.before.revision_no, after=pair.after.revision_no) }}</h3>
+  <p>{{ _("Maximum points: %(before)s → %(after)s", before=pair.before_max|number, after=pair.after_max|number) }}</p>
+  {% set diff = pair.diff %}{% include "admin/_diff.html" %}
+  {% endfor %}
+  {% if refused %}
+  <p class="notice" role="alert">{{ refused }}</p>
+  {% else %}
+  <form method="post" action="{{ url('admin_run_merge', args=[run.id]) }}">
+    {{ csrf_input }}
+    <input type="hidden" name="confirm" value="1">
+    <button type="submit">{{ _("Merge into one table") }}</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

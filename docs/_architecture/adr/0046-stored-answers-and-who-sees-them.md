@@ -26,7 +26,7 @@ A person's grading needs stored answers, and a participant needs a way to learn 
 
 Chosen option: "One table of stored answers, two settings and a signed link", because it stores only what was chosen, and needs no personal data.
 
-* `store_answers` is `images` (default) or `all`, frozen on the attempt at start. A row exists for a question that needs a person, and with `all` for each answered question. A replaced attempt has none.
+* `store_answers` is `images` (default) or `all` (replaced by the data profile in [ADR-0050](0050-data-profile-and-local-resume.md); `all` became `answers`, `images` became `score`), frozen on the attempt at start. A row exists for a question that needs a person, and with `all` for each answered question. A replaced attempt has none.
 * `answers_visibility` is `admins` (default), `participant` or `public`. Anything but `admins` needs `store_answers=all`. The quiz and global forms refuse the combination; a global change falling into it behaves as `admins`, with a warning, like a flow conflict in [ADR-0041](0041-draw-rows-and-flow-settings.md).
 * `grading_view` chooses `by_question` or `by_attempt`. All three settings have global and quiz scope, as each applies to an attempt or a quiz as a whole.
 * `/v/<token>` is a signed reference to one attempt, with no end date until retention arrives in D3. It shows the score, whether it is final, own answers and photo as settings allow, and correct answers only as the attempt's reveal settings allow. An invalid token gets status 200 and one message, and a refused photo 204, so a token never reaches the log. The same device remembers the link in `localStorage` per quiz.

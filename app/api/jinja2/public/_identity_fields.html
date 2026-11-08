@@ -1,0 +1,13 @@
+<div class="identity-fields">
+  {% if identity.name != "off" %}
+  <label>{{ _("Name") }}{% if identity.name == "optional" %} <small>({{ _("optional") }})</small>{% endif %}
+    <input type="text" name="participant_name" maxlength="40" autocomplete="nickname" value="{{ identity.name_value }}"{% if identity.name == "required" %} required{% endif %}>
+  </label>
+  {% endif %}
+  {% if identity.email != "off" %}
+  <label>{{ _("E-mail") }}{% if identity.email == "optional" %} <small>({{ _("optional") }})</small>{% endif %}
+    <input type="email" name="participant_email" maxlength="254" autocomplete="email" value="{{ identity.email_value }}"{% if identity.email == "required" %} required{% endif %}>
+  </label>
+  {% endif %}
+  <p><small>{{ _("Your name and e-mail are used only by the organiser of this run.") }} <a href="{{ url('privacy') }}?lang={{ locale }}" target="_blank" rel="noopener">{{ _("Privacy") }}</a></small></p>
+</div>

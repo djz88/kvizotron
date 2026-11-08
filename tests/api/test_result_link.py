@@ -75,7 +75,7 @@ def test_link_shows_provisional_then_final_score(logged_in):
 
 def test_own_answers_only_at_participant_or_public():
     quiz = photo_quiz(plain=True)
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     player = Player(run_of(quiz))
     fields = {
         f"{player.question('image_answer')}:image": upload(),
@@ -104,7 +104,7 @@ def test_own_photo_at_author_not_at_admins():
 
 def test_no_correct_answer_unless_reveal_allows():
     quiz = photo_quiz(plain=True)
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "participant", admin_id=ADMIN_ID)
     player = Player(run_of(quiz))
     fields = {
@@ -119,7 +119,7 @@ def test_no_correct_answer_unless_reveal_allows():
 
 def test_correct_answers_when_the_attempts_reveal_allows():
     quiz = photo_quiz(plain=True)
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "participant", admin_id=ADMIN_ID)
     settings.set_override(settings.REVEAL_MOMENT, quiz, "at_end", admin_id=ADMIN_ID)
     settings.set_override(settings.REVEAL_LEVEL, quiz, "answers", admin_id=ADMIN_ID)

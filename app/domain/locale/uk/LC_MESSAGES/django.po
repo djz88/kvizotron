@@ -92,6 +92,10 @@ msgstr "Адреса %(wanted)s зайнята, тому вікторина от
 msgid "A bank question must be complete in at least one language."
 msgstr "Запитання в банку має бути повним принаймні однією мовою."
 
+#: results.py:202
+msgid "Player NN"
+msgstr "Гравець NN"
+
 #: revision_diff.py:103
 #, python-format
 msgid "%(count)s questions, %(points)s points each"
@@ -146,175 +150,251 @@ msgstr "Тип питання"
 msgid "Definition"
 msgstr "Визначення"
 
-#: settings.py:132
+#: rewards.py:75
+msgid "Rewards need a data profile that keeps scores."
+msgstr "Для нагород потрібен профіль даних, який зберігає результати."
+
+#: rewards.py:76
+msgid "Answers after each question cannot go with rewards."
+msgstr "Відповіді після кожного питання не можна поєднати з нагородами."
+
+#: rewards.py:77
+msgid "A draw needs a required e-mail under the chosen contact setting."
+msgstr "За вибраного способу зв'язку з переможцями розіграш потребує обов'язкової електронної пошти."
+
+#: settings.py:165
 msgid "No"
 msgstr "Ні"
 
-#: settings.py:132
+#: settings.py:165
 msgid "Yes"
 msgstr "Так"
 
-#: settings.py:138
+#: settings.py:171
 msgid "When a new version is published during a run"
 msgstr "Коли під час запуску публікується нова версія"
 
-#: settings.py:140
+#: settings.py:173
 msgid "Ask at publication"
 msgstr "Запитати під час публікації"
 
-#: settings.py:141
+#: settings.py:174
 msgid "Notify participants and let them switch"
 msgstr "Сповістити учасників і дозволити перейти"
 
-#: settings.py:142
+#: settings.py:175
 msgid "Let participants finish on the old version"
 msgstr "Дозволити учасникам завершити на старій версії"
 
-#: settings.py:151
+#: settings.py:185
 msgid "Colours"
 msgstr "Кольори"
 
-#: settings.py:153
+#: settings.py:187
 msgid "Blue and teal"
 msgstr "Синій і бірюзовий"
 
-#: settings.py:154
+#: settings.py:188
 msgid "Indigo and pink"
 msgstr "Індиго і рожевий"
 
-#: settings.py:155
+#: settings.py:189
 msgid "Violet and white"
 msgstr "Фіолетовий і білий"
 
-#: settings.py:156
+#: settings.py:190
 msgid "Green and blue"
 msgstr "Зелений і синій"
 
-#: settings.py:157
+#: settings.py:191
 msgid "Red and plum"
 msgstr "Червоний і сливовий"
 
-#: settings.py:166
+#: settings.py:202
 msgid "Answer \"None of the answers\""
 msgstr "Відповідь «Жодна з відповідей»"
 
-#: settings.py:169
+#: settings.py:205
 msgid "On every question, which hides trick questions"
 msgstr "У кожному запитанні, що приховує запитання-пастки"
 
-#: settings.py:171
+#: settings.py:207
 msgid "Only on trick questions"
 msgstr "Лише в запитаннях-пастках"
 
-#: settings.py:178
-msgid "Stored answers"
-msgstr "Збережені відповіді"
+#: settings.py:215
+msgid "What a run keeps"
+msgstr "Що зберігає запуск"
 
-#: settings.py:180
-msgid "Only photos"
-msgstr "Лише фото"
+#: settings.py:217
+msgid "Nothing: only counts"
+msgstr "Нічого: лише кількості"
 
-#: settings.py:181
-msgid "All answers"
-msgstr "Усі відповіді"
+#: settings.py:218
+msgid "Score and photos"
+msgstr "Бали та фото"
 
-#: settings.py:190
+#: settings.py:219
+msgid "Score and all answers"
+msgstr "Бали та всі відповіді"
+
+#: settings.py:220
+msgid "Score, all answers and times"
+msgstr "Бали, всі відповіді та час"
+
+#: settings.py:231
+msgid "How long a run keeps its data"
+msgstr "Як довго запуск зберігає дані"
+
+#: settings.py:233
+msgid "30 days"
+msgstr "30 днів"
+
+#: settings.py:234
+msgid "90 days"
+msgstr "90 днів"
+
+#: settings.py:235
+msgid "180 days"
+msgstr "180 днів"
+
+#: settings.py:236
+msgid "1 year"
+msgstr "1 рік"
+
+#: settings.py:237
+msgid "3 years"
+msgstr "3 роки"
+
+#: settings.py:238
+msgid "Permanently"
+msgstr "Назавжди"
+
+#: settings.py:248
 msgid "Who sees stored answers"
 msgstr "Хто бачить збережені відповіді"
 
-#: settings.py:192
+#: settings.py:250
 msgid "Admins"
 msgstr "Адміністратори"
 
-#: settings.py:193
+#: settings.py:251
 msgid "Admins and the participant"
 msgstr "Адміністратори й учасник"
 
-#: settings.py:194
+#: settings.py:252
 msgid "Everyone, after the run ends"
 msgstr "Усі, після завершення запуску"
 
-#: settings.py:199
-msgid "Needs all answers stored. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
-msgstr "Потребує збереження всіх відповідей. Вільний текст може містити будь-що: у публічному огляді значення показується, доки адміністратор його не приховає."
+#: settings.py:257
+msgid "Needs a profile that keeps all answers. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
+msgstr "Потребує профілю, який зберігає всі відповіді. Вільний текст може містити що завгодно: у публічному перегляді значення показується, доки адміністратор його не приховає."
 
-#: settings.py:207
+#: settings.py:266
 msgid "Grading page"
 msgstr "Сторінка оцінювання"
 
-#: settings.py:209
+#: settings.py:268
 msgid "By question"
 msgstr "За запитаннями"
 
-#: settings.py:210
+#: settings.py:269
 msgid "By attempt"
 msgstr "За спробами"
 
-#: settings.py:219
+#: settings.py:279
 msgid "Sources on the result"
 msgstr "Джерела в результаті"
 
-#: settings.py:221
+#: settings.py:281
 msgid "Show"
 msgstr "Показати"
 
-#: settings.py:222
+#: settings.py:282
 msgid "Hide"
 msgstr "Приховати"
 
-#: settings.py:229
+#: settings.py:290
 msgid "Moving through the questions"
 msgstr "Проходження питань"
 
-#: settings.py:231
+#: settings.py:292
 msgid "All questions at once"
 msgstr "Усі питання одразу"
 
-#: settings.py:232
+#: settings.py:293
 msgid "One by one, with going back"
 msgstr "По одному, з поверненням"
 
-#: settings.py:233
+#: settings.py:294
 msgid "One by one, without going back"
 msgstr "По одному, без повернення"
 
-#: settings.py:242
+#: settings.py:295
+msgid "Pages of questions"
+msgstr "Сторінками"
+
+#: settings.py:306
+msgid "Questions per page"
+msgstr "Питань на сторінці"
+
+#: settings.py:310
+msgid "Only for pages of questions."
+msgstr "Лише для проходження сторінками."
+
+#: settings.py:318
 msgid "When to show the answers"
 msgstr "Коли показувати відповіді"
 
-#: settings.py:244
+#: settings.py:320
 msgid "Never"
 msgstr "Ніколи"
 
-#: settings.py:245
+#: settings.py:321
 msgid "At the end"
 msgstr "Наприкінці"
 
-#: settings.py:246
+#: settings.py:322
 msgid "After each question"
 msgstr "Після кожного питання"
 
-#: settings.py:255
+#: settings.py:333
 msgid "What to show"
 msgstr "Що показувати"
 
-#: settings.py:257
+#: settings.py:335
 msgid "Whether each answer is right"
 msgstr "Лише чи відповідь правильна"
 
-#: settings.py:258
+#: settings.py:336
 msgid "And the correct answers"
 msgstr "Також правильні відповіді"
 
-#: settings.py:259
+#: settings.py:337
 msgid "And the correct answers and explanations"
 msgstr "Також правильні відповіді та пояснення"
 
-#: settings.py:268
+#: settings.py:347
 msgid "Shuffle the questions"
 msgstr "Перемішувати питання"
 
-#: settings.py:277
+#: settings.py:357
 msgid "Shuffle the options"
 msgstr "Перемішувати варіанти"
+
+#: settings.py:365
+msgid "Time limit for an attempt (minutes)"
+msgstr "Обмеження часу спроби (хвилини)"
+
+#: settings.py:367
+msgid "No limit"
+msgstr "Без обмеження"
+
+#: settings.py:379
+msgid "Show a planned quiz under \"Coming up\" on the public list"
+msgstr "Показувати заплановану вікторину в розділі «Незабаром» у публічному списку"
+
+#: settings.py:389
+msgid "Time zone"
+msgstr "Часовий пояс"
 

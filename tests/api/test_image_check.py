@@ -118,4 +118,4 @@ def test_the_check_time_is_written_like_other_admin_times(logged_in):
     quiz = quiz_with_image()
     moment = datetime(2026, 11, 7, 9, 6, tzinfo=UTC)
     AddressCheck.objects.create(address=URL, ok=False, checked_at=moment)
-    assert "2026-11-07 09:06" in logged_in.get(edit_url(quiz)).content.decode()
+    assert "2026-11-07 10:06 CET" in logged_in.get(edit_url(quiz)).content.decode()

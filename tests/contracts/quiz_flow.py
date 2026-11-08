@@ -14,11 +14,16 @@ class QuizFlowContract:
     def test_every_mode_has_options(self):
         for mode in self.plugin.modes():
             for moment in MOMENTS:
-                assert set(self.plugin.client_options(mode, moment)) == {"step", "back", "check"}
+                assert set(self.plugin.client_options(mode, moment)) == {
+                    "step",
+                    "back",
+                    "check",
+                    "pages",
+                }
 
     def test_all_at_once_is_not_step(self):
         options = self.plugin.client_options("all_at_once", "never")
-        assert options == {"step": False, "back": False, "check": False}
+        assert options == {"step": False, "back": False, "check": False, "pages": False}
 
     def test_check_only_with_step_and_after_each(self):
         assert self.plugin.client_options("step_back", "after_each")["check"]
@@ -28,3 +33,11 @@ class QuizFlowContract:
     def test_no_back_only_in_step_no_back(self):
         assert self.plugin.client_options("step_back", "never")["back"]
         assert not self.plugin.client_options("step_no_back", "never")["back"]
+
+    def test_pages_step_with_going_back_and_never_check(self):
+        """ADR-0052: answers after each question cannot go with pages."""
+        if "pages" not in self.plugin.modes():
+            return
+        options = self.plugin.client_options("pages", "after_each")
+        assert options == {"step": True, "back": True, "check": False, "pages": True}
+        assert not self.plugin.client_options("step_back", "never")["pages"]

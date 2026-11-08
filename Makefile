@@ -7,7 +7,7 @@ WT_DIR := .worktrees
 WT_NAME = $(or $(name),$(word 2,$(MAKECMDGOALS)))
 export WT_NAME
 TECH_DEBT := python3 tools/tech_debt.py --doc docs/_architecture/TECH_DEBT.md
-.PHONY: help setup setup-reset doctor clean lint test secrets quality smoke hooks fix messages worktree worktree-create worktree-remove tech-debt-check tech-debt-tidy tech-debt-create tech-debt-resolve
+.PHONY: wiring plan-check help setup setup-reset doctor clean lint test secrets quality smoke hooks fix messages worktree worktree-create worktree-remove tech-debt-check tech-debt-tidy tech-debt-create tech-debt-resolve
 
 # Jméno za cílem (make worktree-create JMÉNO) make nehledá jako další cíl.
 ifneq ($(filter worktree-create worktree-remove,$(MAKECMDGOALS)),)
@@ -50,6 +50,13 @@ secrets: ## Hledá tajné údaje (gitleaks) ve staged změnách a v historii git
 	uvx --python 3.14 pre-commit@4.7.0 run --all-files --hook-stage manual gitleaks-history
 
 quality: lint test secrets tech-debt-check ## Lint, testy, gitleaks a kontrola TECH_DEBT.md (to samé běží v CI)
+
+wiring: ## Jen kontroly napojení: moduly, šablony, adresy, skripty, styly, nastavení
+	uv run pytest tests/test_wiring.py -q
+
+plan-check: ## Změnily se soubory z plánu? make plan-check plan=cesta.md base=main
+	@test -n "$(plan)" || { echo "Použití: make plan-check plan=docs/superpowers/plans/x.md [base=main]"; exit 2; }
+	python3 -m tools.plan_check --plan "$(plan)" --base "$(or $(base),main)"
 
 smoke: ## Ověří nasazení: Docker Compose, Caddy, zdraví aplikace
 	sh deploy/smoke.sh

@@ -1,0 +1,18 @@
+{# `groups` from admin_view.group_fields; `collapse` turns each group into <details> (the run plan). #}
+<nav class="group-links" aria-label="{{ _('Setting groups') }}">
+  <ul>
+    {% for group in groups %}<li><a href="#group-{{ group.key }}">{{ group.label }}</a></li>{% endfor %}
+  </ul>
+</nav>
+{% for group in groups %}
+{% if collapse|default(false) %}
+<details class="setting-group" id="group-{{ group.key }}"{% if group.open %} open{% endif %}>
+  <summary>{{ group.label }}</summary>
+{% else %}
+<section class="setting-group" id="group-{{ group.key }}">
+  <h2>{{ group.label }}</h2>
+{% endif %}
+  {% for field in group.fields %}{{ field.as_field_group() }}{% endfor %}
+  {% if group.hidden %}<p class="group-hidden">{{ _("More settings in All: %(count)s", count=group.hidden) }}</p>{% endif %}
+{% if collapse|default(false) %}</details>{% else %}</section>{% endif %}
+{% endfor %}

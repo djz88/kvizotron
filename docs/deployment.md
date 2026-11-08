@@ -34,7 +34,9 @@ healthy. The application serves its few static files itself, so no collect step 
 | `KVZ_DB_PATH` | set by the image | SQLite file on the `db` volume |
 | `KVZ_MEDIA_PATH` | no | Stored images, default `/data/media` on the `media` volume; include it in backups |
 | `KVZ_DEBUG` | no | `1` enables Django debug mode; never in production |
+| `KVZ_CODE_ATTEMPTS_PER_MINUTE` | no | Wrong access codes one client address may try per minute before getting 429, default 10. Counted in process memory, so a restart or another worker process starts from zero |
 | `KVZ_HTTP_PORT`, `KVZ_HTTPS_PORT` | no | Published ports, default 80 and 443 |
+| `KVZ_SERVER_TZ` | no | Time zone the containers run in (`TZ`), default `Europe/Prague`. Logs and the server clock in the administration use it; quiz times follow the time zone chosen in the global settings |
 
 ## Modules
 

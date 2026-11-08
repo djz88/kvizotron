@@ -37,6 +37,8 @@ settings:                     # required; a module with none states []
     scopes: [global, quiz, question]   # the default; narrower needs scope_reason
     label: Text in the module's catalogue
     value_labels: {a: Text, b: Text}
+    group: playing                      # settings page group; technical by default (ADR-0052)
+    level: basic                        # shown in "Basic"; advanced by default
 settings_requirements:        # optional; see modules/kernel.md (FR-46)
   reveal_moment: {refuse: [after_each], use: at_end, reason: Text in the module's catalogue}
 assets:
@@ -54,7 +56,7 @@ Field meaning:
 - `persistence` (`module:Class`) is required for a provider of `persistence`. The module and class are
   loaded while settings load, so they **MUST NOT** import Django at module level.
 - `auth_backend` (dotted class path) is required for a provider of `auth`.
-- `settings` lists settings the module owns. They are inherited global → quiz → question unless `scopes` is narrower, which needs `scope_reason`. Whoever adds a setting decides where it fits ([ADR-0042](_architecture/adr/0042-settings-inherited-and-declared.md)).
+- `settings` lists settings the module owns. They are inherited global → quiz → question unless `scopes` is narrower, which needs `scope_reason`. Whoever adds a setting decides where it fits ([ADR-0042](_architecture/adr/0042-settings-inherited-and-declared.md)). `group` (`playing`, `answers`, `participants`, `scoreboard`, `data`, `look`, `technical`) and `level` (`basic`, `advanced`) only place it on the admin pages ([ADR-0052](_architecture/adr/0052-setting-groups-levels-and-step-default.md)).
 - `settings_requirements` lists settings the module needs: per key, the values it refuses, the value `Use` applies, not among those refused, and a reason. Declarative values only; an unknown key or value stops the start. Modules whose requirements contradict each other block a quiz using both.
 - `api_compatibility` (contract version) and `config_schema_version` (plugin's own data version) are
   different things.
@@ -147,10 +149,21 @@ class ThemePlugin(Protocol):
     def layout_template(self) -> str: ...
     def stylesheet_urls(self) -> Sequence[str]: ...
 
+class RewardPlugin(Protocol):
+    id: str
+    version: str
+    def share(self, rule: ThresholdRule, figures: AttemptFigures) -> Decimal: ...
+    def reached(self, rule: ThresholdRule, figures: AttemptFigures) -> bool: ...
+    def qualifies(self, rules: Sequence[ThresholdRule], figures: AttemptFigures,
+                  mode: str) -> list[str]: ...  # "highest" or "all"
+
 class DrawingPlugin(Protocol):
     id: str
-    def preview_eligible(self, run_id: str, rules: JSON) -> Sequence[str]: ...
-    def draw(self, run_id: str, rules: JSON, admin_id: str) -> JSON: ...
+    version: str
+    algorithm: str  # stored with each draw record
+    def order(self, ids: Iterable[str]) -> list[str]: ...  # sorted and unique
+    def fingerprint(self, ids: Iterable[str]) -> str: ...
+    def select(self, ids: Iterable[str], count: int) -> list[str]: ...  # CSPRNG
 ```
 
 Rules for question types:
@@ -172,8 +185,8 @@ Rules for question types:
 Translations: put `locale/<lang>/LC_MESSAGES/django.{po,mo}` in the module and use `_()` in templates.
 Add the module to `ROOTS` in `tools/messages.py` to include it in `make messages`.
 
-The remaining contracts (`QuizFlowPlugin`, `ParticipantPolicyPlugin`, `ResultViewPlugin`,
-`RewardPlugin`, `ImporterProvider`/`ExporterProvider`, `MediaStorageProvider`,
+The remaining contracts (`QuizFlowPlugin`, `ParticipantPolicyPlugin`, `ResultViewPlugin` (below),
+`ImporterProvider`/`ExporterProvider`, `MediaStorageProvider`,
 `RetentionProvider`) are defined in Stage A–D as they are implemented.
 
 ## Invariants every module must respect
@@ -197,7 +210,48 @@ See [contract invariants](_architecture/modules/contracts.md#contract-invariants
 
 ```python
 def modes(self) -> Sequence[str]: ...
-def client_options(self, mode: str, moment: str) -> JSON: ...  # {"step": bool, "back": bool, "check": bool}
+def client_options(self, mode: str, moment: str) -> JSON: ...  # {"step", "back", "check", "pages": bool}
 ```
 
 The page enforces the result; it is not a security boundary (ADR-0035). Without such a module every quiz is one page, which works without JavaScript.
+
+## Participant policy
+
+`ParticipantPolicyPlugin` (port `participant_policy`) holds the pure rules about a participant. It reads nothing from the request or the database; the API hands it the facts.
+
+```python
+def clean_name(self, raw: str) -> str: ...  # spaces collapsed; "" when empty; ValueError over 40
+def name_key(self, clean: str) -> str: ...  # case-folded, for comparing nicknames
+def valid_email(self, raw: str) -> bool: ...
+def on_start(self, rules: Mapping[str, str], *, finished: bool, open_attempt: OpenAttempt) -> StartDecision: ...
+```
+
+`rules` holds the resolved `repeat_attempts` and `unfinished_attempt`. `open_attempt` is `none`, `running` or `expired`. The result is `new`, `resume`, `replace` (close the open attempt, then start a new one), `played` or `time_up`.
+
+| repeat | unfinished | finished | open | result |
+|---|---|---|---|---|
+| allow | any | any | any | new |
+| forbid | any | yes | any | played |
+| forbid | continue | no | running | resume |
+| forbid | continue | no | expired | time_up |
+| forbid | used | no | running or expired | played |
+| forbid | submitted | no | running or expired | replace |
+| forbid | any | no | none | new |
+
+The module also declares the settings `repeat_attempts`, `unfinished_attempt`, `ask_name`, `ask_email`, `ask_when` and `duplicate_names` (global and quiz).
+
+## Result view
+
+`ResultViewPlugin` (port `result_view`) holds the pure rules of a scoreboard and of score summaries ([ADR-0026](_architecture/adr/0026-scoreboard-tie-break-rule.md), [ADR-0051](_architecture/adr/0051-scoreboard-participants-and-official-attempt.md)). The domain reads attempts, decides visibility and names, and hands it `ScoreEntry` values.
+
+```python
+def pick_official(self, entries: Sequence[ScoreEntry], rule: str) -> ScoreEntry: ...  # "best" or "first"
+def rank(self, entries: Sequence[ScoreEntry], rules: Mapping[str, str], seed: str) -> list[RankedRow]: ...
+def summarize(self, scores: Sequence[Decimal], max_score: Decimal) -> ScoreSummary: ...
+```
+
+`rank` orders by score, then `scoreboard_second_sort` (`submitted` or `duration`), then `tie_break_policy`: `shared` gives equal places, `earlier` the earlier submission, `random` a hash of the run's `seed` and the entry key. `summarize` gives count, average, median, extremes and ten bands. The module `results.local` also declares the twelve scoreboard settings (global and quiz).
+
+## Rewards and draw
+
+`RewardPlugin` (port `reward`) and `DrawingPlugin` (port `drawing`) hold only pure rules ([ADR-0053](_architecture/adr/0053-rewards-tiers-alternates-and-draw-history.md)). The domain hands the reward plugin `ThresholdRule(id, unit, value)` and `AttemptFigures(score, max_score, correct, questions)` of the official attempt; `qualifies` returns the ids of the reached threshold rules, under `highest` only the one with the largest share. The drawing plugin gets participant ids and never sees names. The module `rewards.threshold` also declares `reward_source`, `reward_thresholds` and `winner_contact` (global and quiz); `drawings.manual` declares no settings.

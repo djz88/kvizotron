@@ -47,9 +47,24 @@ See [ADR-0008](../adr/0008-scoreboard-revision-modes-default-separate.md).
 
 | Mode | Behaviour |
 |---|---|
-| `SEPARATE_BY_REVISION` | Separate scoreboards per revision. **Default.** |
-| `MERGE_COMPATIBLE` | Common scoreboard allowed only with equal max points. The admin sees the differences between revisions, is warned that equal max points do not guarantee equal difficulty, and decides. |
-| `LATEST_ONLY` | Public view shows only the latest revision; older results remain available to the admin. |
+| `SEPARATE_BY_REVISION` (`separate`) | Separate scoreboards per revision, newest first, the official attempt chosen in each. **Default.** |
+| `MERGE_COMPATIBLE` (`merged`) | Common scoreboard allowed only with equal max points. The admin sees the differences between revisions, is warned that equal max points do not guarantee equal difficulty, and decides. Not a preset: an audited action on the run page that can be undone (`results_json["merged"]`). |
+| `LATEST_ONLY` (`latest`) | Only attempts on the run's current revision. |
+
+Who is a row, the official attempt, anonymised live names and the anonymous label: [ADR-0051](../adr/0051-scoreboard-participants-and-official-attempt.md). Statistics: `app/domain/run_stats.py`, over every submitted attempt of a normal run.
+
+## Rewards and draws
+
+Decision: [ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md). Rules belong to a run, or to the quiz's template without a run; a run's rule structure is fixed once it opens, its texts are not. A test run has none.
+
+```
+ entitlement:  granted ──hand over──▶ handed_over
+                  │                        │
+                  └──cancel (reason)──▶ cancelled ◀── cancel (admin, reason)
+```
+
+- Sources: `auto` (threshold or participation from the official attempt; recomputation may cancel a granted one with "no longer reached"), `manual` (granted by the admin), `draw` (a drawn winner). Only an admin cancels `manual`, `draw`, participation and handed-over entitlements; a rule an admin cancelled is never granted back automatically.
+- Draw actions: `draw` starts a chain, `move_up` and `substitute` amend it, `redraw` supersedes it and starts a new one. Each action is a new `draw` row; the current winners and alternates are replayed from the chain. Only on a closed or archived run.
 
 ## Restart
 
@@ -120,8 +135,7 @@ moves the highest `ARCHIVED` revision back; revisions have no archive action of 
                                               restart ─▶ new QuizRun (SCHEDULED/OPEN), empty results
 ```
 
-> Run state names (`SCHEDULED/OPEN/CLOSED/ARCHIVED`) are a documentation proposal; the spec defines
-> only the behaviour (scheduled, open, closed, archived, restart).
+Status changes that time makes due are applied on the first request after them, and archiving hides an ended run in admin and from the public walkthrough ([ADR-0048](../adr/0048-run-timing.md)).
 
 ## Invariants
 
@@ -131,5 +145,8 @@ moves the highest `ARCHIVED` revision back; revisions have no archive action of 
 - An attempt freezes at start which questions it got and how it behaves ([ADR-0041](../adr/0041-draw-rows-and-flow-settings.md)). Switching keeps what still fits and draws the rest.
 - An attempt is evaluated against the revision and question selection frozen at its start (FR-19,
   [AC-04](../acceptance-criteria.md)). Switching creates a new attempt; it never changes an existing one's revision.
-- A new run never inherits attempts, results, entitlements or draws.
+- A new run never inherits attempts, results, entitlements or draws. It may copy reward rules from the quiz's template or the previous run when it is planned or opened (`reward_source`).
+- A run's participant rules and access code are its own: the rules are copied from the quiz when it is planned or opened and fixed once it opens, the code is never inherited ([ADR-0049](../adr/0049-participants-and-access-code.md)).
+- A run's data profile and retention period are copied from the quiz when it is planned or opened. The profile is fixed once the run opens, the period stays editable. Under `none` a submitted attempt is deleted and counted ([ADR-0050](../adr/0050-data-profile-and-local-resume.md)); the period is a value that D3 will act on.
+- Attempt statuses: `IN_PROGRESS`, `SUBMITTED`, `PENDING_GRADING`, `SWITCHED` (replaced by a new revision) and `ABANDONED` (replaced by a new start under "counts only when submitted"). An `ABANDONED` attempt can never be submitted, switched or checked, and holds no name.
 - Test attempts live in runs of kind `test`, which `QuizRun.objects` and `quiz.runs` hide ([ADR-0044](../adr/0044-preview-and-test-links.md)). A query on `Attempt` across runs must filter on the run's kind itself.

@@ -4,7 +4,7 @@ from typing import Any
 
 from app.api import rendering
 from app.api.rendering import media_storage
-from app.domain import external_images, grading, quiz_state, requirements
+from app.domain import clock, external_images, grading, quiz_state, requirements
 from app.domain.models import Quiz
 
 
@@ -21,7 +21,7 @@ def image_check(quiz: Quiz) -> dict[str, Any]:
     return {
         "addresses": addresses,
         "failed": [address for address, item in status.items() if not item.ok],
-        "checked_at": max(checked).strftime("%Y-%m-%d %H:%M") if checked else None,
+        "checked_at": clock.shown(max(checked)) if checked else None,
     }
 
 

@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+{# The prize draw of a run: per draw rule the refusal or the preview, the standing, the actions and the history. Only POST changes anything. #}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<section class="form-section">
+  <h2>{{ _("Prize draw of run %(no)s", no=run.run_no) }}</h2>
+  <p><a href="{{ url('admin_run', args=[run.id]) }}">{{ _("Back to the run") }}</a> · <a href="{{ url('admin_run_rewards', args=[run.id]) }}">{{ _("Rewards and who has them") }}</a></p>
+  {% if not sections %}<p>{{ _("This run has no draw.") }}</p>{% endif %}
+</section>
+
+{% for section in sections %}
+{% set rule = section.rule %}
+<section class="form-section" id="rule-{{ rule.id }}">
+  <h2>{{ section.name }}</h2>
+  <p><small>{{ _("Winners: %(winners)s, alternates: %(alternates)s", winners=rule.winners, alternates=rule.alternates) }}</small></p>
+  {% if section.refusal %}<p class="notice" role="note">{{ section.refusal }}</p>{% endif %}
+
+  {% if section.preview %}
+  <details{% if not section.drawn %} open{% endif %}>
+    <summary>{{ _("Eligible: %(count)s", count=section.preview.count) }}</summary>
+    <p><small>{{ _("Fingerprint of the eligible set") }}: <code class="draw-wrap">{{ section.preview.fingerprint }}</code></small></p>
+    {% if section.preview.people %}
+    <ul>{% for person in section.preview.people %}<li>{{ person.name }}</li>{% endfor %}</ul>
+    {% endif %}
+  </details>
+  {% if section.nobody and not section.drawn %}
+  <p class="notice" role="note">{{ section.nobody_text }}</p>
+  {% elif not section.drawn %}
+  <form method="post" action="{{ url('admin_run_draw_action', args=[run.id, rule.id]) }}">
+    {{ csrf_input }}
+    <button type="submit" name="action" value="draw">{{ _("Draw now") }}</button>
+  </form>
+  {% endif %}
+  {% endif %}
+
+  {% if section.drawn %}
+  <h3 id="winners-{{ rule.id }}">{{ _("Winners") }}</h3>
+  <table class="stack">
+    <thead><tr><th>#</th><th>{{ _("Name") }}</th><th>{{ _("E-mail") }}</th><th>{{ _("Actions") }}</th></tr></thead>
+    <tbody>
+      {% for person in section.winners %}
+      <tr>
+        <td data-label="#">{{ person.position }}</td>
+        <td data-label="{{ _('Name') }}">{{ person.name }}</td>
+        <td data-label="{{ _('E-mail') }}">{{ person.email or "–" }}</td>
+        <td data-label="{{ _('Actions') }}">
+          {% if not section.refusal %}
+          <form method="post" action="{{ url('admin_run_draw_action', args=[run.id, rule.id]) }}">
+            {{ csrf_input }}
+            <input type="hidden" name="entry" value="{{ person.id }}">
+            <label>{{ _("Reason") }}
+              <input type="text" name="reason" maxlength="200" required>
+            </label>
+            <button type="submit" name="action" value="move_up" class="secondary">{{ _("Move up an alternate") }}</button>
+            <button type="submit" name="action" value="substitute" class="secondary outline">{{ _("Draw a substitute") }}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>{{ _("Alternates") }}</h3>
+  {% if section.alternates %}
+  <ol>{% for person in section.alternates %}<li>{{ person.name }}{% if person.email %} · {{ person.email }}{% endif %}</li>{% endfor %}</ol>
+  {% else %}
+  <p><small>{{ _("No alternate is left.") }}</small></p>
+  {% endif %}
+  {% if not section.refusal %}
+  <form method="post" action="{{ url('admin_run_draw_action', args=[run.id, rule.id]) }}">
+    {{ csrf_input }}
+    <label>{{ _("Reason for a redraw") }}
+      <input type="text" name="reason" maxlength="200" required>
+    </label>
+    <button type="submit" name="action" value="redraw" class="secondary outline">{{ _("Redraw everything") }}</button>
+  </form>
+  {% endif %}
+  {% endif %}
+
+  <form method="post" action="{{ url('admin_run_draw_action', args=[run.id, rule.id]) }}">
+    {{ csrf_input }}
+    {% if section.public %}
+    <p>{{ _("The winners are shown on the public scoreboard.") }}</p>
+    <button type="submit" name="action" value="unpublish" class="secondary">{{ _("Hide the winners") }}</button>
+    {% else %}
+    <p>{{ _("The winners are not public.") }}</p>
+    <button type="submit" name="action" value="publish" class="secondary">{{ _("Publish the winners") }}</button>
+    {% endif %}
+  </form>
+
+  {% if section.history %}
+  <h3 id="history-{{ rule.id }}">{{ _("History") }}</h3>
+  <table class="stack">
+    <thead><tr><th>{{ _("Time") }}</th><th>{{ _("Admin") }}</th><th>{{ _("Action") }}</th><th>{{ _("Reason") }}</th><th>{{ _("Eligible") }}</th><th>{{ _("Fingerprint") }}</th><th>{{ _("Algorithm") }}</th></tr></thead>
+    <tbody>
+      {% for row in section.history %}
+      <tr>
+        <td data-label="{{ _('Time') }}">{{ row.when|when }}</td>
+        <td data-label="{{ _('Admin') }}">{{ row.admin }}</td>
+        <td data-label="{{ _('Action') }}">{{ row.action }}{% if row.superseded %} <small>({{ _("Superseded") }})</small>{% endif %}{% if row.selected < row.requested %}<br><small>{{ _("Drew %(selected)s of %(requested)s requested: not enough eligible.", selected=row.selected, requested=row.requested) }}</small>{% endif %}</td>
+        <td data-label="{{ _('Reason') }}">{{ row.reason or "–" }}</td>
+        <td data-label="{{ _('Eligible') }}">{{ row.count }}</td>
+        <td data-label="{{ _('Fingerprint') }}"><code class="draw-wrap" title="{{ row.fingerprint }}">{{ row.fingerprint[:12] }}…</code><details><summary><small>{{ _("Full") }}</small></summary><code class="draw-wrap">{{ row.fingerprint }}</code></details></td>
+        <td data-label="{{ _('Algorithm') }}"><small class="draw-wrap">{{ row.algorithm }}</small></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

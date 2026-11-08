@@ -1,0 +1,13 @@
+{# So that an admin sees a wrong clock or zone before it spoils a schedule. #}
+{% set clock = server_clock() %}
+<section class="form-section" id="clock" data-server-epoch="{{ clock.epoch }}" data-zone="{{ clock.zone }}" data-server-zone="{{ clock.server_zone }}" data-warn-clock="{{ _('The server and browser clocks differ by more than a minute. A schedule follows the server.') }}" data-warn-zone="{{ _('Your browser is in a different time zone. Times here are in the configured one.') }}" data-warn-server-zone="{{ _('The server runs in a different time zone. Times here are in the configured one.') }}">
+  <h2>{{ _("Time") }}</h2>
+  <p>{{ _("Server") }}: <strong data-server-time>{{ clock.server_text }}</strong> <small>({{ clock.server_zone }})</small></p>
+  <p data-browser hidden>{{ _("Browser") }}: <strong data-browser-time></strong> <small data-browser-zone></small></p>
+  {% if zone_field is defined %}
+  {{ zone_field.as_field_group() }}
+  {% else %}
+  <p>{{ _("Time zone of the application") }}: <strong>{{ clock.zone }}</strong> · <a href="{{ url('admin_settings') }}">{{ _("change in Settings") }}</a></p>
+  {% endif %}
+  <p class="notice" role="alert" data-warning hidden></p>
+</section>

@@ -1,0 +1,12 @@
+{% if identity_error and not identity_form %}<p class="notice" role="alert">{{ identity_error }}</p>{% endif %}
+{% if identity_form %}
+{% set identity = identity_form %}
+<form method="post" action="{{ identity_form.action }}" class="identity-form">
+  {{ csrf_input }}
+  <h3>{{ _("Add your details") }}</h3>
+  <input type="hidden" name="lang" value="{{ locale }}">
+  {% if identity_error %}<p class="notice" role="alert">{{ identity_error }}</p>{% endif %}
+  {% include "public/_identity_fields.html" %}
+  <button type="submit">{{ _("Save") }}</button>
+</form>
+{% endif %}

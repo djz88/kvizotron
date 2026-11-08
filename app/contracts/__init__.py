@@ -5,7 +5,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 CONTRACT_VERSION = "1.0"
 
@@ -19,6 +19,60 @@ PHOTO_ADMINS = "admins"
 PHOTO_AUTHOR = "author"
 PHOTO_PUBLIC = "public"
 MAX_PHOTO_BYTES = 15 * 1024 * 1024  # ADR-0028
+REPEAT_ATTEMPTS = "repeat_attempts"  # allow, forbid
+UNFINISHED_ATTEMPT = "unfinished_attempt"  # continue, used, submitted
+ASK_NAME = "ask_name"  # off, optional, required
+ASK_EMAIL = "ask_email"  # off, optional, required
+ASK_WHEN = "ask_when"  # end, start
+DUPLICATE_NAMES = "duplicate_names"  # allow, forbid
+LOCAL_RESUME = "local_resume"  # on, off
+SCOREBOARD_VISIBILITY = "scoreboard_visibility"  # hidden, live, after_end
+SCOREBOARD_LIVE_NAMES = "scoreboard_live_names"  # shown, anonymised
+SCOREBOARD_UNNAMED = "scoreboard_unnamed"  # anonymous, unlisted
+OFFICIAL_ATTEMPT = "official_attempt"  # best, first
+SCOREBOARD_SHOW_SCORE = "scoreboard_show_score"  # on, off
+SCOREBOARD_SHOW_PERCENT = "scoreboard_show_percent"  # on, off
+SCOREBOARD_SHOW_TIME = "scoreboard_show_time"  # on, off
+SCOREBOARD_SHOW_DURATION = "scoreboard_show_duration"  # on, off
+SCOREBOARD_SECOND_SORT = "scoreboard_second_sort"  # submitted, duration
+TIE_BREAK_POLICY = "tie_break_policy"  # shared, earlier, random (ADR-0026)
+REVISION_MODE = "revision_mode"  # separate, latest; "merged" is an admin action (ADR-0008)
+ARCHIVED_RESULTS = "archived_results"  # off, on (ADR-0031)
+REWARD_SOURCE = "reward_source"  # none, previous_run, quiz; only fills a new run
+REWARD_THRESHOLDS = "reward_thresholds"  # highest, all
+WINNER_CONTACT = "winner_contact"  # warn, require_email, silent
+# Where a setting shows on the settings pages, and whether "Basic" shows it (ADR-0052)
+SETTING_GROUPS = ("playing", "answers", "participants", "scoreboard", "data", "look", "technical")
+BASIC = "basic"
+ADVANCED = "advanced"
+PARTICIPANT_KEYS: tuple[str, ...] = (
+    REPEAT_ATTEMPTS,
+    UNFINISHED_ATTEMPT,
+    ASK_NAME,
+    ASK_EMAIL,
+    ASK_WHEN,
+    DUPLICATE_NAMES,
+)
+RESULT_KEYS: tuple[str, ...] = (
+    SCOREBOARD_VISIBILITY,
+    SCOREBOARD_LIVE_NAMES,
+    SCOREBOARD_UNNAMED,
+    OFFICIAL_ATTEMPT,
+    SCOREBOARD_SHOW_SCORE,
+    SCOREBOARD_SHOW_PERCENT,
+    SCOREBOARD_SHOW_TIME,
+    SCOREBOARD_SHOW_DURATION,
+    SCOREBOARD_SECOND_SORT,
+    TIE_BREAK_POLICY,
+    REVISION_MODE,
+    ARCHIVED_RESULTS,
+)
+# What only changes what is shown, so it may change on a running, ended or archived run.
+RESULT_DISPLAY_KEYS: tuple[str, ...] = tuple(
+    key for key in RESULT_KEYS if key not in (OFFICIAL_ATTEMPT, TIE_BREAK_POLICY, REVISION_MODE)
+)
+# Copied onto the run with its rewards, fixed once the run opens.
+REWARD_RUN_KEYS: tuple[str, ...] = (REWARD_THRESHOLDS, WINNER_CONTACT)
 EXACTLY_ONE: frozenset[str] = frozenset({"auth", "persistence", "media_storage", "retention"})
 
 # Capabilities that must be present to start.
@@ -177,6 +231,121 @@ class QuizFlowPlugin(Protocol):
     def client_options(self, mode: str, moment: str) -> JSON: ...
 
 
+OpenAttempt = Literal["none", "running", "expired"]
+StartDecision = Literal["new", "resume", "replace", "played", "time_up"]
+
+
+@runtime_checkable
+class ParticipantPolicyPlugin(Protocol):
+    """Who may start an attempt and how a nickname and an e-mail are read."""
+
+    id: str
+    version: str
+
+    def clean_name(self, raw: str) -> str:
+        """Spaces collapsed; `""` when empty. Raises `ValueError` over 40 characters."""
+        ...
+
+    def name_key(self, clean: str) -> str: ...
+    def valid_email(self, raw: str) -> bool: ...
+    def on_start(
+        self, rules: Mapping[str, str], *, finished: bool, open_attempt: OpenAttempt
+    ) -> StartDecision:
+        """`replace` closes the open attempt and starts a new one."""
+        ...
+
+
+@dataclass(frozen=True)
+class ScoreEntry:
+    key: str  # the participant id, or "a:" + attempt id without one; never shown
+    attempt_id: str
+    name: str  # "" when none
+    score: Decimal
+    max_score: Decimal
+    submitted_at: datetime
+    duration_ms: int | None
+
+
+@dataclass(frozen=True)
+class RankedRow:
+    rank: int
+    entry: ScoreEntry
+
+
+@dataclass(frozen=True)
+class ScoreSummary:
+    count: int
+    average: Decimal | None
+    median: Decimal | None
+    lowest: Decimal | None
+    highest: Decimal | None
+    bands: tuple[int, ...]  # ten counts, by tenths of the maximum
+
+
+@runtime_checkable
+class ResultViewPlugin(Protocol):
+    """Pure rules over submitted results: storage and queries stay in the domain (ADR-0026)."""
+
+    id: str
+    version: str
+
+    def pick_official(self, entries: Sequence[ScoreEntry], rule: str) -> ScoreEntry: ...
+    def rank(
+        self, entries: Sequence[ScoreEntry], rules: Mapping[str, str], seed: str
+    ) -> list[RankedRow]: ...
+    def summarize(self, scores: Sequence[Decimal], max_score: Decimal) -> ScoreSummary: ...
+
+
+@dataclass(frozen=True)
+class ThresholdRule:
+    id: str
+    unit: str  # percent, points, correct
+    value: Decimal
+
+
+@dataclass(frozen=True)
+class AttemptFigures:
+    score: Decimal
+    max_score: Decimal  # of this attempt, manual part included
+    correct: int
+    questions: int  # of this attempt
+
+
+@runtime_checkable
+class RewardPlugin(Protocol):
+    """Which threshold rules an attempt reaches, on exact values; storage stays in the domain."""
+
+    id: str
+    version: str
+
+    def share(self, rule: ThresholdRule, figures: AttemptFigures) -> Decimal:
+        """The threshold as a share 0-1 of this attempt; above 1 when the maximum is 0."""
+        ...
+
+    def reached(self, rule: ThresholdRule, figures: AttemptFigures) -> bool: ...
+    def qualifies(
+        self, rules: Sequence[ThresholdRule], figures: AttemptFigures, mode: str
+    ) -> list[str]:
+        """Ids of the reached rules; under `highest` only the largest share, ties by order."""
+        ...
+
+
+@runtime_checkable
+class DrawingPlugin(Protocol):
+    """Snapshot order, fingerprint and secure selection of a draw; records stay in the domain."""
+
+    id: str
+    version: str
+    algorithm: str
+
+    def order(self, ids: Iterable[str]) -> list[str]:
+        """Sorted and unique."""
+        ...
+
+    def fingerprint(self, ids: Iterable[str]) -> str: ...
+    def select(self, ids: Iterable[str], count: int) -> list[str]: ...
+
+
 @runtime_checkable
 class AuthenticationProvider(Protocol):
     """A Django authentication backend, named by `auth_backend` in the manifest."""
@@ -304,6 +473,10 @@ PORTS: dict[str, type] = {
     "question_type": QuestionTypePlugin,
     "scoring_strategy": ScoringStrategyPlugin,
     "quiz_flow": QuizFlowPlugin,
+    "participant_policy": ParticipantPolicyPlugin,
+    "result_view": ResultViewPlugin,
+    "reward": RewardPlugin,
+    "drawing": DrawingPlugin,
     "theme": ThemePlugin,
     "media_storage": MediaStorageProvider,
 }

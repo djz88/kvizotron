@@ -92,6 +92,10 @@ msgstr "Adresa %(wanted)s je obsazená, kvíz dostal %(slug)s."
 msgid "A bank question must be complete in at least one language."
 msgstr "Otázka v bance musí být úplná aspoň v jednom jazyce."
 
+#: results.py:202
+msgid "Player NN"
+msgstr "Hráč NN"
+
 #: revision_diff.py:103
 #, python-format
 msgid "%(count)s questions, %(points)s points each"
@@ -146,175 +150,251 @@ msgstr "Typ otázky"
 msgid "Definition"
 msgstr "Definice"
 
-#: settings.py:132
+#: rewards.py:75
+msgid "Rewards need a data profile that keeps scores."
+msgstr "Odměny potřebují profil dat, který uchovává skóre."
+
+#: rewards.py:76
+msgid "Answers after each question cannot go with rewards."
+msgstr "Odpovědi po každé otázce nejdou dohromady s odměnami."
+
+#: rewards.py:77
+msgid "A draw needs a required e-mail under the chosen contact setting."
+msgstr "Při zvoleném kontaktování výherců potřebuje losování povinný e-mail."
+
+#: settings.py:165
 msgid "No"
 msgstr "Ne"
 
-#: settings.py:132
+#: settings.py:165
 msgid "Yes"
 msgstr "Ano"
 
-#: settings.py:138
+#: settings.py:171
 msgid "When a new version is published during a run"
 msgstr "Když se během běhu publikuje nová verze"
 
-#: settings.py:140
+#: settings.py:173
 msgid "Ask at publication"
 msgstr "Zeptat se při publikaci"
 
-#: settings.py:141
+#: settings.py:174
 msgid "Notify participants and let them switch"
 msgstr "Upozornit hráče a nabídnout přepnutí"
 
-#: settings.py:142
+#: settings.py:175
 msgid "Let participants finish on the old version"
 msgstr "Nechat hráče dokončit na staré verzi"
 
-#: settings.py:151
+#: settings.py:185
 msgid "Colours"
 msgstr "Barvy"
 
-#: settings.py:153
+#: settings.py:187
 msgid "Blue and teal"
 msgstr "Modrá a tyrkysová"
 
-#: settings.py:154
+#: settings.py:188
 msgid "Indigo and pink"
 msgstr "Indigo a růžová"
 
-#: settings.py:155
+#: settings.py:189
 msgid "Violet and white"
 msgstr "Fialová a bílá"
 
-#: settings.py:156
+#: settings.py:190
 msgid "Green and blue"
 msgstr "Zelená a modrá"
 
-#: settings.py:157
+#: settings.py:191
 msgid "Red and plum"
 msgstr "Červená a vínová"
 
-#: settings.py:166
+#: settings.py:202
 msgid "Answer \"None of the answers\""
 msgstr "Odpověď „Žádná z odpovědí“"
 
-#: settings.py:169
+#: settings.py:205
 msgid "On every question, which hides trick questions"
 msgstr "U každé otázky, takže chyták nejde poznat"
 
-#: settings.py:171
+#: settings.py:207
 msgid "Only on trick questions"
 msgstr "Jen u chytáků"
 
-#: settings.py:178
-msgid "Stored answers"
-msgstr "Ukládané odpovědi"
+#: settings.py:215
+msgid "What a run keeps"
+msgstr "Co běh ukládá"
 
-#: settings.py:180
-msgid "Only photos"
-msgstr "Jen fotky"
+#: settings.py:217
+msgid "Nothing: only counts"
+msgstr "Nic: jen počty"
 
-#: settings.py:181
-msgid "All answers"
-msgstr "Všechny odpovědi"
+#: settings.py:218
+msgid "Score and photos"
+msgstr "Skóre a fotky"
 
-#: settings.py:190
+#: settings.py:219
+msgid "Score and all answers"
+msgstr "Skóre a všechny odpovědi"
+
+#: settings.py:220
+msgid "Score, all answers and times"
+msgstr "Skóre, všechny odpovědi a časy"
+
+#: settings.py:231
+msgid "How long a run keeps its data"
+msgstr "Jak dlouho běh uchovává data"
+
+#: settings.py:233
+msgid "30 days"
+msgstr "30 dní"
+
+#: settings.py:234
+msgid "90 days"
+msgstr "90 dní"
+
+#: settings.py:235
+msgid "180 days"
+msgstr "180 dní"
+
+#: settings.py:236
+msgid "1 year"
+msgstr "1 rok"
+
+#: settings.py:237
+msgid "3 years"
+msgstr "3 roky"
+
+#: settings.py:238
+msgid "Permanently"
+msgstr "Trvale"
+
+#: settings.py:248
 msgid "Who sees stored answers"
 msgstr "Kdo vidí uložené odpovědi"
 
-#: settings.py:192
+#: settings.py:250
 msgid "Admins"
 msgstr "Správci"
 
-#: settings.py:193
+#: settings.py:251
 msgid "Admins and the participant"
 msgstr "Admini a účastník"
 
-#: settings.py:194
+#: settings.py:252
 msgid "Everyone, after the run ends"
 msgstr "Všichni, po skončení běhu"
 
-#: settings.py:199
-msgid "Needs all answers stored. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
-msgstr "Vyžaduje ukládání všech odpovědí. Volný text může obsahovat cokoli: ve veřejném průchodu se hodnota ukazuje, dokud ji admin neskryje."
+#: settings.py:257
+msgid "Needs a profile that keeps all answers. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
+msgstr "Potřebuje profil, který ukládá všechny odpovědi. Volný text může obsahovat cokoli: ve veřejném průchodu se hodnota zobrazí, dokud ji admin neskryje."
 
-#: settings.py:207
+#: settings.py:266
 msgid "Grading page"
 msgstr "Stránka hodnocení"
 
-#: settings.py:209
+#: settings.py:268
 msgid "By question"
 msgstr "Po otázkách"
 
-#: settings.py:210
+#: settings.py:269
 msgid "By attempt"
 msgstr "Po pokusech"
 
-#: settings.py:219
+#: settings.py:279
 msgid "Sources on the result"
 msgstr "Zdroje u výsledku"
 
-#: settings.py:221
+#: settings.py:281
 msgid "Show"
 msgstr "Zobrazit"
 
-#: settings.py:222
+#: settings.py:282
 msgid "Hide"
 msgstr "Skrýt"
 
-#: settings.py:229
+#: settings.py:290
 msgid "Moving through the questions"
 msgstr "Průchod otázkami"
 
-#: settings.py:231
+#: settings.py:292
 msgid "All questions at once"
 msgstr "Všechny otázky najednou"
 
-#: settings.py:232
+#: settings.py:293
 msgid "One by one, with going back"
 msgstr "Po jedné, s návratem"
 
-#: settings.py:233
+#: settings.py:294
 msgid "One by one, without going back"
 msgstr "Po jedné, bez návratu"
 
-#: settings.py:242
+#: settings.py:295
+msgid "Pages of questions"
+msgstr "Po stránkách"
+
+#: settings.py:306
+msgid "Questions per page"
+msgstr "Otázek na stránku"
+
+#: settings.py:310
+msgid "Only for pages of questions."
+msgstr "Jen pro průchod po stránkách."
+
+#: settings.py:318
 msgid "When to show the answers"
 msgstr "Kdy ukázat odpovědi"
 
-#: settings.py:244
+#: settings.py:320
 msgid "Never"
 msgstr "Nikdy"
 
-#: settings.py:245
+#: settings.py:321
 msgid "At the end"
 msgstr "Na konci"
 
-#: settings.py:246
+#: settings.py:322
 msgid "After each question"
 msgstr "Po každé otázce"
 
-#: settings.py:255
+#: settings.py:333
 msgid "What to show"
 msgstr "Co ukázat"
 
-#: settings.py:257
+#: settings.py:335
 msgid "Whether each answer is right"
 msgstr "Jen zda je odpověď správně"
 
-#: settings.py:258
+#: settings.py:336
 msgid "And the correct answers"
 msgstr "Navíc správné odpovědi"
 
-#: settings.py:259
+#: settings.py:337
 msgid "And the correct answers and explanations"
 msgstr "Navíc správné odpovědi a vysvětlení"
 
-#: settings.py:268
+#: settings.py:347
 msgid "Shuffle the questions"
 msgstr "Míchat otázky"
 
-#: settings.py:277
+#: settings.py:357
 msgid "Shuffle the options"
 msgstr "Míchat možnosti"
+
+#: settings.py:365
+msgid "Time limit for an attempt (minutes)"
+msgstr "Časový limit pokusu (minuty)"
+
+#: settings.py:367
+msgid "No limit"
+msgstr "Bez limitu"
+
+#: settings.py:379
+msgid "Show a planned quiz under \"Coming up\" on the public list"
+msgstr "Ukázat naplánovaný kvíz v sekci Chystá se na veřejném seznamu"
+
+#: settings.py:389
+msgid "Time zone"
+msgstr "Časové pásmo"
 

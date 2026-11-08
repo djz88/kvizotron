@@ -1,0 +1,96 @@
+#: manifest.py:19
+msgid "Do not ask"
+msgstr "Не питати"
+
+#: manifest.py:20
+msgid "Ask, may be left empty"
+msgstr "Питати, можна залишити порожнім"
+
+#: manifest.py:21
+msgid "Require"
+msgstr "Вимагати"
+
+#: manifest.py:40
+msgid "Attempt repeats"
+msgstr "Повторення спроби"
+
+#: manifest.py:42
+msgid "Anyone may play again"
+msgstr "Кожен може грати знову"
+
+#: manifest.py:43
+msgid "One attempt per browser"
+msgstr "Одна спроба на браузер"
+
+#: manifest.py:46
+msgid "The browser is recognised by a cookie, so another browser or a cleared cookie starts a new attempt."
+msgstr "Браузер розпізнається за cookie, тож інший браузер або видалені cookie починають нову спробу."
+
+#: manifest.py:56
+msgid "An unfinished attempt"
+msgstr "Незавершена спроба"
+
+#: manifest.py:58
+msgid "The participant continues it"
+msgstr "Учасник продовжує її"
+
+#: manifest.py:59
+msgid "It counts as the one attempt"
+msgstr "Вона вважається єдиною спробою"
+
+#: manifest.py:60
+msgid "It is closed and a new one may start"
+msgstr "Її закривають, і може початися нова"
+
+#: manifest.py:62
+msgid "Only matters when an attempt may not be repeated."
+msgstr "Має значення лише тоді, коли спробу не можна повторювати."
+
+#: manifest.py:70
+msgid "Nickname"
+msgstr "Псевдонім"
+
+#: manifest.py:73
+msgid "The administration of this run shows it, and so does the run's public scoreboard when the admin turns it on."
+msgstr "Його показує адміністрація цього запуску, а також публічна таблиця результатів, коли адміністратор її ввімкне."
+
+#: manifest.py:83
+msgid "E-mail"
+msgstr "Електронна пошта"
+
+#: manifest.py:85
+msgid "An e-mail is shown only to logged-in administrators, never publicly."
+msgstr "Електронну пошту бачать лише адміністратори після входу, ніколи публіка."
+
+#: manifest.py:93
+msgid "When to ask"
+msgstr "Коли питати"
+
+#: manifest.py:95
+msgid "After the last question"
+msgstr "Після останнього питання"
+
+#: manifest.py:96
+msgid "Before the first question"
+msgstr "Перед першим питанням"
+
+#: manifest.py:98
+msgid "Applies to the nickname and the e-mail."
+msgstr "Стосується псевдоніма й електронної пошти."
+
+#: manifest.py:106
+msgid "Same nickname twice"
+msgstr "Той самий псевдонім двічі"
+
+#: manifest.py:107
+msgid "Allow"
+msgstr "Дозволити"
+
+#: manifest.py:107
+msgid "Refuse within one run"
+msgstr "Відмовити в межах одного запуску"
+
+#: manifest.py:108
+msgid "Names differing only by case or inner spaces count as the same."
+msgstr "Імена, що відрізняються лише регістром або пробілами всередині, вважаються однаковими."
+

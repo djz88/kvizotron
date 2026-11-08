@@ -1,8 +1,9 @@
 {% from "admin/_chips.html" import content_chips, run_status %}
-{% set tabs = [("edit", "admin_quiz_edit", _("Questions")), ("runs", "admin_run_open", _("Runs")), ("grading", "admin_quiz_grading", _("Grading")), ("tests", "admin_quiz_tests", _("Test links")), ("revisions", "admin_revisions", _("Revisions")), ("settings", "admin_quiz_settings", _("Settings"))] %}
+{% set tabs = [("edit", "admin_quiz_edit", _("Questions")), ("runs", "admin_run_open", _("Runs")), ("grading", "admin_quiz_grading", _("Grading")), ("settings", "admin_quiz_settings", _("Settings"))] %}
+{% set more_tabs = [("rewards", "admin_quiz_rewards", _("Rewards")), ("tests", "admin_quiz_tests", _("Test links")), ("revisions", "admin_revisions", _("Revisions"))] %}
 <div class="quiz-head">
   <details class="quiz-fold" open>
-    <summary><strong>{{ title }}</strong><span>{% for key, name, label in tabs %}{% if key == tab %}{{ label }}{% endif %}{% endfor %}</span></summary>
+    <summary><strong>{{ title }}</strong><span>{% for key, name, label in tabs + more_tabs %}{% if key == tab %}{{ label }}{% endif %}{% endfor %}</span></summary>
     <div class="quiz-title">
       <h1>{{ title }}</h1>
       <ul class="chips">{{ content_chips(state) }}</ul>
@@ -18,12 +19,30 @@
       <span>{{ _("Public address") }}: <a href="{{ url('quiz', args=[quiz.slug]) }}">/q/{{ quiz.slug }}</a> · {{ _("Languages") }}: {{ quiz.supported_locales|join(", ") }}</span>
       <span class="status-area">{{ run_status(state) }}</span>
       <a href="{{ url('admin_preview', args=[quiz.id]) }}">{{ _("Preview") }}</a>
+      {% set shown_run = state.open_run or state.last_run %}
+      {% if shown_run and shown_run.status != "ARCHIVED" %}
+      <span>{{ _("Run %(no)s", no=shown_run.run_no) }}:
+        <a href="{{ url('admin_run', args=[shown_run.id]) }}#statistics">{{ _("Statistics") }}</a> ·
+        <a href="{{ url('admin_run', args=[shown_run.id]) }}#scoreboard">{{ _("Scoreboard") }}</a> ·
+        <a href="{{ url('scoreboard', args=[quiz.slug, shown_run.id]) }}?view=projector">{{ _("Projector") }}</a>
+      </span>
+      {% endif %}
     </div>
     <nav class="tabs" aria-label="{{ _('Parts of this quiz') }}">
       <ul>
         {% for key, name, label in tabs %}
         <li><a href="{{ url(name, args=[quiz.id]) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}{% if key == "grading" and waiting %} <span class="chip chip-count">{{ waiting }}</span>{% endif %}</a></li>
         {% endfor %}
+        <li>
+          <details class="tab-more"{% if tab in ("rewards", "tests", "revisions") %} open{% endif %}>
+            <summary{% if tab in ("rewards", "tests", "revisions") %} aria-current="page"{% endif %}>{{ _("More") }}</summary>
+            <ul>
+              {% for key, name, label in more_tabs %}
+              <li><a href="{{ url(name, args=[quiz.id]) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a></li>
+              {% endfor %}
+            </ul>
+          </details>
+        </li>
       </ul>
     </nav>
   </details>

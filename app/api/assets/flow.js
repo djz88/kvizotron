@@ -1,8 +1,9 @@
-// One question at a time. Without this script the same form shows them all on one page.
+// One question, or one page of questions, at a time.
+// Without this script the same form shows them all on one page.
 (function () {
   "use strict";
 
-  function setProgress(form, text, current, total) {
+  function setProgress(form, text, current, total, first) {
     var box = form.querySelector(".flow-progress");
     if (!box) {
       return;
@@ -10,6 +11,8 @@
     box.hidden = false;
     box.querySelector("span").textContent = text
       .replace("{current}", current)
+      .replace("{first}", first === undefined ? current : first)
+      .replace("{last}", current)
       .replace("{total}", total);
     var bar = box.querySelector("progress");
     bar.max = total;
@@ -98,20 +101,34 @@
     var previous = nav.querySelector("[data-flow-previous]");
     var next = nav.querySelector("[data-flow-next]");
     var submit = form.querySelector("#play-submit");
+    var size = Math.max(Number(form.dataset.flowPage) || 1, 1);
+    var steps = Math.ceil(sections.length / size);
     var current = 0;
 
     function show(index, moveFocus) {
       current = index;
+      var first = index * size;
+      var end = Math.min(first + size, sections.length);
       sections.forEach(function (section, position) {
-        section.hidden = position !== index;
+        section.hidden = position < first || position >= end;
       });
-      var last = index === sections.length - 1;
+      var last = index === steps - 1;
       previous.hidden = index === 0 || !("flowBack" in form.dataset);
       next.hidden = last;
       submit.hidden = !last;
-      setProgress(form, form.dataset.progressStep, index + 1, sections.length);
+      var identity = form.querySelector("[data-identity-fields]");
+      if (identity) {
+        identity.hidden = !last;
+      }
+      if (size > 1) {
+        setProgress(form, form.dataset.progressPage, end, sections.length, first + 1);
+      } else {
+        setProgress(form, form.dataset.progressStep, index + 1, sections.length);
+      }
+      // The index is the step: a question, or a page of them, which resume.js restores.
+      form.dispatchEvent(new CustomEvent("kvz:step", { bubbles: true, detail: { index: index } }));
       if (moveFocus) {
-        sections[index].focus();
+        sections[first].focus();
       }
     }
 
@@ -120,6 +137,11 @@
     });
     previous.addEventListener("click", function () {
       show(current - 1, true);
+    });
+    // A restored attempt goes back to the question it was left on.
+    form.addEventListener("kvz:goto", function (event) {
+      var index = Math.min(Math.max(Number(event.detail.index) || 0, 0), steps - 1);
+      show(index, false);
     });
     // Enter in a field would submit the whole quiz from the middle of it.
     form.addEventListener("keydown", function (event) {

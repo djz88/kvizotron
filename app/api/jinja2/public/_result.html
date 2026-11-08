@@ -2,13 +2,18 @@
 <section class="card result">
   <h2>{{ _("Your score") }}</h2>
   <p class="score"><strong>{{ earned|number }} / {{ maximum|number }}</strong> <span>{{ percentage|number }} %</span></p>
+  {% if place is defined %}<p role="status">{{ _("Your place: %(rank)s. of %(total)s", rank=place[0], total=place[1]) }} · <a href="{{ scoreboard_url }}?lang={{ locale }}">{{ _("Scoreboard") }}</a></p>{% endif %}
+  {% if time_ran_out|default(false) %}<p class="notice" role="status">{{ _("The time ran out, so your answers were sent automatically.") }}</p>{% endif %}
   {% if pending %}<p class="notice" role="status">{{ _("This score is provisional: part of the points is waiting for grading.") }}</p>{% endif %}
+  {% if stateless|default(false) %}<p class="notice" role="status">{{ _("This result cannot be shown again, and it is not saved anywhere.") }}</p>{% endif %}
   {% if result_link %}
   <div class="result-link" data-result-link="{{ result_link }}"{% if remember_quiz %} data-result-quiz="{{ remember_quiz }}"{% endif %}>
     <p><a href="{{ result_link }}">{{ _("Your private result link") }}</a></p>
     <p><small>{{ _("Save this link. It shows your final score and is the only way back to it from another device. Anyone with the link can open it.") }}</small></p>
   </div>
   {% endif %}
+  {% include "public/_rewards.html" %}
+  {% include "public/_identity_form.html" %}
   {% if revealed %}
   <div class="reveal-list">
     <h3>{{ _("Your answers") }}</h3>

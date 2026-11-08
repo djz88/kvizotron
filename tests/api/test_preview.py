@@ -1,11 +1,13 @@
-"""A preview plays like the real thing and stores nothing (AC-45)."""
+"""A preview plays like the real thing and stores nothing (AC-45, AC-75)."""
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from django.apps import apps
 from django.test import Client
 
 from app.domain import authoring, settings
-from app.domain.models import Attempt
+from app.domain.models import Attempt, Participant
 from tests.domain.helpers import (
     ADMIN_ID,
     OPTION_A,
@@ -17,6 +19,7 @@ from tests.domain.helpers import (
     published_quiz,
 )
 from tests.support.client import FormClient
+from tests.support.clock import freeze
 
 pytestmark = pytest.mark.django_db
 
@@ -44,6 +47,10 @@ def question_ids(html):
     return [piece.split('"')[0] for piece in html.split('data-question="')[1:]]
 
 
+# Answers after each question need one question per step (ADR-0052).
+WITHOUT_CHECK = (settings.Navigation.ALL_AT_ONCE, settings.Navigation.PAGES)
+
+
 @pytest.mark.parametrize("navigation", [mode.value for mode in settings.Navigation])
 def test_clicking_through_stores_nothing(logged_in, navigation):
     quiz = published_quiz(locales=("cs", "en"))
@@ -52,16 +59,16 @@ def test_clicking_through_stores_nothing(logged_in, navigation):
     settings.set_override(
         settings.REVEAL_MOMENT,
         quiz,
-        settings.RevealMoment.AFTER_EACH
-        if navigation != settings.Navigation.ALL_AT_ONCE
-        else settings.RevealMoment.AT_END,
+        settings.RevealMoment.AT_END
+        if navigation in WITHOUT_CHECK
+        else settings.RevealMoment.AFTER_EACH,
         admin_id=ADMIN_ID,
     )
     before = row_counts()
     html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
     assert "Koncept en" in html
     ids = question_ids(html)
-    if navigation != settings.Navigation.ALL_AT_ONCE:
+    if navigation not in WITHOUT_CHECK:
         check = logged_in.post(
             f"/admin/quizzes/{quiz.id}/preview/check",
             {
@@ -266,3 +273,141 @@ def test_action_links_exist(logged_in):
     assert f"/admin/quizzes/{quiz.id}/preview" in edit
     revisions = text(logged_in.get(f"/admin/quizzes/{quiz.id}/revisions"))
     assert f"/admin/quizzes/{quiz.id}/preview/1" in revisions
+
+
+TIMED_NOW = datetime(2030, 1, 1, 10, 0, tzinfo=UTC)
+
+
+@pytest.fixture
+def frozen(monkeypatch):
+    """Ahead of `logged_in`, so the login is not older than the session allows."""
+    freeze(monkeypatch, TIMED_NOW)
+
+
+def limited_quiz():
+    quiz = make_quiz(locales=("en",))
+    add_question(quiz)
+    settings.set_override(settings.ATTEMPT_LIMIT, quiz, "10", admin_id=None)
+    return quiz
+
+
+def preview_url(quiz):
+    return f"/admin/quizzes/{quiz.id}/preview"
+
+
+def test_preview_has_no_limit_by_default(logged_in):
+    html = text(logged_in.get(preview_url(limited_quiz())))
+    assert 'id="countdown"' not in html
+
+
+def test_the_switch_is_offered_only_when_the_quiz_has_a_limit(logged_in):
+    quiz = limited_quiz()
+    assert "timed=1" in text(logged_in.get(preview_url(quiz)))
+    plain = make_quiz(slug="bez", locales=("en",))
+    add_question(plain)
+    assert "timed=1" not in text(logged_in.get(preview_url(plain)))
+
+
+def test_timed_preview_shows_a_countdown_without_polling(frozen, logged_in, monkeypatch):
+    html = text(logged_in.get(preview_url(limited_quiz()) + "?timed=1"))
+    assert 'data-remaining="600"' in html
+    assert "data-time-url" not in html
+
+
+def test_a_timed_preview_can_switch_it_off(logged_in):
+    html = text(logged_in.get(preview_url(limited_quiz()) + "?timed=1"))
+    assert "timed=1" not in html.split("mode-bar")[1].split("</p>")[0]
+
+
+def test_a_timed_preview_over_the_limit_is_refused(frozen, logged_in, monkeypatch):
+    quiz = limited_quiz()
+    html = text(logged_in.get(preview_url(quiz) + "?timed=1&lang=en"))
+    before = row_counts()
+    freeze(monkeypatch, TIMED_NOW + timedelta(seconds=601))
+    response = submit(logged_in, quiz, html)
+    assert response.status_code == 410
+    assert "run out" in text(response)
+    assert row_counts() == before
+
+
+def test_a_timed_preview_within_the_limit_is_scored(frozen, logged_in, monkeypatch):
+    quiz = limited_quiz()
+    html = text(logged_in.get(preview_url(quiz) + "?timed=1"))
+    freeze(monkeypatch, TIMED_NOW + timedelta(seconds=600, milliseconds=900))
+    assert submit(logged_in, quiz, html).status_code == 200
+
+
+def test_an_untimed_preview_never_runs_out(frozen, logged_in, monkeypatch):
+    quiz = limited_quiz()
+    html = text(logged_in.get(preview_url(quiz)))
+    freeze(monkeypatch, TIMED_NOW + timedelta(hours=5))
+    assert submit(logged_in, quiz, html).status_code == 200
+
+
+def test_reloading_starts_with_the_full_limit(frozen, logged_in, monkeypatch):
+    quiz = limited_quiz()
+    logged_in.get(preview_url(quiz) + "?timed=1")
+    freeze(monkeypatch, TIMED_NOW + timedelta(minutes=5))
+    assert 'data-remaining="600"' in text(logged_in.get(preview_url(quiz) + "?timed=1"))
+
+
+def test_a_timed_preview_auto_submit_treats_an_unreadable_answer_as_unanswered(logged_in):
+    quiz = make_quiz(locales=("en",))
+    authoring.save_question(
+        quiz,
+        None,
+        "number",
+        {
+            "prompt": {"en": "How many?"},
+            "value": "10",
+            "tolerance": "0",
+            "tolerance_kind": "absolute",
+        },
+    )
+    settings.set_override(settings.ATTEMPT_LIMIT, quiz, "10", admin_id=None)
+    html = text(logged_in.get(preview_url(quiz) + "?timed=1"))
+    question = html.split('data-question="')[1].split('"')[0]
+    answers = {f"{question}:value": "abc"}
+    assert submit(logged_in, quiz, html, answers).status_code == 400
+    response = submit(logged_in, quiz, html, answers | {"auto_submit": "1"})
+    assert response.status_code == 200
+    assert "The time ran out" in text(response) or "Čas vypršel" in text(response)
+
+
+@pytest.mark.parametrize("when", ["end", "start"])
+def test_preview_shows_fields_and_stores_nothing(logged_in, when):
+    quiz = published_quiz(locales=("cs", "en"))
+    settings.set_override("ask_name", quiz, "required", admin_id=ADMIN_ID)
+    settings.set_override("ask_email", quiz, "optional", admin_id=ADMIN_ID)
+    settings.set_override("ask_when", quiz, when, admin_id=ADMIN_ID)
+    before = row_counts()
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
+    assert 'name="participant_name"' in html
+    assert 'name="participant_email"' in html
+    assert 'type="hidden" name="participant_name"' not in html
+    result = submit(
+        logged_in,
+        quiz,
+        html,
+        {"participant_name": "Tajnajana", "participant_email": "tajne@x.cz"},
+    )
+    assert result.status_code == 200
+    assert "Your score" in text(result)
+    assert "Tajnajana" not in text(result)
+    assert row_counts() == before
+    assert not Participant.objects.exists()
+
+
+def test_preview_without_name_or_email_shows_no_fields(logged_in):
+    quiz = published_quiz()
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
+    assert "participant_name" not in html
+
+
+def test_preview_steps_by_the_quiz_page_size(logged_in):
+    """AC-88: the preview shows the pages a participant will get."""
+    quiz = published_quiz(locales=("cs", "en"), questions=3)
+    settings.set_override(settings.NAVIGATION_MODE, quiz, "pages", admin_id=ADMIN_ID)
+    settings.set_override(settings.PAGE_SIZE, quiz, "2", admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
+    assert 'data-flow-page="2"' in html

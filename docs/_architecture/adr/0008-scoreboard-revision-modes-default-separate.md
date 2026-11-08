@@ -42,6 +42,6 @@ scoring strategies) and warns that equal points do not guarantee equal difficult
 and the confirmation is written to `audit_event`. This replaces the undefined "compatible scoring
 metric" of the original spec.
 
-FR-30; [../modules/domain.md](../modules/domain.md), [../plugins/results-scoreboard.md](../plugins/results-scoreboard.md).
+FR-30; [../modules/domain.md](../modules/domain.md), [../plugins/results.md](../plugins/results.md).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)

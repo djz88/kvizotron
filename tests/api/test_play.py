@@ -78,6 +78,7 @@ def test_start_html_has_no_answer_key(client, run):
     def normalised(current):
         html = text(Play(client, current).start_response)
         html = re.sub(r'name="(attempt_token|submission_key)" value="[^"]*"', "", html)
+        html = re.sub(r' data-(run|attempt|copy-expires)="[^"]*"', "", html)
         return re.sub(r"/a/[^/]+/(submit|revision-status)", "", html)
 
     first = normalised(run)

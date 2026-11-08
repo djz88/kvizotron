@@ -1,0 +1,16 @@
+#: manifest.py:25
+msgid "Resume in this browser"
+msgstr "Продовження в цьому браузері"
+
+#: manifest.py:27
+msgid "Keep unsent answers on this device"
+msgstr "Зберігати невідправлені відповіді на цьому пристрої"
+
+#: manifest.py:28
+msgid "Do not keep unsent answers"
+msgstr "Не зберігати невідправлені відповіді"
+
+#: manifest.py:31
+msgid "Answers stay on this device until the attempt ends, at most 24 hours; a shared device can show them to the next person."
+msgstr "Відповіді залишаються на цьому пристрої до кінця спроби, щонайбільше 24 години; на спільному пристрої їх може побачити наступна людина."
+

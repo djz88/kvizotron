@@ -23,6 +23,7 @@ def run():
 
 
 def test_page_carries_the_mode(client, run):
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "all_at_once", admin_id=None)
     assert "data-flow-step" not in start_page(client, run)
     settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
     html = start_page(client, run)
@@ -57,6 +58,9 @@ def test_flow_script_is_served_and_included(client, run):
         ("cs", "Otázka {current} z {total}"),
         ("en", "Question {current} of {total}"),
         ("uk", "Питання {current} з {total}"),
+        ("cs", "Otázky {first}–{last} z {total}"),
+        ("en", "Questions {first}–{last} of {total}"),
+        ("uk", "Питання {first}–{last} з {total}"),
     ],
 )
 def test_progress_texts_are_translated(client, lang, text):
@@ -90,3 +94,31 @@ def test_check_button_does_not_inherit_the_jump_to_the_top(client, run):
     settings.set_override(settings.REVEAL_MOMENT, run.quiz, "after_each", admin_id=None)
     html = start_page(client, run)
     assert re.search(r'<button[^>]*data-flow-check-button[^>]*hx-swap="innerHTML"', html)
+
+
+def test_pages_mode_carries_the_page_size(client, run):
+    """AC-88: pages step by N questions and allow going back."""
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "pages", admin_id=None)
+    settings.set_override(settings.PAGE_SIZE, run.quiz, "2", admin_id=None)
+    html = start_page(client, run, "uk")
+    assert "data-flow-step" in html and "data-flow-back" in html
+    assert 'data-flow-page="2"' in html
+    assert "data-progress-page=" in html
+
+
+def test_page_size_is_fixed_when_the_attempt_starts(client, run):
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "pages", admin_id=None)
+    settings.set_override(settings.PAGE_SIZE, run.quiz, "3", admin_id=None)
+    html = start_page(client, run)
+    token = re.search(r'name="attempt_token" value="([^"]+)"', html).group(1)
+    attempt_id = re.search(r'data-attempt="([^"]+)"', html).group(1)
+    settings.set_override(settings.PAGE_SIZE, run.quiz, "7", admin_id=None)
+    resumed = client.post(
+        f"/r/{run.id}/resume", {"attempt_id": attempt_id, "attempt_token": token}, headers=HTMX
+    )
+    assert 'data-flow-page="3"' in resumed.content.decode()
+
+
+def test_one_question_steps_carry_page_one(client, run):
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    assert 'data-flow-page="1"' in start_page(client, run)

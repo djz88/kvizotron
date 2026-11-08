@@ -46,11 +46,12 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 
 | Milestone | Content |
 |---|---|
-| C1 Runs | Separate runs/restart, schedule, deadline, attempt time limit |
-| C2 Participants | Cookie identity, attempt/duplicate rules, access code, name/e-mail collection |
-| C3 Data policies | Retention profiles, stateless mode, local resume |
-| C4 Results | Results, scoreboard incl. revision modes, analytics (grading of image answers came with B6) |
-| C5 Rewards & draw | Threshold rewards, entitlements, manual draw, audit |
+| C1 Runs | Separate runs/restart, schedule, deadline, attempt time limit, archive of a run, configured time zone (AC-05, AC-07, AC-62 to AC-69). Done 2026-11-07 |
+| C2 Participants | Cookie identity, attempt/duplicate rules, access code, name/e-mail collection (AC-70 to AC-76). Done 2026-11-07 |
+| C3 Data policies | Data profile, stateless mode, retention period as a run value, local resume (AC-09, AC-11, AC-77 to AC-80). Done 2026-11-08 |
+| C4 Results | Public scoreboard with visibility, anonymised live names, one official attempt per browser, ties, revision modes and merging, projector view, statistics and comparison of runs, sortable attempts table (AC-06, AC-16, AC-18, AC-81 to AC-85). Done 2026-11-08 |
+| C4.5 UI simplification | "Basic / All" switch and seven setting groups on every settings page, a run plan that shows what differs, quiz tabs with More, a shorter run page, pages of questions, one question at a time by default for new installations, the logo in the bar and on About (AC-86 to AC-89). Done 2026-11-08 |
+| C5 Rewards & draw | Threshold, participation, manual and draw rewards copied onto a run from the quiz template or the previous run, tiers and winner contact as settings, entitlements from the official attempt with claim instructions on the result, a manual draw with ranked alternates, move-up, substitute and redraw in an append-only history, published winners on the scoreboard (AC-90 to AC-93). Done 2026-11-08 |
 
 - **Exit criteria:** all acceptance criteria with Stage = C in [acceptance-criteria.md](acceptance-criteria.md).
 - **Risks:** SQLite single writer under simultaneous submit — early load spike test.

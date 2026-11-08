@@ -37,9 +37,9 @@ def test_quiz_form_refuses_public_without_all(logged_in):
     quiz = make_quiz()
     response = logged_in.post(
         f"/admin/quizzes/{quiz.id}/settings",
-        behaviour(quiz, answers_visibility="public", store_answers="images"),
+        behaviour(quiz, answers_visibility="public", data_profile="score"),
     )
-    assert "ukládat všechny" in text(response)
+    assert "ukládá všechny" in text(response)
     assert settings.quiz_override(settings.ANSWERS_VISIBILITY, quiz) is None
 
 
@@ -47,7 +47,7 @@ def test_quiz_form_takes_public_with_all(logged_in):
     quiz = make_quiz()
     response = logged_in.post(
         f"/admin/quizzes/{quiz.id}/settings",
-        behaviour(quiz, answers_visibility="public", store_answers="all"),
+        behaviour(quiz, answers_visibility="public", data_profile="answers"),
     )
     assert response.status_code == 302
     assert settings.answers_visibility(quiz) == "public"
@@ -55,21 +55,22 @@ def test_quiz_form_takes_public_with_all(logged_in):
 
 def test_global_conflict_behaves_as_admins_and_warns(logged_in):
     quiz = make_quiz()
-    settings.set_global(settings.STORE_ANSWERS, "all", admin_id=ADMIN_ID)
+    settings.set_global(settings.DATA_PROFILE, "answers", admin_id=ADMIN_ID)
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "public", admin_id=ADMIN_ID)
     assert settings.answers_visibility(quiz) == "public"
-    settings.set_global(settings.STORE_ANSWERS, "images", admin_id=ADMIN_ID)
+    settings.set_global(settings.DATA_PROFILE, "score", admin_id=ADMIN_ID)
     assert settings.answers_visibility(quiz) == "admins"
-    assert "ukládá jen fotky" in text(logged_in.get(f"/admin/quizzes/{quiz.id}/settings"))
+    assert "ukládá méně" in text(logged_in.get(f"/admin/quizzes/{quiz.id}/settings"))
 
 
-def test_global_form_offers_the_settings_and_refuses_the_conflict(logged_in):
+def test_global_form_offers_the_settings_and_refuses_the_conflict(showing_all):
+    logged_in = showing_all
     html = text(logged_in.get("/admin/settings"))
-    assert 'name="store_answers"' in html and 'name="grading_view"' in html
+    assert 'name="data_profile"' in html and 'name="grading_view"' in html
     response = logged_in.post(
-        "/admin/settings", {"store_answers": "images", "answers_visibility": "public"}
+        "/admin/settings", {"data_profile": "score", "answers_visibility": "public"}
     )
-    assert "ukládat všechny" in text(response)
+    assert "ukládá všechny" in text(response)
     assert settings.resolve(settings.ANSWERS_VISIBILITY) == "admins"
 
 

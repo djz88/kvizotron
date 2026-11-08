@@ -103,7 +103,7 @@ def test_question_override_wins(quiz, photo_setting):
 def test_participant_sees_answers_only_when_allowed(quiz, photo_setting):
     row, _question = row_of(quiz)
     assert visibility.participant_sees_answers(row.attempt) is False
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "participant", admin_id=ADMIN_ID)
     assert visibility.participant_sees_answers(row.attempt) is True
 

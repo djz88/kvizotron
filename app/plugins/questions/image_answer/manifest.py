@@ -15,6 +15,7 @@ MANIFEST = {
     "settings": [
         {
             "key": "photo_visibility",
+            "group": "answers",
             "choices": ["author", "admins", "public"],
             "default": "author",
             "label": _("Who sees a photo"),

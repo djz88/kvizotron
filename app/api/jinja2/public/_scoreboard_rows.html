@@ -1,0 +1,41 @@
+<div id="scoreboard-rows" aria-live="polite"{% if poll %} hx-get="{{ rows_url }}" hx-trigger="every {{ poll_seconds }}s" hx-swap="outerHTML"{% endif %}>
+  {% if reason %}
+  <p class="card" role="status">{{ reason }}</p>
+  {% else %}
+  {% for table in board.tables %}
+  {% if board.tables|length > 1 %}<h2>{{ _("Revision %(no)s", no=table.revision_no) }} · {{ _("of %(points)s points", points=table.max_score|number) }}</h2>{% endif %}
+  {% if table.rows %}
+  <table class="stack">
+    <thead>
+      <tr>
+        <th scope="col">{{ _("Place") }}</th>
+        <th scope="col">{{ _("Name") }}</th>
+        {% if projector or "score" in board.columns %}<th scope="col">{{ _("Score") }}</th>{% endif %}
+        {% if not projector %}
+        {% if "percent" in board.columns %}<th scope="col">%</th>{% endif %}
+        {% if "time" in board.columns %}<th scope="col">{{ _("Submitted") }}</th>{% endif %}
+        {% if "duration" in board.columns %}<th scope="col">{{ _("Duration") }}</th>{% endif %}
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in table.rows %}
+      <tr{% if row.mine %} data-mine{% endif %}>
+        <td data-label="{{ _('Place') }}">{{ row.rank }}.</td>
+        <td data-label="{{ _('Name') }}">{{ row.label }}{% if row.mine %} <strong>({{ _("you") }})</strong>{% endif %}</td>
+        {% if projector or "score" in board.columns %}<td data-label="{{ _('Score') }}">{{ row.score|number }}{% if not projector %} / {{ row.max_score|number }}{% endif %}</td>{% endif %}
+        {% if not projector %}
+        {% if "percent" in board.columns %}<td data-label="%">{{ row.percent }} %</td>{% endif %}
+        {% if "time" in board.columns %}<td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>{% endif %}
+        {% if "duration" in board.columns %}<td data-label="{{ _('Duration') }}">{% if row.duration_ms is not none %}{{ (row.duration_ms // 1000) // 60 }}:{{ "%02d"|format((row.duration_ms // 1000) % 60) }}{% endif %}</td>{% endif %}
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="card">{{ _("No results yet.") }}</p>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</div>

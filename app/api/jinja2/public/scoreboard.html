@@ -1,0 +1,32 @@
+{% extends "public/base.html" %}
+{% block title %}{{ _("Scoreboard") }} · {{ title }} · Kvízotron{% endblock %}
+{% block content %}
+{% if not projector %}{% include "public/_mode_bar.html" %}{% endif %}
+<section class="scoreboard{% if projector %} projector{% endif %}">
+  <div class="hero">
+    <h1>{{ title }}</h1>
+    <p>{{ _("Scoreboard") }}</p>
+  </div>
+  <p class="scoreboard-tools">
+    {% if projector %}
+    <a href="{{ page_url }}?lang={{ locale }}">{{ _("Normal view") }}</a>
+    <button type="button" class="secondary" data-fullscreen hidden>{{ _("Full screen") }}</button>
+    {% else %}
+    <a href="{{ page_url }}?view=projector&amp;lang={{ locale }}">{{ _("Projector") }}</a>
+    · <a href="{{ quiz_url }}?lang={{ locale }}">{{ _("Back to the quiz") }}</a>
+    {% endif %}
+  </p>
+  {% include "public/_scoreboard_rows.html" %}
+  {% if winners %}
+  <section class="card winners">
+    <h2>{{ _("Winners") }}</h2>
+    {% for name, people in winners %}
+    <h3>{{ name }}</h3>
+    <ul>
+      {% for person in people %}<li>{{ person }}</li>{% endfor %}
+    </ul>
+    {% endfor %}
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

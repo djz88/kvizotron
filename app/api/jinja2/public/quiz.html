@@ -10,13 +10,59 @@
   </div>
   {% include "public/_result_slot.html" %}
 {% if walkthrough_url %}<p class="card"><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+{% if offered %}
+  <div class="rewards card">
+    <h2>{{ _("Rewards") }}</h2>
+    <ul>
+      {% for name, description in offered %}
+      <li>{% if name %}<strong>{{ name }}</strong>{% endif %}{% if name and description %} · {% endif %}{{ description }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+{% if scoreboard_url %}<p class="card"><a href="{{ scoreboard_url }}?lang={{ locale }}">{{ _("Scoreboard") }}</a></p>{% endif %}
   <div class="card">
     {% if is_open %}
     <p>{{ _("Questions: %(count)s", count=question_count) }}</p>
-    <form method="post" action="{{ url('start', args=[run.id]) }}" hx-post="{{ url('start', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+    {% if limit_text %}<p>{{ _("Time for the quiz: %(time)s", time=limit_text) }}</p>{% endif %}
+    {% if deadline_text %}<p>{{ _("Deadline: %(when)s", when=deadline_text) }}</p>{% endif %}
+    {% if shortened_text %}<p class="notice" role="status">{{ _("The deadline comes sooner, so you will have only %(time)s.", time=shortened_text) }}</p>{% endif %}
+    {% if stateless %}<p>{{ _("The result is shown only once after you submit, and it is not saved anywhere.") }}</p>{% endif %}
+    {% if code_needed %}
+    <form method="post" action="{{ url('run_code', args=[run.id]) }}">
+      {{ csrf_input }}
       <input type="hidden" name="lang" value="{{ locale }}">
+      <label>{{ _("Access code") }}
+        <input type="text" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" autofocus>
+      </label>
+      {% if code_error %}<p class="notice" role="alert">{{ code_error }}</p>{% endif %}
+      <button type="submit">{{ _("Continue") }}</button>
+    </form>
+    {% else %}
+    <div data-resume-offer data-run="{{ run.id }}"{% if may_restart %} data-may-restart{% endif %} hidden>
+      <p class="notice" role="status">{{ _("You have an unfinished attempt on this device.") }}</p>
+      <form method="post" action="{{ url('resume', args=[run.id]) }}" hx-post="{{ url('resume', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+        <input type="hidden" name="lang" value="{{ locale }}">
+        <input type="hidden" name="attempt_id" value="">
+        <input type="hidden" name="attempt_token" value="">
+        <button type="submit">{{ _("Continue") }}</button>
+        {% if may_restart %}<button type="button" class="secondary" data-resume-restart>{{ _("Start again") }}</button>{% endif %}
+      </form>
+    </div>
+    <form data-start-form method="post" action="{{ url('start', args=[run.id]) }}" hx-post="{{ url('start', args=[run.id]) }}" hx-target="#play" hx-disabled-elt="find button">
+      <input type="hidden" name="lang" value="{{ locale }}">
+      {% if identity %}{% include "public/_identity_fields.html" %}{% endif %}
       <button type="submit">{{ _("Start") }}</button>
     </form>
+    {% endif %}
+    {% elif planned %}
+    {% if starts_in is not none %}
+    <p data-starts-in="{{ starts_in }}">{{ _("This quiz starts %(when)s.", when=starts_text) }}</p>
+    {% if limit_text %}<p>{{ _("Time for the quiz: %(time)s", time=limit_text) }}</p>{% endif %}
+    {% if deadline_text %}<p>{{ _("Deadline: %(when)s", when=deadline_text) }}</p>{% endif %}
+    {% else %}
+    <p>{{ _("This quiz has not started yet.") }}</p>
+    {% endif %}
     {% else %}
     <p>{{ _("This run has ended.") }}</p>
     {% endif %}

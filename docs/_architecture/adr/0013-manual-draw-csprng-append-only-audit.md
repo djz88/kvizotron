@@ -36,6 +36,6 @@ Chosen option: "Admin-triggered draw over deterministic eligible snapshot, CSPRN
 
 ## More Information
 
-FR-37 – FR-39; [../plugins/drawing.md](../plugins/drawing.md).
+FR-37 – FR-39; [../plugins/drawings.md](../plugins/drawings.md).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)

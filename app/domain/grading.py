@@ -1,13 +1,14 @@
 """What a person decides about a stored answer. The score follows (ADR-0047, AC-56)."""
 
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from django.db import transaction
 from django.db.models import QuerySet, Sum
 from django.utils import timezone
 
-from app.domain.models import Attempt, AttemptAnswer, Quiz, QuizRun
+from app.domain import rewards
+from app.domain.models import Attempt, AttemptAnswer, Participant, Quiz, QuizRun
 from app.kernel import audit
 
 PLACES = 4
@@ -59,6 +60,8 @@ def recalculated(attempt: Attempt) -> None:
         fields["status"] = Attempt.Status.SUBMITTED
     Attempt.objects.filter(pk=attempt.pk).update(**fields)
     attempt.refresh_from_db()
+    if attempt.participant_id is not None:  # the official attempt may have changed with it
+        rewards.refresh(cast(Participant, attempt.participant))
 
 
 def _audit(action: str, answer: AttemptAnswer, admin_id: str, **details: Any) -> None:

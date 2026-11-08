@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<section class="form-section">
+  <h2>{{ _("Plan the run") if planned else _("Plan a run") }}</h2>
+  <p>{{ _("Times are in the time zone %(zone)s.", zone=server_clock().zone) }}</p>
+  <form method="post">
+    {{ csrf_input }}
+    {{ form.non_field_errors() }}
+    {% for field in ungrouped %}{{ field.as_field_group() }}{% endfor %}
+    <p>{{ _("The run takes the quiz's settings.") }} <a href="{{ url('admin_quiz_settings', args=[quiz.id]) }}">{{ _("Settings of the quiz") }}</a></p>
+    {% include "admin/_setting_groups.html" %}
+    <h3>{{ _("Rewards") }}</h3>
+    {% if planned %}
+    {% if reward_names %}<ul>{% for name in reward_names %}<li>{{ name }}</li>{% endfor %}</ul>{% else %}<p>{{ _("No rewards.") }}</p>{% endif %}
+    {% if reward_warning %}<p class="notice" role="note">{{ _("This run has a draw but does not collect e-mail.") }}</p>{% endif %}
+    <p><a href="{{ url('admin_run_rewards', args=[planned.id]) }}">{{ _("Change the rewards of this run") }}</a></p>
+    {% else %}
+    <p>{{ _("The run copies its rewards when it is saved, as the quiz's settings say.") }} <a href="{{ url('admin_quiz_rewards', args=[quiz.id]) }}">{{ _("Rewards of the quiz") }}</a></p>
+    {% endif %}
+    <p><small>{{ _("The cookie that tells participants apart does not guarantee one person: someone can clear it or use another browser. \"When to ask\" applies only when a name or an e-mail is on.") }}</small></p>
+    <button type="submit">{{ _("Save") }}</button>
+  </form>
+</section>
+{% include "admin/_clock.html" %}
+{% endblock %}

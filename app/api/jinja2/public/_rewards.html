@@ -1,0 +1,15 @@
+{% if rewards %}
+<div class="rewards rewards-held">
+  <h3>{{ _("Your rewards") }}</h3>
+  <ul>
+    {% for reward in rewards %}
+    <li>
+      <strong>{{ reward.name }}</strong>
+      · {% if reward.status == "handed_over" %}{{ _("Handed over") }}{% else %}{{ _("Granted") }}{% endif %}
+      {% if reward.description %}<br>{{ reward.description }}{% endif %}
+      {% if reward.claim %}<br><small>{{ _("How to claim it: %(text)s", text=reward.claim) }}</small>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

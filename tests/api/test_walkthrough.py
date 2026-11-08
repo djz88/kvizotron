@@ -24,7 +24,7 @@ def text(response):
 
 
 def public_answers(quiz):
-    settings.set_override(settings.STORE_ANSWERS, quiz, "all", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=ADMIN_ID)
     settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "public", admin_id=ADMIN_ID)
 
 
@@ -314,7 +314,8 @@ def test_no_link_when_nothing_is_public(logged_in):
     assert "/answers" not in text(logged_in.get(f"/admin/runs/{run.id}"))
 
 
-def test_settings_page_warns_about_free_text(logged_in):
+def test_settings_page_warns_about_free_text(showing_all):
+    logged_in = showing_all
     quiz = make_quiz()
     assert "Volný text" in text(logged_in.get(f"/admin/quizzes/{quiz.id}/settings"))
 

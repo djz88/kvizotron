@@ -33,8 +33,8 @@ Related documents outside this directory:
 | **SHOULD** | Recommended realisation; may be replaced by an equivalent implementation that keeps contracts and behaviour. |
 | **LATER** | Explicitly out of v1.0. |
 
-Identifiers are stable anchors: functional requirements `FR-01`…`FR-53`, acceptance criteria
-`AC-01`…`AC-22`, decisions `ADR-NNNN`, open questions `OQ-NN`,
+Identifiers are stable anchors: functional requirements `FR-01`…`FR-54`, acceptance criteria
+`AC-01`…`AC-93`, decisions `ADR-NNNN`, open questions `OQ-NN`,
 technical debt `TD-NNN`. Each `FR-xx` is **defined in exactly
 one file** (see the index below); other files only reference it.
 
@@ -52,14 +52,14 @@ one file** (see the index below); other files only reference it.
 | FR-21 | [providers/media-local.md](providers/media-local.md) |
 | FR-24 – FR-26 | [plugins/scoring.md](plugins/scoring.md) |
 | FR-27, FR-28 | [plugins/participants.md](plugins/participants.md) |
-| FR-29 – FR-31, FR-43 | [plugins/results-scoreboard.md](plugins/results-scoreboard.md) |
+| FR-29 – FR-31, FR-43 | [plugins/results.md](plugins/results.md) |
 | FR-32 – FR-35 | [../privacy.md](../privacy.md) |
 | FR-36 | [plugins/rewards.md](plugins/rewards.md) |
-| FR-37 – FR-39 | [plugins/drawing.md](plugins/drawing.md) |
+| FR-37 – FR-39 | [plugins/drawings.md](plugins/drawings.md) |
 | FR-40 – FR-42, FR-44 | [providers/csv-io.md](providers/csv-io.md) |
 | FR-46 | [modules/kernel.md](modules/kernel.md) |
 
-FR-45 – FR-54 and AC-16 – AC-37 were added after the original specification.
+FR-45 and later and AC-16 and later were added after the original specification.
 
 ## Glossary
 

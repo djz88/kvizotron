@@ -6,6 +6,9 @@
   <meta name="color-scheme" content="light dark">
   {% if htmx_config %}<meta name="htmx-config" content="{{ htmx_config }}">{% endif %}
   <title>{% block title %}Kvízotron{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   {% for url in theme.stylesheet_urls() %}
   <link rel="stylesheet" href="{{ url }}">
   {% endfor %}
@@ -16,7 +19,7 @@
 <body class="{% block body_class %}public{% endblock %}">
   <a class="skip-link" href="#content">{{ _("Skip to content") }}</a>
   <header class="site-bar">
-    <a class="site-name" href="/">Kvízotron</a>
+    <a class="site-name" href="/"><img class="site-logo" src="/assets/logo.svg" alt="" width="32" height="32"> Kvízotron</a>
     {% block bar %}{% endblock %}
   </header>
   <main id="content" class="{% block main_class %}page{% endblock %}">

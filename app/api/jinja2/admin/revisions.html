@@ -8,7 +8,7 @@
     <tr>
       <td data-label="{{ _('Number') }}">{{ row.no }}</td>
       <td data-label="{{ _('Status') }}">{{ row.status }}</td>
-      <td data-label="{{ _('Published') }}">{{ row.published_at.strftime("%Y-%m-%d %H:%M") if row.published_at else "–" }}</td>
+      <td data-label="{{ _('Published') }}">{{ row.published_at|when }}</td>
       <td data-label="{{ _('Questions') }}">{{ row.questions }}</td>
       <td data-label="{{ _('Maximum score') }}">{{ row.max_score|number }}</td>
       <td>

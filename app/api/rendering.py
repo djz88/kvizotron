@@ -14,6 +14,9 @@ from django.utils.translation import gettext_lazy
 from markupsafe import Markup
 
 from app.contracts import (
+    ASK_EMAIL,
+    ASK_NAME,
+    ASK_WHEN,
     IMAGE_MODE_EXTERNAL,
     JSON,
     PHOTO_VISIBILITY,
@@ -23,12 +26,24 @@ from app.contracts import (
     QuizFlowPlugin,
     ThemePlugin,
 )
-from app.domain import settings
-from app.domain.models import Quiz, QuizRun
+from app.domain import participants, settings, tokens
+from app.domain.models import Attempt, Quiz, QuizRun
 from app.kernel import registry
 
 SOURCE_LINK = re.compile(r"https://\S+")
-SCRIPTS = ("htmx.min.js", "play.js", "flow.js", "nav.js", "sortable.js", "editor.js")
+SCRIPTS = (
+    "htmx.min.js",
+    "play.js",
+    "flow.js",
+    "resume.js",
+    "nav.js",
+    "sortable.js",
+    "editor.js",
+    "clock.js",
+    "scoreboard.js",
+    "countdown.js",
+    "planned.js",
+)
 # Eval and injected styles are off because of the CSP. 4xx responses carry a message to show.
 HTMX_CONFIG = json.dumps(
     {
@@ -151,7 +166,7 @@ def delete_images(asset_ids: Sequence[str]) -> None:
             storage.delete_image(asset_id)
 
 
-ONE_PAGE = {"step": False, "back": False, "check": False}
+ONE_PAGE = {"step": False, "back": False, "check": False, "page": 1}
 FLOW_MODULE = "flow.basic"
 
 
@@ -163,7 +178,10 @@ def flow_options(flow: Mapping[str, Any]) -> JSON:
         return ONE_PAGE
     if flow["navigation"] not in plugin.modes():
         return ONE_PAGE
-    return plugin.client_options(flow["navigation"], flow["moment"])
+    options = dict(plugin.client_options(flow["navigation"], flow["moment"]))
+    # The size is fixed on the attempt; an attempt from before pages has none (ADR-0052).
+    options["page"] = int(flow.get("page_size") or 1) if options.get("pages") else 1
+    return options
 
 
 def question_label(question: Mapping[str, Any], locale: str) -> str:
@@ -255,3 +273,36 @@ def question_html(
             '<div class="question-changed"><p role="note"><strong>{}</strong></p>{}</div>'
         )
         return mark.format(_("This question changed"), html)
+
+
+def identity_context(
+    rules: Mapping[str, str], name: str = "", email: str = "", refused: bool = False
+) -> dict[str, Any] | None:
+    """What the name and e-mail fields need. None when the run asks for neither."""
+    name_mode, email_mode = rules.get(ASK_NAME, "off"), rules.get(ASK_EMAIL, "off")
+    if name_mode == "off" and email_mode == "off":
+        return None
+    return {
+        "name": name_mode,
+        "email": email_mode,
+        "when": rules.get(ASK_WHEN, "end"),
+        "name_value": name if name_mode != "off" else "",
+        "email_value": email if email_mode != "off" else "",
+        "refused": refused,
+    }
+
+
+def identity_form(attempt: Attempt) -> dict[str, Any] | None:
+    """The form on a result for what is still missing, until the run is archived."""
+    gap = participants.missing(attempt.participant)
+    if not gap or attempt.run.status == QuizRun.Status.ARCHIVED:
+        return None
+    rules = participants.rules_of(attempt.run)
+    form = identity_context(
+        rules
+        | {ASK_NAME: rules[ASK_NAME] if gap.name else "off"}
+        | {ASK_EMAIL: rules[ASK_EMAIL] if gap.email else "off"}
+    )
+    if form is None:
+        return None
+    return form | {"action": reverse("result_identity", args=[tokens.issue_result(attempt.id)])}

@@ -1,7 +1,8 @@
 {% include "public/_mode_bar.html" %}
+{% include "public/_countdown.html" %}
 <div class="card">
 {% set submit_address = submit_url|default(url('submit', args=[attempt.id])) %}
-<form method="post" action="{{ submit_address }}" hx-post="{{ submit_address }}" hx-target="#play" hx-swap="innerHTML show:window:top" hx-disabled-elt="find button[type=submit]"{% if uploads|default(false) %} enctype="multipart/form-data" hx-encoding="multipart/form-data"{% endif %} data-flow data-progress-step="{{ _('Question %(current)s of %(total)s', current='{current}', total='{total}') }}" data-progress-all="{{ _('Answered %(current)s of %(total)s', current='{current}', total='{total}') }}"{% if flow.step %} data-flow-step{% endif %}{% if flow.back %} data-flow-back{% endif %}{% if flow.check %} data-flow-check{% endif %}>
+<form method="post" action="{{ submit_address }}" hx-post="{{ submit_address }}" hx-target="#play" hx-swap="innerHTML show:window:top" hx-disabled-elt="find button[type=submit]"{% if uploads|default(false) %} enctype="multipart/form-data" hx-encoding="multipart/form-data"{% endif %} data-flow data-progress-step="{{ _('Question %(current)s of %(total)s', current='{current}', total='{total}') }}" data-progress-all="{{ _('Answered %(current)s of %(total)s', current='{current}', total='{total}') }}"{% if flow.step %} data-flow-step data-flow-page="{{ flow.page|default(1) }}"{% endif %} data-progress-page="{{ _('Questions %(first)s–%(last)s of %(total)s', first='{first}', last='{last}', total='{total}') }}"{% if resumable|default(false) %} data-local-resume="on" data-run="{{ run_id }}" data-attempt="{{ attempt.id }}" data-copy-expires="{{ copy_expires }}" data-photo-note="{{ _('A photo is not kept on this device. Choose it again.') }}"{% endif %}{% if flow.back %} data-flow-back{% endif %}{% if flow.check %} data-flow-check{% endif %}>
   {% if preview|default(false) %}{{ csrf_input }}{% endif %}
   <input type="hidden" name="attempt_token" value="{{ attempt_token }}">
   <input type="hidden" name="submission_key" value="{{ submission_key }}">
@@ -21,6 +22,16 @@
     <button type="button" class="secondary" data-flow-previous>{{ _("Back") }}</button>
     <button type="button" data-flow-next>{{ _("Next") }}</button>
   </div>
+  {% if identity %}
+  <div id="identity-error" role="alert" aria-live="assertive">{{ identity_message|default('') }}</div>
+  {% if identity.when == "start" and not identity.refused %}
+  {% if identity.name != "off" %}<input type="hidden" name="participant_name" value="{{ identity.name_value }}">{% endif %}
+  {% if identity.email != "off" %}<input type="hidden" name="participant_email" value="{{ identity.email_value }}">{% endif %}
+  {% else %}
+  <div data-identity-fields>{% include "public/_identity_fields.html" %}</div>
+  {% endif %}
+  {% endif %}
   <button type="submit" id="play-submit">{{ _("Submit answers") }}</button>
+  {% if resumable|default(false) %}<p data-resume-device><small>{{ _("Answers are kept in this browser until you submit, for 24 hours at most.") }}</small></p>{% endif %}
 </form>
 </div>

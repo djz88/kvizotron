@@ -17,7 +17,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from markupsafe import Markup
 
-from app.api import rendering
+from app.api import admin_view, rendering
 from app.api.admin_auth import admin_required
 from app.api.admin_forms import (
     DuplicateQuizForm,
@@ -25,9 +25,11 @@ from app.api.admin_forms import (
     QuizBehaviourForm,
     QuizContentForm,
     QuizForm,
+    conflict_messages,
     setting_initial,
 )
 from app.api.admin_workspace import image_check, quiz_title, workspace
+from app.api.i18n import PUBLIC_LOCALES
 from app.api.rendering import media_storage, page, question_label, with_media_urls
 from app.contracts import (
     EXTERNAL_IMAGE_MODE,
@@ -42,11 +44,13 @@ from app.contracts import (
 from app.domain import (
     authoring,
     banks,
+    data_policy,
     external_images,
     questions,
     quiz_state,
     requirements,
     revision_diff,
+    rewards,
     selection,
     settings,
 )
@@ -179,7 +183,20 @@ def settings_page(
 ) -> HttpResponse:
     context = workspace(quiz, "settings", run_error)
     context["content_form"] = content_form or QuizContentForm(quiz=quiz)
-    context["behaviour_form"] = behaviour_form or QuizBehaviourForm(quiz=quiz)
+    form = behaviour_form or QuizBehaviourForm(quiz=quiz)
+    labels = {f"anonymous_label_{code}": ("scoreboard", "advanced") for code in PUBLIC_LOCALES}
+    context["behaviour_form"] = form
+    context["groups"] = admin_view.group_fields(
+        form,
+        basic=admin_view.is_basic(request),
+        differs=lambda key: (
+            bool(quiz.anonymous_label.get(key.removeprefix("anonymous_label_")))
+            if key.startswith("anonymous_label_")
+            else settings.quiz_override(key, quiz) is not None
+        ),
+        extra=labels,
+    )
+    context["ungrouped"] = admin_view.outside_groups(form, extra=labels)
     context["flow_conflict"] = settings.flow(quiz).conflict
     context["visibility_conflict"] = settings.visibility_conflict(quiz)
     return page(
@@ -610,6 +627,13 @@ def quiz_publish(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         return _publish_page(request, quiz, _("Choose what happens to the running run."))
     except authoring.RunAlreadyOpen:
         return _publish_page(request, quiz, _("This quiz already has a running run."))
+    except data_policy.StatelessConflict as error:
+        return _publish_page(request, quiz, " ".join(conflict_messages(error.keys)))
+    if authoring.stateless_held_back(quiz):
+        notice = _(
+            "The running stateless run keeps its revision: the new one has a photo question."
+        )
+        return edit_page(request, quiz, run_error=notice)
     return redirect("admin_quiz_edit", quiz.id)
 
 
@@ -626,6 +650,10 @@ def run_open(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         return edit_page(request, quiz, run_error=_("This quiz already has a running run."))
     except authoring.RequirementUnmet as error:
         return edit_page(request, quiz, run_error=" ".join(error.reasons))
+    except data_policy.StatelessConflict as error:
+        return edit_page(request, quiz, run_error=" ".join(conflict_messages(error.keys)))
+    except rewards.RewardConflict as error:
+        return edit_page(request, quiz, run_error=" ".join(error.messages()))
     return redirect("admin_run", run.id)
 
 

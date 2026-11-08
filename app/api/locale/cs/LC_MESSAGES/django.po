@@ -11,177 +11,403 @@ msgstr "Tuto banku používají kvízy: %(quizzes)s"
 msgid "Complete the question in at least one language."
 msgstr "Dokončete otázku aspoň v jednom jazyce."
 
-#: admin_forms.py:20 admin_forms.py:396
+#: admin_forms.py:28 admin_forms.py:856
 msgid "Login"
 msgstr "Přihlašovací jméno"
 
-#: admin_forms.py:22 admin_forms.py:398
+#: admin_forms.py:30 admin_forms.py:858
 msgid "Password"
 msgstr "Heslo"
 
-#: admin_forms.py:31 admin_forms.py:119 admin_quizzes.py:88
-#: admin_quizzes.py:252 admin_quizzes.py:641
+#: admin_forms.py:39 admin_forms.py:127 admin_quizzes.py:92
+#: admin_quizzes.py:269 admin_quizzes.py:669
 msgid "Another quiz already uses this identifier."
 msgstr "Tento identifikátor už používá jiný kvíz."
 
-#: admin_forms.py:39 jinja2/admin/_quiz_header.html:18
+#: admin_forms.py:47 jinja2/admin/_quiz_header.html:19
 msgid "Languages"
 msgstr "Jazyky"
 
-#: admin_forms.py:44
+#: admin_forms.py:52
 msgid "Default language"
 msgstr "Výchozí jazyk"
 
-#: admin_forms.py:62
+#: admin_forms.py:70
 msgid "Title"
 msgstr "Název"
 
-#: admin_forms.py:65
+#: admin_forms.py:73
 msgid "Description"
 msgstr "Popis"
 
-#: admin_forms.py:77
+#: admin_forms.py:85
 msgid "The default language must be among the selected languages."
 msgstr "Výchozí jazyk musí být mezi vybranými jazyky."
 
-#: admin_forms.py:100 admin_forms.py:114 admin_forms.py:186
+#: admin_forms.py:108 admin_forms.py:122 admin_forms.py:617
 msgid "URL identifier"
 msgstr "Identifikátor v adrese"
 
-#: admin_forms.py:101 admin_forms.py:192
+#: admin_forms.py:109 admin_forms.py:623
 msgid "Highlight on the home page"
 msgstr "Zvýraznit na úvodní stránce"
 
-#: admin_forms.py:139
+#: admin_forms.py:147
 msgid "Answers after each question need a one-by-one mode."
 msgstr "Odpovědi po každé otázce vyžadují režim po jedné."
 
-#: admin_forms.py:153
-msgid "Showing answers to anyone but admins needs all answers stored."
-msgstr "Aby odpovědi viděl někdo jiný než admin, musí se ukládat všechny."
+#: admin_forms.py:161
+msgid "Showing answers to anyone but admins needs a profile that keeps all answers."
+msgstr "Zobrazení odpovědí komukoli kromě adminů potřebuje profil, který ukládá všechny odpovědi."
 
-#: admin_forms.py:189
+#: admin_forms.py:171
+msgid "Nothing is kept, so the quiz cannot have a photo question: a photo is stored."
+msgstr "Nic se neukládá, takže kvíz nemůže mít otázku s fotkou: fotka by se uložila."
+
+#: admin_forms.py:176
+#, python-format
+msgid "Nothing is kept, which does not go with the setting \"%(name)s\" as it is."
+msgstr "Nic se neukládá, což nejde dohromady s nastavením „%(name)s“ v této podobě."
+
+#: admin_forms.py:197
+msgid "Nothing is kept, so the run cannot have a public scoreboard."
+msgstr "Neukládá se nic, takže běh nemůže mít veřejný žebříček."
+
+#: admin_forms.py:198
+msgid "Answers after each question cannot go with a visible scoreboard."
+msgstr "Odpovědi po každé otázce nejdou dohromady s viditelným žebříčkem."
+
+#: admin_forms.py:199
+msgid "The duration needs the data profile that keeps times."
+msgstr "Doba trvání potřebuje profil dat, který ukládá časy."
+
+#: admin_forms.py:200
+msgid "A test run has no scoreboard."
+msgstr "Testovací běh nemá žebříček."
+
+#: admin_forms.py:286
+msgid "In minutes. 0 means no limit."
+msgstr "V minutách. 0 znamená bez limitu."
+
+#: admin_forms.py:333
+msgid "This time does not exist because of the clock change."
+msgstr "Tento čas kvůli změně času neexistuje."
+
+#: admin_forms.py:335 admin_runs.py:490
+msgid "Enter a valid time."
+msgstr "Zadejte platný čas."
+
+#: admin_forms.py:343 jinja2/admin/run.html:13 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:25
+msgid "Start time"
+msgstr "Začátek"
+
+#: admin_forms.py:345
+msgid "Empty starts the run now."
+msgstr "Prázdné pole spustí běh hned."
+
+#: admin_forms.py:348 jinja2/admin/run.html:14 jinja2/admin/run.html:174
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:27
+msgid "Deadline"
+msgstr "Uzávěrka"
+
+#: admin_forms.py:350
+msgid "Empty means the run lasts until you end it."
+msgstr "Prázdné pole znamená, že běh trvá, dokud ho neukončíte."
+
+#: admin_forms.py:353
+msgid "Time limit for an attempt (minutes)"
+msgstr "Časový limit pokusu (minuty)"
+
+#: admin_forms.py:357
+msgid "Empty or 0 means no limit. It cannot change once the run opens."
+msgstr "Prázdné pole nebo 0 znamená bez limitu. Po začátku běhu ho nelze změnit."
+
+#: admin_forms.py:365
+msgid "Nothing: only counts, so there is no attempts table, result link, scoreboard, draw or export. Score and photos: rankings by time need the last profile. Score and all answers: every answer is kept. Score, all answers and times: also how long each attempt took. It cannot change once the run opens."
+msgstr "Nic: jen počty, takže není tabulka pokusů, odkaz na výsledek, žebříček, losování ani export. Skóre a fotky: pořadí podle času potřebuje poslední profil. Skóre a všechny odpovědi: ukládá se každá odpověď. Skóre, všechny odpovědi a časy: navíc i to, jak dlouho pokus trval. Po otevření běhu se nedá změnit."
+
+#: admin_forms.py:376
+msgid "It can change later, also after the run ends."
+msgstr "Dá se změnit i později, také po skončení běhu."
+
+#: admin_forms.py:379 jinja2/admin/run.html:18 jinja2/public/quiz.html:35
+msgid "Access code"
+msgstr "Přístupový kód"
+
+#: admin_forms.py:384
+msgid "Optional. Participants must enter it before they start. It is shown once after saving."
+msgstr "Volitelný. Účastníci ho musí zadat před začátkem. Po uložení se ukáže jen jednou."
+
+#: admin_forms.py:387 jinja2/admin/run.html:31
+msgid "Generate a code"
+msgstr "Vytvořit kód"
+
+#: admin_forms.py:456
+msgid "Choose a kind of reward."
+msgstr "Vyberte druh odměny."
+
+#: admin_forms.py:457
+msgid "Choose a unit and enter a value."
+msgstr "Vyberte jednotku a zadejte hodnotu."
+
+#: admin_forms.py:458
+msgid "Enter a valid number. Correct answers are a whole number."
+msgstr "Zadejte platné číslo. Správné odpovědi jsou celé číslo."
+
+#: admin_forms.py:459
+msgid "Enter a number greater than 0."
+msgstr "Zadejte číslo větší než 0."
+
+#: admin_forms.py:460
+msgid "A percentage can be at most 100."
+msgstr "Procenta mohou být nejvýš 100."
+
+#: admin_forms.py:461
+#, python-format
+msgid "Enter from 1 to %(max)s winners."
+msgstr "Zadejte od 1 do %(max)s výherců."
+
+#: admin_forms.py:462
+#, python-format
+msgid "Enter from 0 to %(max)s alternates."
+msgstr "Zadejte od 0 do %(max)s náhradníků."
+
+#: admin_forms.py:464
+msgid "A text is too long."
+msgstr "Některý text je příliš dlouhý."
+
+#: admin_forms.py:466
+msgid "This reward cannot be saved."
+msgstr "Tuto odměnu nejde uložit."
+
+#: admin_forms.py:477
+msgid "Kind"
+msgstr "Druh"
+
+#: admin_forms.py:479
+msgid "Threshold: for a score that reaches it"
+msgstr "Hranice: za skóre, které ji dosáhne"
+
+#: admin_forms.py:480
+msgid "Participation: for every submission"
+msgstr "Účast: za každé odeslání"
+
+#: admin_forms.py:481
+msgid "Manual: granted by an admin"
+msgstr "Ruční: udělí ji admin"
+
+#: admin_forms.py:482
+msgid "Draw: winners drawn after the run"
+msgstr "Losování: výherci se losují po běhu"
+
+#: admin_forms.py:486
+msgid "Threshold unit"
+msgstr "Jednotka hranice"
+
+#: admin_forms.py:490
+msgid "Percent"
+msgstr "Procenta"
+
+#: admin_forms.py:491 admin_forms.py:697
+msgid "Points"
+msgstr "Body"
+
+#: admin_forms.py:492
+msgid "Correct answers"
+msgstr "Správné odpovědi"
+
+#: admin_forms.py:494
+msgid "Only for a threshold. Reached means at least this value."
+msgstr "Jen u hranice. Dosažená znamená aspoň tato hodnota."
+
+#: admin_forms.py:497
+msgid "Threshold value"
+msgstr "Hodnota hranice"
+
+#: admin_forms.py:503
+msgid "Who may be drawn"
+msgstr "Kdo může být vylosován"
+
+#: admin_forms.py:506
+msgid "Everyone with a submitted attempt"
+msgstr "Každý s odeslaným pokusem"
+
+#: admin_forms.py:507
+msgid "At least a percentage"
+msgstr "Aspoň daná procenta"
+
+#: admin_forms.py:508
+msgid "At least a number of points"
+msgstr "Aspoň daný počet bodů"
+
+#: admin_forms.py:510
+msgid "Only for a draw."
+msgstr "Jen u losování."
+
+#: admin_forms.py:513
+msgid "Minimum for the draw"
+msgstr "Minimum pro losování"
+
+#: admin_forms.py:519 jinja2/admin/prize_draw.html:37
+#: jinja2/public/scoreboard.html:22
+msgid "Winners"
+msgstr "Výherci"
+
+#: admin_forms.py:522 jinja2/admin/prize_draw.html:63
+msgid "Alternates"
+msgstr "Náhradníci"
+
+#: admin_forms.py:528
+#, python-brace-format
+msgid "Drawn after the winners, in order. Empty means {default}."
+msgstr "Losují se po výhercích, v pořadí. Prázdné pole znamená {default}."
+
+#: admin_forms.py:545
+#, python-format
+msgid "Name (%(locale)s)"
+msgstr "Název (%(locale)s)"
+
+#: admin_forms.py:550
+#, python-format
+msgid "Description (%(locale)s)"
+msgstr "Popis (%(locale)s)"
+
+#: admin_forms.py:556
+#, python-format
+msgid "How to claim it (%(locale)s)"
+msgstr "Jak si ji vyzvednout (%(locale)s)"
+
+#: admin_forms.py:620
 msgid "Locked after the first publication, so that printed QR codes work."
 msgstr "Po první publikaci se nedá změnit, aby vytištěné QR kódy dál fungovaly."
 
-#: admin_forms.py:203 admin_forms.py:280
+#: admin_forms.py:634 admin_forms.py:740
 #, python-format
 msgid "Use global setting (now: %(value)s)"
 msgstr "Použít globální nastavení (teď: %(value)s)"
 
-#: admin_forms.py:237
-msgid "Points"
-msgstr "Body"
+#: admin_forms.py:638
+msgid "Empty:"
+msgstr "Prázdné:"
 
-#: admin_forms.py:240
+#: admin_forms.py:657
+msgid "Anonymous participant on the scoreboard"
+msgstr "Anonymní účastník v žebříčku"
+
+#: admin_forms.py:661
+msgid "NN stands for the number. Empty uses \"Player NN\" in that language."
+msgstr "NN nahradí číslo. Prázdné pole použije v tom jazyce „Hráč NN“."
+
+#: admin_forms.py:700
 msgid "Scoring"
 msgstr "Bodování"
 
-#: admin_forms.py:243
+#: admin_forms.py:703
 msgid "Part by part: every correct answer adds its share and a wrong tick subtracts it, down to zero."
 msgstr "Část za část: každá správná odpověď přidá svůj díl a špatné zaškrtnutí ho ubere, nejméně na nulu."
 
-#: admin_forms.py:248
+#: admin_forms.py:708
 msgid "Sources (optional)"
 msgstr "Zdroje (nepovinné)"
 
-#: admin_forms.py:252
+#: admin_forms.py:712
 msgid "One per line. An address starting with https:// becomes a link. Participants see them with the result, if the settings allow it."
 msgstr "Každý na jeden řádek. Adresa začínající https:// bude odkaz. Účastník je uvidí u výsledku, pokud to nastavení dovolí."
 
-#: admin_forms.py:278
+#: admin_forms.py:738
 #, python-format
 msgid "Use quiz setting (now: %(value)s)"
 msgstr "Použít nastavení kvízu (teď: %(value)s)"
 
-#: admin_forms.py:290
+#: admin_forms.py:750
 #, python-format
 msgid "Explanation (optional), %(language)s"
 msgstr "Vysvětlení (nepovinné), %(language)s"
 
-#: admin_forms.py:295
+#: admin_forms.py:755
 msgid "Participants see it with the correct answer, if the settings allow it."
 msgstr "Účastník ho uvidí u správné odpovědi, pokud to nastavení dovolí."
 
-#: admin_forms.py:316
+#: admin_forms.py:776
 #, python-format
 msgid "At most %(count)s sources are allowed."
 msgstr "Zdrojů může být nejvýše %(count)s."
 
-#: admin_forms.py:320
+#: admin_forms.py:780
 #, python-format
 msgid "A source can have at most %(count)s characters."
 msgstr "Zdroj může mít nejvýše %(count)s znaků."
 
-#: admin_forms.py:330
+#: admin_forms.py:790
 msgid "Tags (optional)"
 msgstr "Štítky (nepovinné)"
 
-#: admin_forms.py:332
+#: admin_forms.py:792
 msgid "Separated by commas. A quiz can draw only questions with one tag."
 msgstr "Oddělené čárkami. Kvíz může losovat jen otázky s jedním štítkem."
 
-#: admin_forms.py:343
+#: admin_forms.py:803
 #, python-format
 msgid "At most %(count)s tags are allowed."
 msgstr "Povoleno je nejvýš %(count)s štítků."
 
-#: admin_forms.py:347
+#: admin_forms.py:807
 #, python-format
 msgid "A tag can have at most %(count)s characters."
 msgstr "Štítek může mít nejvýš %(count)s znaků."
 
-#: admin_forms.py:353
+#: admin_forms.py:813
 msgid "Bank name"
 msgstr "Název banky"
 
-#: admin_forms.py:359
+#: admin_forms.py:819
 msgid "Bank"
 msgstr "Banka"
 
-#: admin_forms.py:361
+#: admin_forms.py:821
 msgid "Tag (optional)"
 msgstr "Štítek (nepovinný)"
 
-#: admin_forms.py:364
+#: admin_forms.py:824
 msgid "Without a tag, questions are drawn from the whole bank."
 msgstr "Bez štítku se losuje z celé banky."
 
-#: admin_forms.py:367
+#: admin_forms.py:827
 msgid "Number of questions"
 msgstr "Počet otázek"
 
-#: admin_forms.py:370
+#: admin_forms.py:830
 msgid "Points per question"
 msgstr "Body za otázku"
 
-#: admin_forms.py:372
+#: admin_forms.py:832
 msgid "Position"
 msgstr "Pozice"
 
-#: admin_forms.py:385
+#: admin_forms.py:845
 msgid "At the start"
 msgstr "Na začátku"
 
-#: admin_forms.py:387
+#: admin_forms.py:847
 #, python-format
 msgid "After question %(number)s"
 msgstr "Po otázce %(number)s"
 
-#: admin_forms.py:404 admin_users.py:33
+#: admin_forms.py:864 admin_users.py:33
 msgid "This login already exists."
 msgstr "Tento login už existuje."
 
-#: admin_grading.py:152
+#: admin_grading.py:153
 msgid "A question no longer in the quiz"
 msgstr "Otázka, která už v kvízu není"
 
-#: admin_grading.py:303
+#: admin_grading.py:304
 #, python-format
 msgid "Points must be a number from 0 to %(maximum)s."
 msgstr "Body musí být číslo od 0 do %(maximum)s."
 
-#: admin_grading.py:331
+#: admin_grading.py:332
 msgid "Delete this photo? It is gone for good, and its points given by an admin become 0."
 msgstr "Smazat tuto fotku? Zmizí natrvalo a její body od admina budou 0."
 
@@ -220,170 +446,190 @@ msgstr "Obrázek z adresy %(address)s se nepodařilo stáhnout."
 msgid "This quiz was archived in the meantime. Nothing was imported."
 msgstr "Kvíz byl mezitím archivován. Nic se neimportovalo."
 
-#: admin_links.py:27
+#: admin_links.py:26
 msgid "Draft (a frozen copy)"
 msgstr "Koncept (zmrazená kopie)"
 
-#: admin_links.py:30 admin_links.py:68 jinja2/admin/revision_compare.html:3
+#: admin_links.py:29 admin_links.py:66 jinja2/admin/revision_compare.html:3
+#: jinja2/admin/run.html:12 jinja2/admin/run.html:71 jinja2/admin/run.html:129
+#: jinja2/public/_scoreboard_rows.html:6
 #, python-format
 msgid "Revision %(no)s"
 msgstr "Revize %(no)s"
 
-#: admin_links.py:43
+#: admin_links.py:42
 msgid "Waiting for grading"
 msgstr "Čeká na hodnocení"
 
-#: admin_links.py:45 jinja2/admin/runs.html:16 jinja2/admin/runs.html:25
+#: admin_links.py:44 jinja2/admin/run.html:74 jinja2/admin/run.html:81
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:163
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:31
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:51
+#: jinja2/public/_scoreboard_rows.html:16
+#: jinja2/public/_scoreboard_rows.html:29
 msgid "Submitted"
 msgstr "Odesláno"
 
-#: admin_links.py:45
+#: admin_links.py:44
 msgid "In progress"
 msgstr "Rozpracováno"
 
-#: admin_links.py:54
+#: admin_links.py:53
 msgid "Cancelled"
 msgstr "Zrušený"
 
-#: admin_links.py:55
+#: admin_links.py:54
 msgid "Active"
 msgstr "Aktivní"
 
-#: admin_links.py:55 jinja2/admin/run.html:8 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:21 jinja2/admin/runs.html:23
+#: admin_links.py:54 admin_runs.py:60 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:28 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:49
 msgid "Ended"
 msgstr "Skončil"
 
-#: admin_links.py:65
+#: admin_links.py:64
 #, python-format
 msgid "Copy of the draft from %(when)s"
 msgstr "Kopie konceptu z %(when)s"
 
-#: admin_links.py:113
+#: admin_links.py:111
 msgid "Choose a version."
 msgstr "Vyberte verzi."
 
-#: admin_links.py:118
+#: admin_links.py:116
 msgid "The end must be a valid time in the future."
 msgstr "Konec musí být platný čas v budoucnosti."
 
-#: admin_links.py:165
+#: admin_links.py:163
 msgid "Delete this test link with all its attempts? This cannot be undone."
 msgstr "Smazat tento testovací odkaz se všemi pokusy? Nejde to vrátit."
 
-#: admin_links.py:176
+#: admin_links.py:174
 msgid "Delete all attempts of this test link? This cannot be undone."
 msgstr "Smazat všechny pokusy tohoto testovacího odkazu? Nejde to vrátit."
 
-#: admin_preview.py:48 play.py:241
+#: admin_preview.py:50 play.py:538
 msgid "Photos cannot be stored on this installation."
 msgstr "Na této instalaci nejde fotky ukládat."
 
-#: admin_preview.py:55
+#: admin_preview.py:59
 msgid "Preview. Nothing is stored."
 msgstr "Náhled. Nic se neukládá."
 
-#: admin_preview.py:59 jinja2/admin/draw_form.html:3
+#: admin_preview.py:63 jinja2/admin/draw_form.html:3
 #: jinja2/admin/publish.html:4 jinja2/admin/question_form.html:3
 msgid "Back to the editor"
 msgstr "Zpět do editoru"
 
-#: admin_preview.py:82
+#: admin_preview.py:87
 #, python-format
 msgid "This question cannot be shown yet: %(reason)s"
 msgstr "Tuto otázku zatím nejde zobrazit: %(reason)s"
 
-#: admin_preview.py:161
+#: admin_preview.py:129
+msgid "Turn the time limit off"
+msgstr "Vypnout časový limit"
+
+#: admin_preview.py:130
+msgid "Try it with the time limit"
+msgstr "Zkusit s časovým limitem"
+
+#: admin_preview.py:180
 msgid "The draft changed in the meantime. Start the preview again."
 msgstr "Koncept se mezitím změnil. Spusťte náhled znovu."
 
-#: admin_preview.py:204
+#: admin_preview.py:227
 msgid "Preview again"
 msgstr "Znovu náhled"
 
-#: admin_quizzes.py:60 jinja2/admin/quiz_settings.html:5
+#: admin_quizzes.py:64 jinja2/admin/quiz_settings.html:5
 msgid "This quiz is archived. Restore it to change it."
 msgstr "Tento kvíz je archivovaný. Chcete-li ho změnit, obnovte ho."
 
-#: admin_quizzes.py:350 admin_quizzes.py:384
+#: admin_quizzes.py:367 admin_quizzes.py:401
 msgid "Images cannot be stored on this installation."
 msgstr "Tato instalace neumí ukládat obrázky."
 
-#: admin_quizzes.py:509
+#: admin_quizzes.py:526
 msgid "The quiz has no questions."
 msgstr "Kvíz nemá žádnou otázku."
 
-#: admin_quizzes.py:511
+#: admin_quizzes.py:528
 msgid "There is nothing new to publish."
 msgstr "Není co nového publikovat."
 
-#: admin_quizzes.py:513
+#: admin_quizzes.py:530
 #, python-format
 msgid "The title is missing in language %(locale)s."
 msgstr "Chybí název v jazyce %(locale)s."
 
-#: admin_quizzes.py:515
+#: admin_quizzes.py:532
 #, python-format
 msgid "The description is missing in language %(locale)s."
 msgstr "Chybí popis v jazyce %(locale)s."
 
-#: admin_quizzes.py:517
+#: admin_quizzes.py:534
 #, python-format
 msgid "Question %(number)s: the explanation is missing in language %(locale)s."
 msgstr "Otázka %(number)s: chybí vysvětlení v jazyce %(locale)s."
 
-#: admin_quizzes.py:522
+#: admin_quizzes.py:539
 #, python-format
 msgid "There are not enough usable questions to draw for %(row)s."
 msgstr "Pro los %(row)s není dost použitelných otázek."
 
-#: admin_quizzes.py:526
+#: admin_quizzes.py:543
 #, python-format
 msgid "The bank of the draw %(row)s no longer exists."
 msgstr "Banka losu %(row)s už neexistuje."
 
-#: admin_quizzes.py:529
+#: admin_quizzes.py:546
 #, python-format
 msgid "Question %(number)s: an image has no copy, and this quiz shows copies. Save the question again, or change how images are shown."
 msgstr "Otázka %(number)s: obrázek nemá kopii a tento kvíz ukazuje kopie. Otázku znovu uložte, nebo změňte způsob zobrazení obrázků."
 
-#: admin_quizzes.py:534
+#: admin_quizzes.py:551
 #, python-format
 msgid "The draw %(row)s holds an image with no copy, and this quiz shows copies. Save that question in the bank again, or change how images are shown."
 msgstr "Losování %(row)s obsahuje obrázek bez kopie a tento kvíz ukazuje kopie. Otázku v bance znovu uložte, nebo změňte způsob zobrazení obrázků."
 
-#: admin_quizzes.py:541
+#: admin_quizzes.py:558
 #, python-format
 msgid "Question types of this quiz need settings that exclude each other: %(detail)s"
 msgstr "Typy otázek v tomto kvízu potřebují nastavení, která se vylučují: %(detail)s"
 
-#: admin_quizzes.py:544
+#: admin_quizzes.py:561
 #, python-format
 msgid "Question %(number)s: its question type is not available."
 msgstr "Otázka %(number)s: její typ není k dispozici."
 
-#: admin_quizzes.py:547
+#: admin_quizzes.py:564
 #, python-format
 msgid "Question %(number)s, language %(locale)s: %(detail)s"
 msgstr "Otázka %(number)s, jazyk %(locale)s: %(detail)s"
 
-#: admin_quizzes.py:607
+#: admin_quizzes.py:624
 msgid "The quiz changed in the meantime. Check the changes and publish again."
 msgstr "Kvíz se mezitím změnil. Zkontrolujte změny a publikujte znovu."
 
-#: admin_quizzes.py:610
+#: admin_quizzes.py:627
 msgid "Choose what happens to the running run."
 msgstr "Zvolte, co se stane s probíhajícím během."
 
-#: admin_quizzes.py:612 admin_quizzes.py:626
+#: admin_quizzes.py:629 admin_quizzes.py:650
 msgid "This quiz already has a running run."
 msgstr "Tento kvíz už má probíhající běh."
 
-#: admin_quizzes.py:624
+#: admin_quizzes.py:634
+msgid "The running stateless run keeps its revision: the new one has a photo question."
+msgstr "Běžící běh, který nic neukládá, ponechá svou revizi: nová má otázku s fotkou."
+
+#: admin_quizzes.py:648 admin_runs.py:289
 msgid "Publish the quiz first."
 msgstr "Nejdřív kvíz publikujte."
 
-#: admin_quizzes.py:655
+#: admin_quizzes.py:683
 msgid "A run is in progress. End it before archiving the quiz."
 msgstr "Běh právě probíhá. Před archivací kvízu ho ukončete."
 
@@ -396,11 +642,12 @@ msgstr "Koncept"
 msgid "Published"
 msgstr "Publikováno"
 
-#: admin_revisions.py:21
+#: admin_revisions.py:21 jinja2/admin/prize_draw.html:100
 msgid "Superseded"
 msgstr "Nahrazeno"
 
-#: admin_revisions.py:22 jinja2/admin/_chips.html:3 jinja2/admin/_chips.html:9
+#: admin_revisions.py:22 admin_runs.py:61 jinja2/admin/_chips.html:3
+#: jinja2/admin/_chips.html:9
 msgid "Archived"
 msgstr "Archivováno"
 
@@ -421,128 +668,429 @@ msgstr "Tento kvíz nebyl nikdy publikován, takže se není k čemu vrátit."
 msgid "Discard all unpublished changes? This cannot be undone."
 msgstr "Zahodit všechny nepublikované změny? Nejde to vrátit."
 
-#: admin_runs.py:89
+#: admin_rewards.py:46
+msgid "Threshold"
+msgstr "Hranice"
+
+#: admin_rewards.py:47
+msgid "Participation"
+msgstr "Účast"
+
+#: admin_rewards.py:48
+msgid "Manual"
+msgstr "Ruční"
+
+#: admin_rewards.py:49 admin_rewards.py:65
+msgid "Draw"
+msgstr "Losování"
+
+#: admin_rewards.py:55
+msgctxt "reward"
+msgid "Granted"
+msgstr "Udělená"
+
+#: admin_rewards.py:56
+msgctxt "reward"
+msgid "Handed over"
+msgstr "Předaná"
+
+#: admin_rewards.py:57
+msgctxt "reward"
+msgid "Cancelled"
+msgstr "Zrušená"
+
+#: admin_rewards.py:63
+msgid "Automatic"
+msgstr "Automaticky"
+
+#: admin_rewards.py:64
+msgid "By an admin"
+msgstr "Adminem"
+
+#: admin_rewards.py:70
+msgid "No longer reached"
+msgstr "Už nedosažena"
+
+#: admin_rewards.py:170
+msgid "The quiz is archived. Restore it to change its rewards."
+msgstr "Kvíz je archivovaný. Obnovte ho, abyste mohli měnit jeho odměny."
+
+#: admin_rewards.py:174 jinja2/admin/_reward_rule_form.html:7
+msgid "The kind, threshold and counts can change only while the run is planned."
+msgstr "Druh, hranice a počty jde měnit, jen dokud je běh naplánovaný."
+
+#: admin_rewards.py:373 admin_rewards.py:417
+msgid "Enter a reason, at most 200 characters."
+msgstr "Zadejte důvod, nejvýš 200 znaků."
+
+#: admin_rewards.py:375
+msgid "The reward has changed in the meantime. Check its status and try again."
+msgstr "Odměna se mezitím změnila. Zkontrolujte její stav a zkuste to znovu."
+
+#: admin_rewards.py:397
+msgid "This reward cannot be granted."
+msgstr "Tuto odměnu nejde udělit."
+
+#: admin_rewards.py:406
+msgid "A draw is possible only after the run has closed."
+msgstr "Losovat jde až po uzavření běhu."
+
+#: admin_rewards.py:407
+msgid "This run keeps no scores, so there is nobody to draw from."
+msgstr "Tento běh neukládá skóre, takže není z koho losovat."
+
+#: admin_rewards.py:408
+msgid "Some answers still wait for grading. Grade them before the draw."
+msgstr "Některé odpovědi ještě čekají na hodnocení. Před losováním je ohodnoťte."
+
+#: admin_rewards.py:409
+msgid "This reward is not a draw."
+msgstr "Tato odměna se nelosuje."
+
+#: admin_rewards.py:410
+msgid "Nobody is eligible for this draw."
+msgstr "Do tohoto losování nikdo nepostupuje."
+
+#: admin_rewards.py:411
+msgid "Everybody eligible has already been drawn."
+msgstr "Všichni způsobilí už byli vylosováni."
+
+#: admin_rewards.py:412
+msgid "No alternate who is still eligible is left. Draw a substitute instead."
+msgstr "Nezbývá žádný náhradník, který je stále způsobilý. Vylosujte místo toho náhradního výherce."
+
+#: admin_rewards.py:413
+msgid "This reward has already been drawn. A redraw draws it again."
+msgstr "Tato odměna už je vylosovaná. Znovu ji vylosuje nové losování."
+
+#: admin_rewards.py:415
+msgid "This reward has not been drawn yet, or its winners have changed in the meantime."
+msgstr "Tato odměna ještě není vylosovaná, nebo se mezitím změnili její výherci."
+
+#: admin_rewards.py:423
+msgid "First draw"
+msgstr "První losování"
+
+#: admin_rewards.py:424
+msgid "Redraw"
+msgstr "Nové losování"
+
+#: admin_rewards.py:425
+msgid "Alternate moved up"
+msgstr "Posun náhradníka"
+
+#: admin_rewards.py:426
+msgid "Substitute drawn"
+msgstr "Náhradní výherce"
+
+#: admin_rewards.py:432
+msgid "No longer stored"
+msgstr "Už není uložen"
+
+#: admin_runs.py:58
+msgid "Planned"
+msgstr "Naplánováno"
+
+#: admin_runs.py:59 jinja2/admin/grading.html:14
+msgid "Running"
+msgstr "Probíhá"
+
+#: admin_runs.py:115
+msgid "The start has already passed."
+msgstr "Začátek už uplynul."
+
+#: admin_runs.py:116
+msgid "The deadline must be after the start."
+msgstr "Uzávěrka musí být po začátku."
+
+#: admin_runs.py:117
+msgid "This quiz already has a running or planned run."
+msgstr "Tento kvíz už má běžící nebo naplánovaný běh."
+
+#: admin_runs.py:118
+msgid "This run is no longer planned."
+msgstr "Tento běh už není naplánovaný."
+
+#: admin_runs.py:119
+msgid "The deadline must be at least a minute ahead."
+msgstr "Uzávěrka musí být aspoň minutu dopředu."
+
+#: admin_runs.py:120 jinja2/public/quiz.html:67 play.py:92
+msgid "This run has ended."
+msgstr "Tento běh skončil."
+
+#: admin_runs.py:122
+msgid "This cannot be done now."
+msgstr "Teď to nejde."
+
+#: admin_runs.py:324
+msgid "Enter a start. To start now, use Start now."
+msgstr "Zadejte začátek. Hned běh spustíte tlačítkem Spustit hned."
+
+#: admin_runs.py:473
+#, python-format
+msgid "Move the deadline to %(when)s? Attempts in progress: %(count)s."
+msgstr "Přesunout uzávěrku na %(when)s? Rozehraných pokusů: %(count)s."
+
+#: admin_runs.py:575
+msgid "The revisions have different maximum points, so they cannot share one table."
+msgstr "Revize mají různé maximum bodů, takže nemohou mít společnou tabulku."
+
+#: admin_runs.py:576
+msgid "The run used only one revision, so there is nothing to merge."
+msgstr "Běh použil jen jednu revizi, takže není co slučovat."
+
+#: admin_runs.py:675
 #, python-format
 msgid "End run %(no)s? Participants can no longer submit answers."
 msgstr "Ukončit běh %(no)s? Účastníci už nebudou moci odeslat odpovědi."
 
-#: play.py:53
+#: admin_runs.py:705
+msgid "Enter a code."
+msgstr "Zadejte kód."
+
+#: admin_view.py:21
+msgid "Playing"
+msgstr "Průchod"
+
+#: admin_view.py:22
+msgid "Answers and result"
+msgstr "Odpovědi a výsledek"
+
+#: admin_view.py:23 jinja2/admin/run.html:107 jinja2/admin/run.html:148
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:50
+msgid "Participants"
+msgstr "Účastníci"
+
+#: admin_view.py:24 jinja2/admin/_quiz_header.html:26 jinja2/admin/run.html:55
+#: jinja2/admin/runs.html:12 jinja2/admin/runs.html:54
+#: jinja2/public/_result.html:5 jinja2/public/quiz.html:23
+#: jinja2/public/result.html:9 jinja2/public/scoreboard.html:2
+#: jinja2/public/scoreboard.html:8 jinja2/public/unavailable.html:6
+msgid "Scoreboard"
+msgstr "Žebříček"
+
+#: admin_view.py:25 jinja2/admin/run.html:37
+msgid "Data"
+msgstr "Data"
+
+#: admin_view.py:26
+msgid "Look and listing"
+msgstr "Vzhled a výpis"
+
+#: admin_view.py:27
+msgid "Technical"
+msgstr "Technické"
+
+#: play.py:88
 msgid "The form could not be read. Please try again."
 msgstr "Formulář se nepodařilo přečíst. Zkuste to prosím znovu."
 
-#: play.py:54
+#: play.py:89
 msgid "An answer could not be read. Please check your answers."
 msgstr "Odpověď se nepodařilo přečíst. Zkontrolujte prosím své odpovědi."
 
-#: play.py:55
+#: play.py:90
 msgid "This attempt is not valid. Please start again."
 msgstr "Tento pokus není platný. Začněte prosím znovu."
 
-#: play.py:56
+#: play.py:91
 msgid "This attempt does not exist."
 msgstr "Tento pokus neexistuje."
 
-#: jinja2/public/quiz.html:21 play.py:57
-msgid "This run has ended."
-msgstr "Tento běh skončil."
+#: jinja2/public/quiz.html:64 play.py:93
+msgid "This quiz has not started yet."
+msgstr "Tento kvíz ještě nezačal."
 
-#: play.py:58 play.py:59
+#: play.py:94 play.py:95
 msgid "This attempt has already been submitted."
 msgstr "Tento pokus už byl odeslán."
 
-#: play.py:61
+#: play.py:97
 msgid "This attempt was replaced by a newer version of the quiz. Please reload the page."
 msgstr "Tento pokus nahradila novější verze kvízu. Načtěte prosím stránku znovu."
 
-#: play.py:63
+#: play.py:99
 msgid "The time for this attempt has run out."
 msgstr "Čas na tento pokus vypršel."
 
-#: play.py:64
+#: play.py:100
+msgid "This attempt has already been submitted or has ended."
+msgstr "Tento pokus už byl odeslán nebo skončil."
+
+#: play.py:101
 msgid "This quiz is temporarily unavailable."
 msgstr "Tento kvíz je dočasně nedostupný."
 
-#: play.py:65
+#: play.py:102
 msgid "This quiz does not show answers now."
 msgstr "Tento kvíz teď odpovědi neukazuje."
 
-#: play.py:66
+#: play.py:103
 msgid "This question is not part of your attempt."
 msgstr "Tato otázka není součástí vašeho pokusu."
 
-#: play.py:67
+#: play.py:104
 msgid "This test has ended."
 msgstr "Tento test skončil."
 
-#: play.py:228
+#: play.py:105
+msgid "You have already played this run in this browser."
+msgstr "Tento běh už jste v tomto prohlížeči hráli."
+
+#: play.py:106
+msgid "Time is up for your attempt. It cannot be started again."
+msgstr "Čas vašeho pokusu vypršel. Znovu ho spustit nelze."
+
+#: play.py:107
+msgid "This attempt was closed because you started again."
+msgstr "Tento pokus byl uzavřen, protože jste začali znovu."
+
+#: play.py:108
+msgid "Please enter your name."
+msgstr "Zadejte své jméno."
+
+#: play.py:109
+msgid "The name can have at most 40 characters."
+msgstr "Jméno může mít nejvýše 40 znaků."
+
+#: play.py:110
+msgid "Please enter your e-mail."
+msgstr "Zadejte svůj e-mail."
+
+#: play.py:111
+msgid "The e-mail address does not look right."
+msgstr "E-mailová adresa nevypadá správně."
+
+#: play.py:112
+msgid "This name is already used in this run. Please choose another one."
+msgstr "Toto jméno už se v tomto běhu používá. Zvolte prosím jiné."
+
+#: play.py:113
+msgid "This run needs an access code. Reload the page and enter it."
+msgstr "Tento běh vyžaduje přístupový kód. Načtěte stránku znovu a zadejte ho."
+
+#: play.py:114
+msgid "This attempt belongs to another run."
+msgstr "Tento pokus patří k jinému běhu."
+
+#: play.py:115
+msgid "This quiz does not let you continue an attempt on this device."
+msgstr "Tento kvíz nedovoluje pokračovat v pokusu na tomto zařízení."
+
+#: play.py:407
+msgid "Too many wrong codes. Please try again in a minute."
+msgstr "Příliš mnoho chybných kódů. Zkuste to znovu za minutu."
+
+#: play.py:417
+msgid "The access code is not right. Please try again."
+msgstr "Přístupový kód není správný. Zkuste to znovu."
+
+#: play.py:521
 msgid "A photo can be at most 15 MB."
 msgstr "Fotka může mít nejvýše 15 MB."
 
-#: public.py:103 public.py:119
+#: public.py:154 public.py:172
 msgid "This quiz does not exist."
 msgstr "Tento kvíz neexistuje."
 
-#: public.py:107
+#: public.py:160
 msgid "This quiz is not running right now."
 msgstr "Tento kvíz teď neběží."
 
-#: public.py:128
+#: public.py:181
 msgid "This test link does not work."
 msgstr "Tento testovací odkaz nefunguje."
 
-#: public.py:234
+#: public.py:331
 msgid "This walkthrough is not available."
 msgstr "Tento průchod není k dispozici."
 
-#: public.py:333
+#: public.py:435
 msgid "This link does not work."
 msgstr "Tento odkaz nefunguje."
 
-#: rendering.py:98
+#: public.py:479
+msgid "This run is archived, so the details can no longer be added."
+msgstr "Tento běh je archivovaný, údaje už nejde doplnit."
+
+#: rendering.py:113
 msgid "This is a test. The result does not count."
 msgstr "Toto je test. Výsledek se nepočítá."
 
-#: rendering.py:257
+#: rendering.py:275
 msgid "This question changed"
 msgstr "Tato otázka se změnila"
+
+#: scoreboard.py:22
+msgid "The scoreboard is not public."
+msgstr "Žebříček není veřejný."
+
+#: scoreboard.py:23
+msgid "The scoreboard appears when the run ends."
+msgstr "Žebříček se ukáže po skončení běhu."
+
+#: scoreboard.py:24
+msgid "The scoreboard appears when all answers are graded."
+msgstr "Žebříček se ukáže, až budou ohodnocené všechny odpovědi."
+
+#: scoreboard.py:25
+msgid "The results of this run are not public."
+msgstr "Výsledky tohoto běhu nejsou veřejné."
 
 #: jinja2/admin/_actions.html:6 jinja2/admin/publish.html:44
 msgid "Start the quiz"
 msgstr "Spustit kvíz"
 
-#: jinja2/admin/_actions.html:6
+#: jinja2/admin/_actions.html:6 jinja2/public/quiz.html:49
 msgid "Start again"
 msgstr "Spustit znovu"
 
-#: jinja2/admin/_actions.html:16
+#: jinja2/admin/_actions.html:15
+msgid "Plan…"
+msgstr "Naplánovat…"
+
+#: jinja2/admin/_actions.html:19 jinja2/admin/_actions.html:39
+msgid "Start now"
+msgstr "Spustit hned"
+
+#: jinja2/admin/_actions.html:22
 msgid "Publish changes"
 msgstr "Publikovat změny"
 
-#: jinja2/admin/_actions.html:18 jinja2/admin/_actions.html:32
-#: jinja2/admin/run.html:15
+#: jinja2/admin/_actions.html:24 jinja2/admin/_actions.html:38
+#: jinja2/admin/run.html:182
 msgid "End the run"
 msgstr "Ukončit běh"
 
-#: jinja2/admin/_actions.html:22
+#: jinja2/admin/_actions.html:28
 msgid "Restore from archive"
 msgstr "Obnovit z archivu"
 
-#: jinja2/admin/_actions.html:27 jinja2/admin/bank.html:20
+#: jinja2/admin/_actions.html:33 jinja2/admin/bank.html:20
 #: jinja2/admin/quiz_edit.html:21 jinja2/admin/quiz_edit.html:44
 #: jinja2/admin/revisions.html:17
 msgid "More actions"
 msgstr "Další akce"
 
-#: jinja2/admin/_actions.html:30
+#: jinja2/admin/_actions.html:36
 msgid "Publish only"
 msgstr "Jen publikovat"
 
-#: jinja2/admin/_actions.html:31
+#: jinja2/admin/_actions.html:37
 msgid "Discard changes"
 msgstr "Zahodit změny"
 
-#: jinja2/admin/_actions.html:33 jinja2/admin/quiz_duplicate.html:8
-#: jinja2/admin/quiz_settings.html:31
+#: jinja2/admin/_actions.html:40 jinja2/admin/run.html:12
+msgid "Change the plan"
+msgstr "Změnit plán"
+
+#: jinja2/admin/_actions.html:41
+msgid "Cancel the plan"
+msgstr "Zrušit plán"
+
+#: jinja2/admin/_actions.html:42 jinja2/admin/quiz_duplicate.html:8
+#: jinja2/admin/quiz_settings.html:33
 msgid "Duplicate"
 msgstr "Duplikovat"
 
@@ -567,12 +1115,50 @@ msgstr "Běh %(no)s probíhá"
 
 #: jinja2/admin/_chips.html:11
 #, python-format
+msgid "Run %(no)s starts %(when)s"
+msgstr "Běh %(no)s začne %(when)s"
+
+#: jinja2/admin/_chips.html:12
+#, python-format
 msgid "Run %(no)s has ended"
 msgstr "Běh %(no)s skončil"
 
-#: jinja2/admin/_chips.html:12
+#: jinja2/admin/_chips.html:13
 msgid "The quiz is not running"
 msgstr "Kvíz neběží"
+
+#: jinja2/admin/_clock.html:3
+msgid "The server and browser clocks differ by more than a minute. A schedule follows the server."
+msgstr "Hodiny serveru a prohlížeče se liší o více než minutu. Plán se řídí serverem."
+
+#: jinja2/admin/_clock.html:3
+msgid "Your browser is in a different time zone. Times here are in the configured one."
+msgstr "Prohlížeč je v jiném časovém pásmu. Časy tady jsou v nastaveném pásmu."
+
+#: jinja2/admin/_clock.html:3
+msgid "The server runs in a different time zone. Times here are in the configured one."
+msgstr "Server běží v jiném časovém pásmu. Časy tady jsou v nastaveném pásmu."
+
+#: jinja2/admin/_clock.html:4 jinja2/admin/prize_draw.html:94
+#: jinja2/admin/prize_draw.html:98
+msgid "Time"
+msgstr "Čas"
+
+#: jinja2/admin/_clock.html:5
+msgid "Server"
+msgstr "Server"
+
+#: jinja2/admin/_clock.html:6
+msgid "Browser"
+msgstr "Prohlížeč"
+
+#: jinja2/admin/_clock.html:10
+msgid "Time zone of the application"
+msgstr "Časové pásmo aplikace"
+
+#: jinja2/admin/_clock.html:10
+msgid "change in Settings"
+msgstr "změnit v Nastavení"
 
 #: jinja2/admin/_diff.html:4
 msgid "Item"
@@ -635,7 +1221,7 @@ msgstr "Pokus %(number)s"
 msgid "Waiting"
 msgstr "Čeká"
 
-#: jinja2/admin/_grading_photo.html:7 jinja2/public/result.html:20
+#: jinja2/admin/_grading_photo.html:7 jinja2/public/result.html:23
 msgid "The photo was removed."
 msgstr "Fotka byla odstraněna."
 
@@ -733,37 +1319,88 @@ msgstr "Běhy"
 msgid "Grading"
 msgstr "Hodnocení"
 
-#: jinja2/admin/_quiz_header.html:2
-msgid "Test links"
-msgstr "Testovací odkazy"
-
-#: jinja2/admin/_quiz_header.html:2 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:24
-msgid "Revisions"
-msgstr "Revize"
-
 #: jinja2/admin/_quiz_header.html:2 jinja2/admin/base.html:12
 #: jinja2/admin/settings.html:3
 msgid "Settings"
 msgstr "Nastavení"
 
-#: jinja2/admin/_quiz_header.html:18 jinja2/admin/run.html:9
+#: jinja2/admin/_quiz_header.html:3 jinja2/admin/rewards.html:20
+#: jinja2/admin/run.html:52 jinja2/admin/run_plan.html:13
+#: jinja2/public/quiz.html:15
+msgid "Rewards"
+msgstr "Odměny"
+
+#: jinja2/admin/_quiz_header.html:3
+msgid "Test links"
+msgstr "Testovací odkazy"
+
+#: jinja2/admin/_quiz_header.html:3 jinja2/admin/run.html:58
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:30
+msgid "Revisions"
+msgstr "Revize"
+
+#: jinja2/admin/_quiz_header.html:19 jinja2/admin/run.html:9
 #: jinja2/admin/runs.html:9
 msgid "Public address"
 msgstr "Veřejná adresa"
 
-#: jinja2/admin/_quiz_header.html:20 jinja2/admin/revisions.html:19
+#: jinja2/admin/_quiz_header.html:21 jinja2/admin/revisions.html:19
 msgid "Preview"
 msgstr "Náhled"
 
-#: jinja2/admin/_quiz_header.html:22
+#: jinja2/admin/_quiz_header.html:24 jinja2/admin/grading.html:14
+#: jinja2/admin/run.html:7
+#, python-format
+msgid "Run %(no)s"
+msgstr "Běh %(no)s"
+
+#: jinja2/admin/_quiz_header.html:25 jinja2/admin/run.html:104
+#: jinja2/admin/runs.html:11 jinja2/admin/runs.html:54
+msgid "Statistics"
+msgstr "Statistiky"
+
+#: jinja2/admin/_quiz_header.html:27 jinja2/admin/run.html:60
+#: jinja2/admin/runs.html:13 jinja2/public/scoreboard.html:15
+msgid "Projector"
+msgstr "Projektor"
+
+#: jinja2/admin/_quiz_header.html:31
 msgid "Parts of this quiz"
 msgstr "Části kvízu"
+
+#: jinja2/admin/_quiz_header.html:38
+msgid "More"
+msgstr "Více"
 
 #: jinja2/admin/_requirements.html:7
 #, python-format
 msgid "Use: %(value)s"
 msgstr "Použít: %(value)s"
+
+#: jinja2/admin/_reward_rule_form.html:6
+msgid "Who gets it"
+msgstr "Kdo ji dostane"
+
+#: jinja2/admin/_reward_rule_form.html:11
+msgid "Texts for participants"
+msgstr "Texty pro účastníky"
+
+#: jinja2/admin/_reward_rule_form.html:14
+msgid "Save the reward"
+msgstr "Uložit odměnu"
+
+#: jinja2/admin/_reward_rule_form.html:15
+msgid "Delete the reward"
+msgstr "Smazat odměnu"
+
+#: jinja2/admin/_setting_groups.html:2
+msgid "Setting groups"
+msgstr "Skupiny nastavení"
+
+#: jinja2/admin/_setting_groups.html:16
+#, python-format
+msgid "More settings in All: %(count)s"
+msgstr "Další nastavení ve Vše: %(count)s"
 
 #: jinja2/admin/bank.html:3
 msgid "Back to the banks"
@@ -801,7 +1438,8 @@ msgstr "Název a smazání"
 
 #: jinja2/admin/bank.html:49 jinja2/admin/draw_form.html:13
 #: jinja2/admin/question_form.html:15 jinja2/admin/quiz_settings.html:13
-#: jinja2/admin/quiz_settings.html:24 jinja2/admin/settings.html:9
+#: jinja2/admin/quiz_settings.html:26 jinja2/admin/run_plan.html:22
+#: jinja2/admin/settings.html:12 jinja2/public/_identity_form.html:10
 msgid "Save"
 msgstr "Uložit"
 
@@ -817,7 +1455,7 @@ msgstr "Banky otázek"
 msgid "A bank holds questions that quizzes can draw from. All administrators share them."
 msgstr "Banka drží otázky, ze kterých můžou kvízy losovat. Sdílejí je všichni správci."
 
-#: jinja2/admin/banks.html:11 jinja2/public/quiz.html:15
+#: jinja2/admin/banks.html:11 jinja2/public/quiz.html:26
 #, python-format
 msgid "Questions: %(count)s"
 msgstr "Počet otázek: %(count)s"
@@ -838,7 +1476,7 @@ msgstr "Vytvořit banku"
 msgid "Menu"
 msgstr "Menu"
 
-#: jinja2/admin/base.html:8 jinja2/public/landing.html:20
+#: jinja2/admin/base.html:8 jinja2/public/landing.html:31
 msgid "Administration"
 msgstr "Správa"
 
@@ -855,7 +1493,19 @@ msgstr "Banky"
 msgid "Admins"
 msgstr "Správci"
 
-#: jinja2/admin/base.html:18
+#: jinja2/admin/base.html:16
+msgid "How much to show"
+msgstr "Kolik ukázat"
+
+#: jinja2/admin/base.html:19
+msgid "Basic"
+msgstr "Základní"
+
+#: jinja2/admin/base.html:20
+msgid "All"
+msgstr "Vše"
+
+#: jinja2/admin/base.html:27
 msgid "Log out"
 msgstr "Odhlásit se"
 
@@ -863,11 +1513,11 @@ msgstr "Odhlásit se"
 msgid "Please confirm"
 msgstr "Prosím potvrďte"
 
-#: jinja2/admin/confirm.html:8
+#: jinja2/admin/confirm.html:10
 msgid "Confirm"
 msgstr "Potvrdit"
 
-#: jinja2/admin/confirm.html:9 jinja2/admin/quiz_duplicate.html:9
+#: jinja2/admin/confirm.html:11 jinja2/admin/quiz_duplicate.html:9
 msgid "Cancel"
 msgstr "Zrušit"
 
@@ -895,20 +1545,11 @@ msgstr "Zatím nebyl otevřen žádný běh, není co hodnotit."
 msgid "You are grading a test link. Its results count nowhere."
 msgstr "Hodnotíte testovací odkaz. Jeho výsledky se nikam nepočítají."
 
-#: jinja2/admin/grading.html:11 jinja2/admin/runs.html:16
-#: jinja2/admin/runs.html:20
+#: jinja2/admin/grading.html:11 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:23 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:47
 msgid "Run"
 msgstr "Běh"
-
-#: jinja2/admin/grading.html:14 jinja2/admin/run.html:7
-#, python-format
-msgid "Run %(no)s"
-msgstr "Běh %(no)s"
-
-#: jinja2/admin/grading.html:14 jinja2/admin/run.html:8
-#: jinja2/admin/runs.html:21
-msgid "Running"
-msgstr "Probíhá"
 
 #: jinja2/admin/grading.html:18
 msgid "Show"
@@ -1009,7 +1650,8 @@ msgstr "Vyberte, co který sloupec znamená, nebo ho nechte nepoužitý."
 msgid "Do not use"
 msgstr "Nepoužít"
 
-#: jinja2/admin/import_mapping.html:18
+#: jinja2/admin/import_mapping.html:18 jinja2/public/quiz.html:39
+#: jinja2/public/quiz.html:48
 msgid "Continue"
 msgstr "Pokračovat"
 
@@ -1038,7 +1680,7 @@ msgstr "Otevřít, co se naimportovalo"
 msgid "Rows that were skipped"
 msgstr "Přeskočené řádky"
 
-#: jinja2/admin/import_upload.html:3 jinja2/public/_questions.html:21
+#: jinja2/admin/import_upload.html:3 jinja2/public/_questions.html:22
 msgid "Back"
 msgstr "Zpět"
 
@@ -1065,6 +1707,137 @@ msgstr "Nahrát a zkontrolovat"
 #: jinja2/admin/login.html:7 jinja2/admin/login.html:13
 msgid "Log in"
 msgstr "Přihlásit se"
+
+#: jinja2/admin/prize_draw.html:6
+#, python-format
+msgid "Prize draw of run %(no)s"
+msgstr "Losování cen běhu %(no)s"
+
+#: jinja2/admin/prize_draw.html:7 jinja2/admin/rewards.html:8
+#: jinja2/admin/run_merge.html:6
+msgid "Back to the run"
+msgstr "Zpět na běh"
+
+#: jinja2/admin/prize_draw.html:7 jinja2/admin/run.html:54
+msgid "Rewards and who has them"
+msgstr "Odměny a kdo je má"
+
+#: jinja2/admin/prize_draw.html:8
+msgid "This run has no draw."
+msgstr "Tento běh nemá žádné losování."
+
+#: jinja2/admin/prize_draw.html:15
+#, python-format
+msgid "Winners: %(winners)s, alternates: %(alternates)s"
+msgstr "Výherci: %(winners)s, náhradníci: %(alternates)s"
+
+#: jinja2/admin/prize_draw.html:20
+#, python-format
+msgid "Eligible: %(count)s"
+msgstr "Způsobilí: %(count)s"
+
+#: jinja2/admin/prize_draw.html:21
+msgid "Fingerprint of the eligible set"
+msgstr "Otisk množiny způsobilých"
+
+#: jinja2/admin/prize_draw.html:31
+msgid "Draw now"
+msgstr "Losovat"
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:44
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:53
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:79 jinja2/admin/run.html:156
+#: jinja2/admin/run.html:160 jinja2/public/_identity_fields.html:3
+#: jinja2/public/_scoreboard_rows.html:12
+#: jinja2/public/_scoreboard_rows.html:25
+msgid "Name"
+msgstr "Jméno"
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:45
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:54
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:161
+#: jinja2/public/_identity_fields.html:8
+msgid "E-mail"
+msgstr "E-mail"
+
+#: jinja2/admin/prize_draw.html:39 jinja2/admin/prize_draw.html:46
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:57
+msgid "Actions"
+msgstr "Akce"
+
+#: jinja2/admin/prize_draw.html:51 jinja2/admin/prize_draw.html:94
+#: jinja2/admin/prize_draw.html:101 jinja2/admin/rewards.html:67
+msgid "Reason"
+msgstr "Důvod"
+
+#: jinja2/admin/prize_draw.html:54
+msgid "Move up an alternate"
+msgstr "Posunout náhradníka"
+
+#: jinja2/admin/prize_draw.html:55
+msgid "Draw a substitute"
+msgstr "Vylosovat náhradního výherce"
+
+#: jinja2/admin/prize_draw.html:67
+msgid "No alternate is left."
+msgstr "Nezbývá žádný náhradník."
+
+#: jinja2/admin/prize_draw.html:72
+msgid "Reason for a redraw"
+msgstr "Důvod nového losování"
+
+#: jinja2/admin/prize_draw.html:75
+msgid "Redraw everything"
+msgstr "Losovat celé znovu"
+
+#: jinja2/admin/prize_draw.html:83
+msgid "The winners are shown on the public scoreboard."
+msgstr "Výherci jsou vidět na veřejném žebříčku."
+
+#: jinja2/admin/prize_draw.html:84
+msgid "Hide the winners"
+msgstr "Skrýt výherce"
+
+#: jinja2/admin/prize_draw.html:86
+msgid "The winners are not public."
+msgstr "Výherci nejsou veřejní."
+
+#: jinja2/admin/prize_draw.html:87
+msgid "Publish the winners"
+msgstr "Zveřejnit výherce"
+
+#: jinja2/admin/prize_draw.html:92
+msgid "History"
+msgstr "Historie"
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:99
+msgid "Admin"
+msgstr "Admin"
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:100
+msgid "Action"
+msgstr "Akce"
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:102
+msgid "Eligible"
+msgstr "Způsobilí"
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:103
+msgid "Fingerprint"
+msgstr "Otisk"
+
+#: jinja2/admin/prize_draw.html:94 jinja2/admin/prize_draw.html:104
+msgid "Algorithm"
+msgstr "Algoritmus"
+
+#: jinja2/admin/prize_draw.html:100
+#, python-format
+msgid "Drew %(selected)s of %(requested)s requested: not enough eligible."
+msgstr "Vylosováno %(selected)s z požadovaných %(requested)s: málo způsobilých."
+
+#: jinja2/admin/prize_draw.html:103
+msgid "Full"
+msgstr "Celý"
 
 #: jinja2/admin/publish.html:3 jinja2/admin/publish.html:44
 msgid "Publish"
@@ -1166,8 +1939,8 @@ msgstr "Archivované kvízy"
 msgid "There are no quizzes yet."
 msgstr "Zatím tu nejsou žádné kvízy."
 
-#: jinja2/admin/quiz_list.html:29 jinja2/public/_result.html:33
-#: jinja2/public/result.html:29 jinja2/public/unavailable.html:6
+#: jinja2/admin/quiz_list.html:29 jinja2/public/_result.html:38
+#: jinja2/public/result.html:32 jinja2/public/unavailable.html:7
 #: jinja2/public/walkthrough.html:42
 msgid "Back to quizzes"
 msgstr "Zpět na kvízy"
@@ -1197,18 +1970,18 @@ msgid "Answers after each question need a one-by-one mode, and this quiz shows a
 msgstr "Odpovědi po každé otázce vyžadují režim po jedné, ale tento kvíz ukazuje všechny otázky najednou. Účastníci uvidí odpovědi na konci."
 
 #: jinja2/admin/quiz_settings.html:20
-msgid "Showing answers to anyone but admins needs all answers stored, and this quiz stores only photos. Answers stay visible to admins only."
-msgstr "Aby odpovědi viděl někdo jiný než admin, musí se ukládat všechny, a tento kvíz ukládá jen fotky. Odpovědi tak vidí jen admini."
+msgid "Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only."
+msgstr "Zobrazení odpovědí komukoli kromě adminů potřebuje profil, který ukládá všechny odpovědi, a tento kvíz ukládá méně. Odpovědi vidí jen admini."
 
-#: jinja2/admin/quiz_settings.html:28
+#: jinja2/admin/quiz_settings.html:30
 msgid "Copy and archive"
 msgstr "Kopie a archivace"
 
-#: jinja2/admin/quiz_settings.html:29
+#: jinja2/admin/quiz_settings.html:31
 msgid "An archived quiz disappears from the public pages. A running run must end first."
 msgstr "Archivovaný kvíz zmizí z veřejných stránek. Probíhající běh musí nejdřív skončit."
 
-#: jinja2/admin/quiz_settings.html:34
+#: jinja2/admin/quiz_settings.html:36
 msgid "Archive this quiz"
 msgstr "Archivovat tento kvíz"
 
@@ -1226,7 +1999,8 @@ msgid "Number"
 msgstr "Číslo"
 
 #: jinja2/admin/revisions.html:5 jinja2/admin/revisions.html:10
-#: jinja2/admin/runs.html:16 jinja2/admin/runs.html:21
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:56
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:24
 #: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:47
 msgid "Status"
 msgstr "Stav"
@@ -1243,6 +2017,81 @@ msgstr "Porovnat s předchozí"
 msgid "Use as new draft"
 msgstr "Použít jako nový koncept"
 
+#: jinja2/admin/rewards.html:7
+#, python-format
+msgid "Rewards of run %(no)s"
+msgstr "Odměny běhu %(no)s"
+
+#: jinja2/admin/rewards.html:8 jinja2/admin/run.html:54
+msgid "Prize draw"
+msgstr "Losování cen"
+
+#: jinja2/admin/rewards.html:10
+msgid "Rewards of a new run"
+msgstr "Odměny nového běhu"
+
+#: jinja2/admin/rewards.html:11
+msgid "These rewards are a template. A new run copies them when the setting below says so; a change here does not reach runs already planned."
+msgstr "Tyto odměny jsou šablona. Nový běh si je zkopíruje, když to říká nastavení níže; změna tady se nedostane do už naplánovaných běhů."
+
+#: jinja2/admin/rewards.html:12 jinja2/admin/run_plan.html:11
+msgid "Settings of the quiz"
+msgstr "Nastavení kvízu"
+
+#: jinja2/admin/rewards.html:15 jinja2/admin/run.html:53
+#: jinja2/admin/run_plan.html:16
+msgid "This run has a draw but does not collect e-mail."
+msgstr "Tento běh má losování, ale nesbírá e-mail."
+
+#: jinja2/admin/rewards.html:21
+msgid "No rewards yet."
+msgstr "Zatím žádné odměny."
+
+#: jinja2/admin/rewards.html:26
+msgid "How to claim it"
+msgstr "Jak si ji vyzvednout"
+
+#: jinja2/admin/rewards.html:35
+msgid "Add a reward"
+msgstr "Přidat odměnu"
+
+#: jinja2/admin/rewards.html:46
+msgid "Who has a reward"
+msgstr "Kdo má odměnu"
+
+#: jinja2/admin/rewards.html:49 jinja2/admin/rewards.html:55
+#: jinja2/admin/rewards.html:89
+msgid "Reward"
+msgstr "Odměna"
+
+#: jinja2/admin/rewards.html:61
+msgid "Mark as handed over"
+msgstr "Označit jako předanou"
+
+#: jinja2/admin/rewards.html:70
+msgid "Cancel the reward"
+msgstr "Zrušit odměnu"
+
+#: jinja2/admin/rewards.html:79
+msgid "Nobody has a reward yet."
+msgstr "Zatím nikdo nemá odměnu."
+
+#: jinja2/admin/rewards.html:85
+msgid "Grant a manual reward"
+msgstr "Udělit ruční odměnu"
+
+#: jinja2/admin/rewards.html:94
+msgid "Participant"
+msgstr "Účastník"
+
+#: jinja2/admin/rewards.html:99
+msgid "Grant"
+msgstr "Udělit"
+
+#: jinja2/admin/rewards.html:102
+msgid "Nobody has submitted an attempt yet."
+msgstr "Zatím nikdo neodeslal pokus."
+
 #: jinja2/admin/run.html:5 jinja2/admin/runs.html:6
 msgid "QR code of the public address"
 msgstr "QR kód veřejné adresy"
@@ -1252,20 +2101,306 @@ msgstr "QR kód veřejné adresy"
 msgid "Attempts submitted: %(count)s"
 msgstr "Odesláno pokusů: %(count)s"
 
-#: jinja2/admin/run.html:11 jinja2/public/quiz.html:12
+#: jinja2/admin/run.html:11
+#, python-format
+msgid "Not sent: %(count)s"
+msgstr "Neodesláno: %(count)s"
+
+#: jinja2/admin/run.html:15 jinja2/admin/runs.html:19 jinja2/admin/runs.html:29
+msgid "Time limit"
+msgstr "Časový limit"
+
+#: jinja2/admin/run.html:15
+msgid "No limit"
+msgstr "Bez limitu"
+
+#: jinja2/admin/run.html:20
+msgid "The access code is"
+msgstr "Přístupový kód je"
+
+#: jinja2/admin/run.html:20
+msgid "It is shown only now. Write it down: afterwards it can only be replaced."
+msgstr "Ukazuje se jen teď. Zapište si ho: potom ho lze už jen nahradit."
+
+#: jinja2/admin/run.html:22
+msgid "An access code is set."
+msgstr "Přístupový kód je nastaven."
+
+#: jinja2/admin/run.html:22
+msgid "No access code: anyone with the address can start."
+msgstr "Bez přístupového kódu: začít může každý, kdo zná adresu."
+
+#: jinja2/admin/run.html:26
+msgid "New code"
+msgstr "Nový kód"
+
+#: jinja2/admin/run.html:29
+msgid "A new code stops people who have not started yet. Attempts in progress continue."
+msgstr "Nový kód zastaví ty, kdo ještě nezačali. Rozpracované pokusy pokračují."
+
+#: jinja2/admin/run.html:30
+msgid "Set the code"
+msgstr "Nastavit kód"
+
+#: jinja2/admin/run.html:32
+msgid "Remove the code"
+msgstr "Odebrat kód"
+
+#: jinja2/admin/run.html:42
+msgid "How long a run keeps its data"
+msgstr "Jak dlouho běh uchovává data"
+
+#: jinja2/admin/run.html:47
+msgid "What a run keeps cannot change once it opens, but the period can."
+msgstr "Co běh ukládá, se po otevření nedá změnit, ale dobu uchování ano."
+
+#: jinja2/admin/run.html:48
+msgid "Save the period"
+msgstr "Uložit dobu"
+
+#: jinja2/admin/run.html:54
+#, python-format
+msgid "Rewards: %(count)s"
+msgstr "Odměny: %(count)s"
+
+#: jinja2/admin/run.html:54 jinja2/admin/run_plan.html:15
+msgid "No rewards."
+msgstr "Žádné odměny."
+
+#: jinja2/admin/run.html:58
+msgid "Merged into one table"
+msgstr "Sloučené do jedné tabulky"
+
+#: jinja2/admin/run.html:58
+msgid "Only the latest revision"
+msgstr "Jen poslední revize"
+
+#: jinja2/admin/run.html:58
+msgid "One table per revision"
+msgstr "Tabulka pro každou revizi"
+
+#: jinja2/admin/run.html:60
+msgid "Public scoreboard"
+msgstr "Veřejný žebříček"
+
+#: jinja2/admin/run.html:65
+msgid "Separate the revisions again"
+msgstr "Znovu oddělit revize"
+
+#: jinja2/admin/run.html:68
+msgid "Merge the revisions into one table"
+msgstr "Sloučit revize do jedné tabulky"
+
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:78
+#: jinja2/public/_scoreboard_rows.html:11
+#: jinja2/public/_scoreboard_rows.html:24
+msgid "Place"
+msgstr "Místo"
+
+#: jinja2/admin/run.html:74 jinja2/admin/run.html:80 jinja2/admin/run.html:156
+#: jinja2/admin/run.html:162 jinja2/admin/test_links.html:43
+#: jinja2/admin/test_links.html:48 jinja2/public/_scoreboard_rows.html:13
+#: jinja2/public/_scoreboard_rows.html:26
+msgid "Score"
+msgstr "Skóre"
+
+#: jinja2/admin/run.html:87 jinja2/public/_scoreboard_rows.html:37
+msgid "No results yet."
+msgstr "Zatím žádné výsledky."
+
+#: jinja2/admin/run.html:100
+msgid "A visible scoreboard remembers each browser with a cookie from its next start on."
+msgstr "Viditelný žebříček si od dalšího startu pamatuje každý prohlížeč přes cookie."
+
+#: jinja2/admin/run.html:101
+msgid "Save the scoreboard"
+msgstr "Uložit žebříček"
+
+#: jinja2/admin/run.html:108
+msgid "Started attempts"
+msgstr "Zahájené pokusy"
+
+#: jinja2/admin/run.html:109
+msgid "Submitted attempts"
+msgstr "Odeslané pokusy"
+
+#: jinja2/admin/run.html:110 jinja2/admin/runs.html:19
+#: jinja2/admin/runs.html:32
+msgid "Not sent"
+msgstr "Neodesláno"
+
+#: jinja2/admin/run.html:114 jinja2/admin/runs.html:43
+#: jinja2/admin/runs.html:52
+msgid "Average"
+msgstr "Průměr"
+
+#: jinja2/admin/run.html:115
+msgid "Median"
+msgstr "Medián"
+
+#: jinja2/admin/run.html:116
+msgid "Lowest"
+msgstr "Nejnižší"
+
+#: jinja2/admin/run.html:117
+msgid "Highest"
+msgstr "Nejvyšší"
+
+#: jinja2/admin/run.html:120
+msgid "Scores by tenths of the maximum"
+msgstr "Skóre po desetinách maxima"
+
+#: jinja2/admin/run.html:129
+#, python-format
+msgid "submitted %(count)s, average %(average)s"
+msgstr "odesláno %(count)s, průměr %(average)s"
+
+#: jinja2/admin/run.html:132
+msgid "Numbers per question need a data profile that keeps all answers."
+msgstr "Čísla po otázkách potřebují profil dat, který ukládá všechny odpovědi."
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:139
+msgid "Question"
+msgstr "Otázka"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:140
+msgid "Answered"
+msgstr "Odpovědí"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:141
+msgid "Average points"
+msgstr "Průměr bodů"
+
+#: jinja2/admin/run.html:135 jinja2/admin/run.html:142
+msgid "Full points"
+msgstr "Plný počet bodů"
+
+#: jinja2/admin/run.html:150
+msgid "Attempts"
+msgstr "Pokusy"
+
+#: jinja2/admin/run.html:152
+msgid "This run keeps nothing about an attempt, so there is no table of attempts."
+msgstr "Tento běh o pokusu nic neukládá, proto tu není tabulka pokusů."
+
+#: jinja2/admin/run.html:156 jinja2/admin/run.html:164
+#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:49
+#: jinja2/public/_scoreboard_rows.html:17
+#: jinja2/public/_scoreboard_rows.html:30
+msgid "Duration"
+msgstr "Trvání"
+
+#: jinja2/admin/run.html:160
+msgid "no name"
+msgstr "bez jména"
+
+#: jinja2/admin/run.html:169
+msgid "No attempt has been submitted yet."
+msgstr "Zatím nikdo nic neodeslal."
+
+#: jinja2/admin/run.html:170 jinja2/public/quiz.html:12
 #: jinja2/public/unavailable.html:5
 msgid "See the answers of this run"
 msgstr "Zobrazit odpovědi tohoto běhu"
 
-#: jinja2/admin/runs.html:16 jinja2/admin/runs.html:22
+#: jinja2/admin/run.html:177
+msgid "Empty means the run lasts until you end it. It applies to attempts in progress too."
+msgstr "Prázdné pole znamená, že běh trvá, dokud ho neukončíte. Platí i pro rozehrané pokusy."
+
+#: jinja2/admin/run.html:178
+msgid "Save the deadline"
+msgstr "Uložit uzávěrku"
+
+#: jinja2/admin/run.html:187
+msgid "Archive this run"
+msgstr "Archivovat běh"
+
+#: jinja2/admin/run.html:192
+msgid "Restore this run"
+msgstr "Obnovit běh"
+
+#: jinja2/admin/run_merge.html:5
+#, python-format
+msgid "Merge the revisions of run %(no)s"
+msgstr "Sloučit revize běhu %(no)s"
+
+#: jinja2/admin/run_merge.html:7
+msgid "Merged revisions share one table. Equal maximum points do not mean equal questions: check what changed."
+msgstr "Sloučené revize sdílejí jednu tabulku. Stejné maximum bodů neznamená stejné otázky: zkontrolujte, co se změnilo."
+
+#: jinja2/admin/run_merge.html:9
+#, python-format
+msgid "Revision %(before)s → %(after)s"
+msgstr "Revize %(before)s → %(after)s"
+
+#: jinja2/admin/run_merge.html:10
+#, python-format
+msgid "Maximum points: %(before)s → %(after)s"
+msgstr "Maximum bodů: %(before)s → %(after)s"
+
+#: jinja2/admin/run_merge.html:19
+msgid "Merge into one table"
+msgstr "Sloučit do jedné tabulky"
+
+#: jinja2/admin/run_plan.html:5
+msgid "Plan the run"
+msgstr "Naplánovat běh"
+
+#: jinja2/admin/run_plan.html:5
+msgid "Plan a run"
+msgstr "Naplánovat běh"
+
+#: jinja2/admin/run_plan.html:6
+#, python-format
+msgid "Times are in the time zone %(zone)s."
+msgstr "Časy jsou v časovém pásmu %(zone)s."
+
+#: jinja2/admin/run_plan.html:11
+msgid "The run takes the quiz's settings."
+msgstr "Běh převezme nastavení kvízu."
+
+#: jinja2/admin/run_plan.html:17
+msgid "Change the rewards of this run"
+msgstr "Změnit odměny tohoto běhu"
+
+#: jinja2/admin/run_plan.html:19
+msgid "The run copies its rewards when it is saved, as the quiz's settings say."
+msgstr "Běh si odměny zkopíruje při uložení, jak říká nastavení kvízu."
+
+#: jinja2/admin/run_plan.html:19
+msgid "Rewards of the quiz"
+msgstr "Odměny kvízu"
+
+#: jinja2/admin/run_plan.html:21
+msgid "The cookie that tells participants apart does not guarantee one person: someone can clear it or use another browser. \"When to ask\" applies only when a name or an e-mail is on."
+msgstr "Cookie, podle které se účastníci rozlišují, nezaručuje jednu osobu: jde ji smazat nebo použít jiný prohlížeč. „Kdy se ptát“ platí jen při zapnutém jménu nebo e-mailu."
+
+#: jinja2/admin/runs.html:19 jinja2/admin/runs.html:26
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:48
 msgid "Opened"
 msgstr "Otevřeno"
 
-#: jinja2/admin/runs.html:31
+#: jinja2/admin/runs.html:38
 msgid "There are no runs yet."
 msgstr "Zatím tu nejsou žádné běhy."
 
-#: jinja2/admin/settings.html:5
+#: jinja2/admin/runs.html:41
+msgid "Comparison of runs"
+msgstr "Porovnání běhů"
+
+#: jinja2/admin/runs.html:43 jinja2/admin/runs.html:54
+msgid "Results"
+msgstr "Výsledky"
+
+#: jinja2/admin/runs.html:61
+msgid "Hide archived runs"
+msgstr "Skrýt archivované běhy"
+
+#: jinja2/admin/runs.html:61
+msgid "Show archived runs"
+msgstr "Zobrazit archivované"
+
+#: jinja2/admin/settings.html:10
 msgid "These values apply to every quiz that does not set its own."
 msgstr "Tyto hodnoty platí pro každý kvíz, který nemá vlastní."
 
@@ -1286,8 +2421,9 @@ msgid "Version"
 msgstr "Verze"
 
 #: jinja2/admin/test_links.html:24
-msgid "End (UTC, optional)"
-msgstr "Konec (UTC, nepovinné)"
+#, python-format
+msgid "End (optional, %(zone)s)"
+msgstr "Konec (nepovinné, %(zone)s)"
 
 #: jinja2/admin/test_links.html:27
 msgid "Create test link"
@@ -1320,14 +2456,6 @@ msgstr "Pokusy: %(count)s"
 msgid "Grade"
 msgstr "Hodnotit"
 
-#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:48
-msgid "Score"
-msgstr "Skóre"
-
-#: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:49
-msgid "Duration"
-msgstr "Trvání"
-
 #: jinja2/admin/test_links.html:43 jinja2/admin/test_links.html:50
 msgid "Started"
 msgstr "Začátek"
@@ -1352,6 +2480,47 @@ msgstr "Zatím žádné testovací odkazy."
 msgid "New admin"
 msgstr "Nový správce"
 
+#: jinja2/public/_countdown.html:3
+msgid "Five minutes left."
+msgstr "Zbývá pět minut."
+
+#: jinja2/public/_countdown.html:3
+msgid "One minute left."
+msgstr "Zbývá jedna minuta."
+
+#: jinja2/public/_countdown.html:3
+msgid "Time is up. Sending your answers."
+msgstr "Čas vypršel. Odesílám odpovědi."
+
+#: jinja2/public/_countdown.html:4
+msgid "Time left"
+msgstr "Zbývá"
+
+#: jinja2/public/_error.html:2
+msgid "One attempt per browser applies."
+msgstr "Platí jeden pokus na prohlížeč."
+
+#: jinja2/public/_error.html:3
+msgid "See your result"
+msgstr "Zobrazit váš výsledek"
+
+#: jinja2/public/_identity_fields.html:3 jinja2/public/_identity_fields.html:8
+msgid "optional"
+msgstr "nepovinné"
+
+#: jinja2/public/_identity_fields.html:12
+msgid "Your name and e-mail are used only by the organiser of this run."
+msgstr "Jméno a e-mail slouží jen pořadateli tohoto běhu."
+
+#: jinja2/public/_identity_fields.html:12 jinja2/public/base.html:10
+#: jinja2/public/privacy.html:2 jinja2/public/privacy.html:4
+msgid "Privacy"
+msgstr "Ochrana osobních údajů"
+
+#: jinja2/public/_identity_form.html:6
+msgid "Add your details"
+msgstr "Doplňte své údaje"
+
 #: jinja2/public/_message.html:1
 msgid "The photos are too large to send together. Your answers are still here: choose smaller photos and try again."
 msgstr "Fotky jsou dohromady příliš velké na odeslání. Vaše odpovědi tu zůstaly: vyberte menší fotky a zkuste to znovu."
@@ -1372,49 +2541,75 @@ msgstr "Spustit náhled"
 msgid "There are no questions to show."
 msgstr "Není co zobrazit."
 
-#: jinja2/public/_questions.html:4
+#: jinja2/public/_questions.html:5
 #, python-format
 msgid "Question %(current)s of %(total)s"
 msgstr "Otázka %(current)s z %(total)s"
 
-#: jinja2/public/_questions.html:4
+#: jinja2/public/_questions.html:5
 #, python-format
 msgid "Answered %(current)s of %(total)s"
 msgstr "Zodpovězeno %(current)s z %(total)s"
 
-#: jinja2/public/_questions.html:14
+#: jinja2/public/_questions.html:5
+#, python-format
+msgid "Questions %(first)s–%(last)s of %(total)s"
+msgstr "Otázky %(first)s–%(last)s z %(total)s"
+
+#: jinja2/public/_questions.html:5
+msgid "A photo is not kept on this device. Choose it again."
+msgstr "Fotka se v tomto zařízení neuchovává. Vyberte ji znovu."
+
+#: jinja2/public/_questions.html:15
 msgid "Check the answer"
 msgstr "Zkontrolovat"
 
-#: jinja2/public/_questions.html:22
+#: jinja2/public/_questions.html:23
 msgid "Next"
 msgstr "Další"
 
-#: jinja2/public/_questions.html:24
+#: jinja2/public/_questions.html:34
 msgid "Submit answers"
 msgstr "Odeslat odpovědi"
+
+#: jinja2/public/_questions.html:35
+msgid "Answers are kept in this browser until you submit, for 24 hours at most."
+msgstr "Odpovědi se do odeslání drží v tomto prohlížeči, nejdéle 24 hodin."
 
 #: jinja2/public/_result.html:3 jinja2/public/result.html:7
 msgid "Your score"
 msgstr "Váš výsledek"
 
-#: jinja2/public/_result.html:5 jinja2/public/result.html:10
+#: jinja2/public/_result.html:5 jinja2/public/result.html:9
+#, python-format
+msgid "Your place: %(rank)s. of %(total)s"
+msgstr "Vaše místo: %(rank)s. z %(total)s"
+
+#: jinja2/public/_result.html:6
+msgid "The time ran out, so your answers were sent automatically."
+msgstr "Čas vypršel, takže se odpovědi odeslaly automaticky."
+
+#: jinja2/public/_result.html:7 jinja2/public/result.html:11
 msgid "This score is provisional: part of the points is waiting for grading."
 msgstr "Toto skóre je předběžné: část bodů čeká na hodnocení."
 
 #: jinja2/public/_result.html:8
+msgid "This result cannot be shown again, and it is not saved anywhere."
+msgstr "Výsledek už nepůjde znovu zobrazit a nikam se neukládá."
+
+#: jinja2/public/_result.html:11
 msgid "Your private result link"
 msgstr "Váš soukromý odkaz na výsledek"
 
-#: jinja2/public/_result.html:9
+#: jinja2/public/_result.html:12
 msgid "Save this link. It shows your final score and is the only way back to it from another device. Anyone with the link can open it."
 msgstr "Tento odkaz si uložte. Ukazuje konečné skóre a z jiného zařízení je to jediná cesta zpět. Otevřít ho může každý, kdo ho má."
 
-#: jinja2/public/_result.html:14 jinja2/public/result.html:16
+#: jinja2/public/_result.html:19 jinja2/public/result.html:19
 msgid "Your answers"
 msgstr "Vaše odpovědi"
 
-#: jinja2/public/_result.html:22
+#: jinja2/public/_result.html:27
 msgid "Sources"
 msgstr "Zdroje"
 
@@ -1443,6 +2638,32 @@ msgstr "Špatně"
 #: jinja2/public/_reveal.html:3
 msgid "No answer"
 msgstr "Bez odpovědi"
+
+#: jinja2/public/_rewards.html:3
+msgid "Your rewards"
+msgstr "Vaše odměny"
+
+#: jinja2/public/_rewards.html:8
+msgid "Handed over"
+msgstr "Předaná"
+
+#: jinja2/public/_rewards.html:8
+msgid "Granted"
+msgstr "Udělená"
+
+#: jinja2/public/_rewards.html:10
+#, python-format
+msgid "How to claim it: %(text)s"
+msgstr "Jak ji získat: %(text)s"
+
+#: jinja2/public/_scoreboard_rows.html:6
+#, python-format
+msgid "of %(points)s points"
+msgstr "z %(points)s bodů"
+
+#: jinja2/public/_scoreboard_rows.html:25
+msgid "you"
+msgstr "vy"
 
 #: jinja2/public/_switch_notice.html:1
 msgid "A new version of this quiz is available. Your answers to unchanged questions stay."
@@ -1474,11 +2695,6 @@ msgstr "Organizátoři provozují Kvízotron na vlastním serveru, a proto se st
 msgid "How it works"
 msgstr "Jak to funguje"
 
-#: jinja2/public/base.html:10 jinja2/public/privacy.html:2
-#: jinja2/public/privacy.html:4
-msgid "Privacy"
-msgstr "Ochrana osobních údajů"
-
 #: jinja2/public/how_it_works.html:7
 msgid "Choose a quiz on the home page, or open its link or QR code."
 msgstr "Vyberte kvíz na úvodní stránce, nebo otevřete jeho odkaz či QR kód."
@@ -1499,17 +2715,26 @@ msgstr "Své skóre uvidíte hned."
 msgid "You do not need to register or install anything."
 msgstr "Nemusíte se registrovat ani nic instalovat."
 
-#: jinja2/public/landing.html:4
+#: jinja2/public/landing.html:5
 msgid "Turn on your brain. Start Kvízotron."
 msgstr "Zapni mozek. Spusť Kvízotron."
 
-#: jinja2/public/landing.html:5
+#: jinja2/public/landing.html:6
 msgid "Quizzes and contests without registration, right on your phone."
 msgstr "Kvízy a soutěže bez registrace, přímo v telefonu."
 
-#: jinja2/public/landing.html:17
+#: jinja2/public/landing.html:18
 msgid "No quiz is running right now."
 msgstr "Teď neběží žádný kvíz."
+
+#: jinja2/public/landing.html:23
+msgid "Coming up"
+msgstr "Chystá se"
+
+#: jinja2/public/landing.html:26
+#, python-format
+msgid "Starts %(when)s"
+msgstr "Začíná %(when)s"
 
 #: jinja2/public/privacy.html:6
 msgid "This notice covers the current version of Kvízotron and will be completed as new features arrive."
@@ -1532,37 +2757,94 @@ msgid "An organiser can choose to store all answers, and to show them to you or,
 msgstr "Organizátor může ukládat všechny odpovědi a ukázat je vám nebo po skončení běhu všem, aniž by bylo vidět, kdo je dal."
 
 #: jinja2/public/privacy.html:12
+msgid "What an attempt leaves behind depends on the quiz: an organiser can keep nothing but a count, only your score, all answers, or answers with the time you took."
+msgstr "Co po pokusu zůstane, závisí na kvízu: organizátor může uchovat jen počet, jen vaše skóre, všechny odpovědi, nebo odpovědi s dobou, kterou jste potřebovali."
+
+#: jinja2/public/privacy.html:13
+#, python-format
+msgid "A run's data are kept for %(period)s after it ends unless the quiz sets another period. Deleting them after that arrives in a later version."
+msgstr "Data běhu se uchovávají %(period)s po jeho skončení, pokud kvíz nenastaví jinou dobu. Mazání po uplynutí této doby přijde v pozdější verzi."
+
+#: jinja2/public/privacy.html:14
+msgid "While an attempt is unfinished, your answers may stay in this browser, without photos, name and e-mail, until the attempt ends and at most 24 hours. Submitting deletes them. An organiser can turn this off."
+msgstr "Dokud pokus není dokončen, mohou vaše odpovědi zůstat v tomto prohlížeči, bez fotek, jména a e-mailu, do konce pokusu nejvýše 24 hodin. Odesláním se smažou. Organizátor to může vypnout."
+
+#: jinja2/public/privacy.html:15
+msgid "If an organiser makes a run's scoreboard public, it shows your nickname or an anonymous label with your score, never your e-mail. Such a run remembers this browser with a cookie, so that playing again does not add a second row."
+msgstr "Když organizátor zveřejní žebříček běhu, ukáže se v něm vaše přezdívka nebo anonymní označení a skóre, nikdy e-mail. Takový běh si tento prohlížeč pamatuje přes cookie, aby další hra nepřidala druhý řádek."
+
+#: jinja2/public/privacy.html:16
 msgid "When a result has a private link, this browser remembers it on your device so that you can return to it. Nothing about that is sent anywhere."
 msgstr "Když má výsledek soukromý odkaz, tento prohlížeč si ho pamatuje ve vašem zařízení, abyste se k němu mohli vrátit. Nikam se přitom nic neposílá."
 
-#: jinja2/public/privacy.html:13
+#: jinja2/public/privacy.html:17
 msgid "Answers and personal data are not written to the application logs."
 msgstr "Odpovědi a osobní údaje se nezapisují do logů aplikace."
 
-#: jinja2/public/privacy.html:14
+#: jinja2/public/privacy.html:18
 msgid "Pages load nothing from other services, with one exception: an organiser can have a quiz load its images from another server, which then sees your IP address."
 msgstr "Stránky nic nenačítají z jiných služeb, s jednou výjimkou: pořadatel může nechat kvíz načítat obrázky z jiného serveru, který pak vidí vaši IP adresu."
 
-#: jinja2/public/privacy.html:15
+#: jinja2/public/privacy.html:19
 msgid "The organiser who runs this installation is responsible for its data."
 msgstr "Za data odpovídá organizátor, který tuto instalaci provozuje."
 
-#: jinja2/public/quiz.html:18
+#: jinja2/public/quiz.html:27 jinja2/public/quiz.html:61
+#, python-format
+msgid "Time for the quiz: %(time)s"
+msgstr "Čas na kvíz: %(time)s"
+
+#: jinja2/public/quiz.html:28 jinja2/public/quiz.html:62
+#, python-format
+msgid "Deadline: %(when)s"
+msgstr "Uzávěrka: %(when)s"
+
+#: jinja2/public/quiz.html:29
+#, python-format
+msgid "The deadline comes sooner, so you will have only %(time)s."
+msgstr "Uzávěrka přijde dřív, takže budete mít jen %(time)s."
+
+#: jinja2/public/quiz.html:30
+msgid "The result is shown only once after you submit, and it is not saved anywhere."
+msgstr "Výsledek se po odeslání ukáže jen jednou a nikam se neukládá."
+
+#: jinja2/public/quiz.html:43
+msgid "You have an unfinished attempt on this device."
+msgstr "V tomto zařízení máte nedokončený pokus."
+
+#: jinja2/public/quiz.html:55
 msgid "Start"
 msgstr "Začít"
 
-#: jinja2/public/result.html:12
+#: jinja2/public/quiz.html:60
+#, python-format
+msgid "This quiz starts %(when)s."
+msgstr "Tento kvíz začíná %(when)s."
+
+#: jinja2/public/result.html:13
 msgid "This score is final."
 msgstr "Toto skóre je konečné."
 
-#: jinja2/public/result.html:21
+#: jinja2/public/result.html:24
 msgid "Your photo"
 msgstr "Vaše fotka"
 
-#: jinja2/public/result.html:22
+#: jinja2/public/result.html:25
 #, python-format
 msgid "Points: %(earned)s of %(maximum)s"
 msgstr "Body: %(earned)s z %(maximum)s"
+
+#: jinja2/public/scoreboard.html:12
+msgid "Normal view"
+msgstr "Běžné zobrazení"
+
+#: jinja2/public/scoreboard.html:13
+msgid "Full screen"
+msgstr "Celá obrazovka"
+
+#: jinja2/public/scoreboard.html:16
+msgid "Back to the quiz"
+msgstr "Zpět na kvíz"
 
 #: jinja2/public/walkthrough.html:6
 msgid "The answers of this run."

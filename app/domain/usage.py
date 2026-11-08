@@ -3,10 +3,11 @@
 from collections.abc import Iterator
 from typing import Any
 
+from django.db.models import Q
 from django.utils import timezone
 
 from app.domain import selection
-from app.domain.models import QuizRun
+from app.domain.models import QuizRun, RewardRule
 from app.kernel import registry
 
 
@@ -36,6 +37,32 @@ def question_type_usage(module_id: str) -> list[str]:
         or ("scoring_strategy", question["scoring"]) in owned
     }
     return sorted(reasons)
+
+
+_LIVE = (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN, QuizRun.Status.CLOSED)
+THRESHOLD_MODULE = "rewards.threshold"
+DRAWING_MODULE = "drawings.manual"
+
+
+def reward_rule_usage(module_id: str) -> list[str]:
+    """Why a reward or drawing module cannot be disabled: a rule of a live run calls it.
+
+    `rewards.threshold` judges threshold rules at every submission and the minimum of a draw
+    rule; `drawings.manual` serves every draw rule. Participation and manual rules ask no plugin.
+    A test run has no rules and an archived run no longer grants or draws.
+    """
+    if module_id == THRESHOLD_MODULE:
+        wanted = Q(kind=RewardRule.Kind.THRESHOLD) | Q(
+            kind=RewardRule.Kind.DRAW, min_unit__isnull=False
+        )
+    elif module_id == DRAWING_MODULE:
+        wanted = Q(kind=RewardRule.Kind.DRAW)
+    else:
+        return []
+    rules = RewardRule.objects.filter(
+        wanted, run__status__in=_LIVE, run__kind=QuizRun.Kind.NORMAL
+    ).select_related("run", "quiz")
+    return sorted({f"run {rule.run.run_no} of quiz {rule.quiz.slug}" for rule in rules})
 
 
 def missing_plugin_problems() -> list[str]:

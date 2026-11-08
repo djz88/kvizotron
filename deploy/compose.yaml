@@ -8,6 +8,7 @@ x-app: &app
   environment:
     KVZ_SECRET_KEY: ${KVZ_SECRET_KEY:?KVZ_SECRET_KEY must be set, see deploy/.env.example}
     KVZ_DOMAIN: ${KVZ_DOMAIN:?KVZ_DOMAIN must be set, see deploy/.env.example}
+    TZ: ${KVZ_SERVER_TZ:-Europe/Prague}
   volumes:
     - db:/data/db
     - media:/data/media

@@ -21,6 +21,7 @@ MANIFEST = {
     "settings": [
         {
             "key": EXTERNAL_IMAGE_MODE,
+            "group": "technical",
             "choices": [IMAGE_MODE_COPY, IMAGE_MODE_EXTERNAL],
             "default": IMAGE_MODE_COPY,
             "label": _("Images from an address"),
@@ -32,6 +33,7 @@ MANIFEST = {
         },
         {
             "key": ALLOW_INTERNAL_IMAGE_ADDRESSES,
+            "group": "technical",
             "choices": ["off", "on"],
             "default": "off",
             "scopes": ["global"],

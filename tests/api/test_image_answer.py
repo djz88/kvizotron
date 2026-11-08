@@ -1,10 +1,12 @@
 """A photo from a participant, from the form to storage (AC-55, AC-57, AC-61)."""
 
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from django.test import Client
 from django.test.client import MULTIPART_CONTENT
+from django.utils import timezone
 
 from app.contracts import ImageRefused
 from app.domain import attempts, authoring, run_links, settings
@@ -20,6 +22,7 @@ from tests.domain.helpers import (
     make_bank,
     make_quiz,
 )
+from tests.support.clock import freeze
 from tests.support.photos import (
     Player,
     add_photo,
@@ -65,10 +68,11 @@ def test_multipart_refused_for_an_attempt_that_does_not_exist():
     assert response.status_code == 415
 
 
-def test_multipart_refused_when_the_run_ended():
+def test_multipart_refused_long_after_the_run_ended(monkeypatch):
     run = run_of(photo_quiz())
     player = Player(run)
     authoring.close_run(run, admin_id=ADMIN_ID)
+    freeze(monkeypatch, timezone.now() + timedelta(minutes=11))
     assert player.submit({"x": upload()}).status_code == 415
 
 
@@ -217,12 +221,12 @@ def test_double_submit_one_result_loser_file_removed(monkeypatch):
     real = attempts.submit
     other = None
 
-    def after_a_rival(attempt_id, token, answers, key):
+    def after_a_rival(attempt_id, token, answers, key, **kwargs):
         nonlocal other
         if other is None:
             other = LocalMediaStorage().store_participant_image(jpeg(), run_assets=[])
             real(attempt_id, token, {question: {"image": other}}, key)
-        return real(attempt_id, token, answers, key)
+        return real(attempt_id, token, answers, key, **kwargs)
 
     monkeypatch.setattr(attempts, "submit", after_a_rival)
     assert player.submit({f"{question}:image": upload()}).status_code == 200
@@ -234,7 +238,7 @@ def test_double_submit_one_result_loser_file_removed(monkeypatch):
 def test_failed_submit_removes_the_stored_file(monkeypatch):
     player = Player(run_of(photo_quiz()))
 
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise attempts.AttemptError("run_closed")
 
     monkeypatch.setattr(attempts, "submit", fail)
@@ -245,7 +249,7 @@ def test_failed_submit_removes_the_stored_file(monkeypatch):
 def test_error_while_saving_removes_the_stored_file(monkeypatch):
     player = Player(run_of(photo_quiz()))
 
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise RuntimeError("database gone")
 
     monkeypatch.setattr(attempts, "submit", fail)

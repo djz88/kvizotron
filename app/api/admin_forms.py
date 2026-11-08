@@ -5,13 +5,21 @@ from typing import Any
 
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
+from django.utils.text import format_lazy
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
 from app.api.i18n import PUBLIC_LOCALES
-from app.contracts import QuestionTypePlugin
-from app.domain import questions, settings
-from app.domain.models import Quiz, QuizRevision
+from app.contracts import (
+    PARTICIPANT_KEYS,
+    RESULT_KEYS,
+    REWARD_RUN_KEYS,
+    SCOREBOARD_UNNAMED,
+    SCOREBOARD_VISIBILITY,
+    QuestionTypePlugin,
+)
+from app.domain import access_codes, clock, data_policy, questions, results, rewards, settings
+from app.domain.models import Quiz, QuizRevision, QuizRun, RewardRule
 
 LOCALE_CHOICES = [(code, code) for code in PUBLIC_LOCALES]
 
@@ -141,16 +149,118 @@ def _refuse_flow_conflict(form: forms.Form) -> None:
 
 
 def _refuse_visibility_conflict(form: forms.Form) -> None:
-    store = form.cleaned_data.get(settings.STORE_ANSWERS) or settings.resolve(
-        settings.STORE_ANSWERS
+    profile = form.cleaned_data.get(settings.DATA_PROFILE) or settings.resolve(
+        settings.DATA_PROFILE
     )
     visibility = form.cleaned_data.get(settings.ANSWERS_VISIBILITY) or settings.resolve(
         settings.ANSWERS_VISIBILITY
     )
-    if settings.is_visibility_conflict(store, visibility):
+    if settings.is_visibility_conflict(profile, visibility):
         form.add_error(
             settings.ANSWERS_VISIBILITY,
-            _("Showing answers to anyone but admins needs all answers stored."),
+            _("Showing answers to anyone but admins needs a profile that keeps all answers."),
+        )
+
+
+def conflict_messages(keys: Sequence[str]) -> list[str]:
+    """One line per setting that the profile "nothing" cannot go with, naming that setting."""
+    lines = []
+    for key in keys:
+        if key == data_policy.PHOTO_QUESTION:
+            lines.append(
+                _("Nothing is kept, so the quiz cannot have a photo question: a photo is stored.")
+            )
+            continue
+        name = settings.CATALOGUE[key].label
+        lines.append(
+            _('Nothing is kept, which does not go with the setting "%(name)s" as it is.')
+            % {"name": name}
+        )
+    return lines
+
+
+def _refuse_stateless_conflict(form: forms.Form) -> None:
+    """Under "nothing" no one is remembered, so the rules about people must stay off."""
+    profile = form.cleaned_data.get(settings.DATA_PROFILE) or settings.resolve(
+        settings.DATA_PROFILE
+    )
+    rules = {key: form.cleaned_data.get(key) or settings.resolve(key) for key in PARTICIPANT_KEYS}
+    # The visibility conflict has its own message above.
+    keys = data_policy.conflicts(profile, rules, settings.AnswersVisibility.ADMINS.value, None)
+    for key, message in zip(keys, conflict_messages(keys), strict=True):
+        form.add_error(key if key in form.fields else None, message)
+
+
+def result_messages(reasons: Sequence[str]) -> list[str]:
+    """One line per reason a scoreboard setting was refused."""
+    texts = {
+        results.STATELESS: _("Nothing is kept, so the run cannot have a public scoreboard."),
+        results.AFTER_EACH: _("Answers after each question cannot go with a visible scoreboard."),
+        results.NEEDS_TIMES: _("The duration needs the data profile that keeps times."),
+        results.TEST_RUN: _("A test run has no scoreboard."),
+    }
+    return [str(texts[reason]) for reason in reasons]
+
+
+def _visible_board_on_a_run(quiz: Quiz | None) -> bool:
+    """For the global form, the runs of every quiz that takes the global answers setting."""
+    live = (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN)
+    if quiz is not None:
+        return any(results.needs_participant(run) for run in quiz.runs.filter(status__in=live))
+    return any(
+        results.needs_participant(run)
+        for run in QuizRun.objects.filter(status__in=live).select_related("quiz")
+        if settings.quiz_override(settings.REVEAL_MOMENT, run.quiz) is None
+    )
+
+
+def _refuse_result_conflict(form: forms.Form, quiz: Quiz | None = None) -> None:
+    """Empty fields mean the global value. Runs already planned or open count too (AC-18)."""
+    chosen = {key: form.cleaned_data.get(key) or settings.resolve(key) for key in RESULT_KEYS}
+    profile = form.cleaned_data.get(settings.DATA_PROFILE) or settings.resolve(
+        settings.DATA_PROFILE
+    )
+    moment = form.cleaned_data.get(settings.REVEAL_MOMENT) or settings.resolve(
+        settings.REVEAL_MOMENT
+    )
+    why = results.reasons(chosen, profile=profile, reveal_moment=moment)
+    if (
+        moment == settings.RevealMoment.AFTER_EACH
+        and results.AFTER_EACH not in why
+        and _visible_board_on_a_run(quiz)
+    ):
+        why.append(results.AFTER_EACH)
+    fields = {
+        results.STATELESS: SCOREBOARD_VISIBILITY,
+        results.AFTER_EACH: settings.REVEAL_MOMENT,
+        results.NEEDS_TIMES: SCOREBOARD_VISIBILITY,
+    }
+    for reason, message in zip(why, result_messages(why), strict=True):
+        field = fields[reason]
+        form.add_error(field if field in form.fields else None, message)
+
+
+def _rewards_on_a_run(quiz: Quiz | None) -> bool:
+    """Like `_visible_board_on_a_run`, for runs planned or open with reward rules."""
+    live = (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN)
+    if quiz is not None:
+        return any(rewards.has_rules(run) for run in quiz.runs.filter(status__in=live))
+    return any(
+        rewards.has_rules(run)
+        for run in QuizRun.objects.filter(status__in=live).select_related("quiz")
+        if settings.quiz_override(settings.REVEAL_MOMENT, run.quiz) is None
+    )
+
+
+def _refuse_reward_conflict(form: forms.Form, quiz: Quiz | None = None) -> None:
+    """Answers after each question would tell a player what the next attempt needs (AC-18)."""
+    moment = form.cleaned_data.get(settings.REVEAL_MOMENT) or settings.resolve(
+        settings.REVEAL_MOMENT
+    )
+    if moment == settings.RevealMoment.AFTER_EACH and _rewards_on_a_run(quiz):
+        field = settings.REVEAL_MOMENT
+        form.add_error(
+            field if field in form.fields else None, rewards.messages([rewards.REVEAL])[0]
         )
 
 
@@ -159,11 +269,36 @@ def _value_choices(key: str) -> list[tuple[str, Any]]:
     return [(value, definition.value_labels[value]) for value in definition.choices]
 
 
+class _MinutesField(forms.IntegerField):
+    """A limit in minutes, kept as the string the settings catalogue stores. 0 means no limit."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("min_value", 0)
+        kwargs.setdefault("max_value", settings.MAX_LIMIT_MINUTES)
+        super().__init__(**kwargs)
+
+    def clean(self, value: Any) -> str:
+        number = super().clean(value)
+        return "" if number is None else str(number)
+
+
+def _limit_help() -> str:
+    return _("In minutes. 0 means no limit.")
+
+
 class GlobalSettingsForm(forms.Form):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         for key in settings.keys_for("global"):
             definition = settings.CATALOGUE[key]
+            if key == settings.ATTEMPT_LIMIT:
+                self.fields[key] = _MinutesField(
+                    label=definition.label,
+                    help_text=_limit_help(),
+                    initial=settings.resolve(key),
+                    required=False,
+                )
+                continue
             self.fields[key] = forms.ChoiceField(
                 label=definition.label,
                 help_text=definition.help or "",
@@ -176,7 +311,303 @@ class GlobalSettingsForm(forms.Form):
         cleaned = super().clean()
         _refuse_flow_conflict(self)
         _refuse_visibility_conflict(self)
+        _refuse_stateless_conflict(self)
+        _refuse_result_conflict(self, getattr(self, "quiz", None))
+        _refuse_reward_conflict(self, getattr(self, "quiz", None))
         return cleaned
+
+
+class _LocalTimeField(forms.CharField):
+    """A `datetime-local` field read in the configured zone."""
+
+    widget = forms.DateTimeInput(attrs={"type": "datetime-local"})
+
+    def clean(self, value: Any) -> Any:
+        text = super().clean(value)
+        if not text:
+            return None
+        try:
+            parsed = clock.parse_local(text)
+        except ValueError as exc:
+            message = (
+                _("This time does not exist because of the clock change.")
+                if str(exc) == clock.NO_SUCH_TIME
+                else _("Enter a valid time.")
+            )
+            raise forms.ValidationError(message) from exc
+        return parsed
+
+
+class RunPlanForm(forms.Form):
+    starts_at = _LocalTimeField(
+        label=gettext_lazy("Start time"),
+        required=False,
+        help_text=gettext_lazy("Empty starts the run now."),
+    )
+    deadline_at = _LocalTimeField(
+        label=gettext_lazy("Deadline"),
+        required=False,
+        help_text=gettext_lazy("Empty means the run lasts until you end it."),
+    )
+    limit_minutes = forms.IntegerField(
+        label=gettext_lazy("Time limit for an attempt (minutes)"),
+        required=False,
+        min_value=0,
+        max_value=settings.MAX_LIMIT_MINUTES,
+        help_text=gettext_lazy("Empty or 0 means no limit. It cannot change once the run opens."),
+    )
+
+    data_profile = forms.ChoiceField(
+        label=settings.CATALOGUE[settings.DATA_PROFILE].label,
+        choices=lambda: _value_choices(settings.DATA_PROFILE),
+        required=False,
+        help_text=gettext_lazy(
+            "Nothing: only counts, so there is no attempts table, result link, scoreboard, "
+            "draw or export. Score and photos: rankings by time need the last profile. "
+            "Score and all answers: every answer is kept. "
+            "Score, all answers and times: also how long each attempt took. "
+            "It cannot change once the run opens."
+        ),
+    )
+    retention_period = forms.ChoiceField(
+        label=settings.CATALOGUE[settings.RETENTION_PERIOD].label,
+        choices=lambda: _value_choices(settings.RETENTION_PERIOD),
+        required=False,
+        help_text=gettext_lazy("It can change later, also after the run ends."),
+    )
+    access_code = forms.CharField(
+        label=gettext_lazy("Access code"),
+        required=False,
+        max_length=64,
+        strip=True,
+        help_text=gettext_lazy(
+            "Optional. Participants must enter it before they start. It is shown once after saving."
+        ),
+    )
+    generate_code = forms.BooleanField(label=gettext_lazy("Generate a code"), required=False)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.refused: set[str] = set()  # settings a refusal names; the page shows them (ADR-0052)
+        for key in (*PARTICIPANT_KEYS, *RESULT_KEYS, *REWARD_RUN_KEYS):
+            definition = settings.CATALOGUE[key]
+            self.fields[key] = forms.ChoiceField(
+                label=definition.label,
+                help_text=definition.help or "",
+                choices=_value_choices(key),
+                required=False,
+            )
+
+    def limit_seconds(self) -> int | None:
+        return (self.cleaned_data["limit_minutes"] or 0) * 60 or None
+
+    def code(self) -> str | None:
+        """A typed code wins, else a generated one when asked. None leaves the code alone."""
+        typed = self.cleaned_data["access_code"]
+        if typed:
+            return typed
+        return access_codes.generate() if self.cleaned_data["generate_code"] else None
+
+    def rules(self) -> dict[str, str]:
+        """Only what was chosen; the rest follows the quiz."""
+        return {key: self.cleaned_data[key] for key in PARTICIPANT_KEYS if self.cleaned_data[key]}
+
+    def results(self) -> dict[str, str]:
+        """Only what was chosen; the rest follows the quiz."""
+        return {key: self.cleaned_data[key] for key in RESULT_KEYS if self.cleaned_data[key]}
+
+    def rewards(self) -> dict[str, str]:
+        """Only what was chosen; an empty field follows the quiz, or keeps the run's value."""
+        return {key: self.cleaned_data[key] for key in REWARD_RUN_KEYS if self.cleaned_data[key]}
+
+    def retention(self) -> dict[str, str]:
+        """Only what was chosen; the rest follows the quiz."""
+        chosen = {
+            data_policy.PROFILE: self.cleaned_data[settings.DATA_PROFILE],
+            data_policy.PERIOD: self.cleaned_data[settings.RETENTION_PERIOD],
+        }
+        return {key: value for key, value in chosen.items() if value}
+
+
+_STRUCTURE_FIELDS = (
+    "kind",
+    "threshold_unit",
+    "threshold_value",
+    "min_unit",
+    "min_value",
+    "winners",
+    "alternates",
+)
+# Where a refusal of the domain belongs: (field of a threshold, field of a draw)
+_RULE_ERROR_FIELDS = {
+    "kind_invalid": ("kind", "kind"),
+    "unit_invalid": ("threshold_unit", "min_unit"),
+    "value_invalid": ("threshold_value", "min_value"),
+    "value_not_positive": ("threshold_value", "min_value"),
+    "percent_over_100": ("threshold_value", "min_value"),
+    "winners_invalid": ("winners", "winners"),
+    "alternates_invalid": ("alternates", "alternates"),
+}
+
+
+def rule_refusal(code: str) -> str:
+    """The message for a `rewards.RuleInvalid` code."""
+    messages = {
+        "kind_invalid": _("Choose a kind of reward."),
+        "unit_invalid": _("Choose a unit and enter a value."),
+        "value_invalid": _("Enter a valid number. Correct answers are a whole number."),
+        "value_not_positive": _("Enter a number greater than 0."),
+        "percent_over_100": _("A percentage can be at most 100."),
+        "winners_invalid": _("Enter from 1 to %(max)s winners.") % {"max": rewards.MAX_WINNERS},
+        "alternates_invalid": _("Enter from 0 to %(max)s alternates.")
+        % {"max": rewards.MAX_ALTERNATES},
+        "text_too_long": _("A text is too long."),
+    }
+    return messages.get(code, _("This reward cannot be saved."))
+
+
+class RewardRuleForm(forms.Form):
+    """One reward rule. The first locale is the quiz's default, where the name is required.
+
+    With `structure_locked` the structure fields are disabled: Django then ignores what was posted
+    for them and keeps the initial values, so only the texts can change.
+    """
+
+    kind = forms.ChoiceField(
+        label=gettext_lazy("Kind"),
+        choices=[
+            (RewardRule.Kind.THRESHOLD, gettext_lazy("Threshold: for a score that reaches it")),
+            (RewardRule.Kind.PARTICIPATION, gettext_lazy("Participation: for every submission")),
+            (RewardRule.Kind.MANUAL, gettext_lazy("Manual: granted by an admin")),
+            (RewardRule.Kind.DRAW, gettext_lazy("Draw: winners drawn after the run")),
+        ],
+    )
+    threshold_unit = forms.ChoiceField(
+        label=gettext_lazy("Threshold unit"),
+        required=False,
+        choices=[
+            ("", "—"),
+            (RewardRule.Unit.PERCENT, gettext_lazy("Percent")),
+            (RewardRule.Unit.POINTS, gettext_lazy("Points")),
+            (RewardRule.Unit.CORRECT, gettext_lazy("Correct answers")),
+        ],
+        help_text=gettext_lazy("Only for a threshold. Reached means at least this value."),
+    )
+    threshold_value = forms.DecimalField(
+        label=gettext_lazy("Threshold value"),
+        required=False,
+        max_digits=12,
+        decimal_places=4,
+    )
+    min_unit = forms.ChoiceField(
+        label=gettext_lazy("Who may be drawn"),
+        required=False,
+        choices=[
+            ("", gettext_lazy("Everyone with a submitted attempt")),
+            (RewardRule.Unit.PERCENT, gettext_lazy("At least a percentage")),
+            (RewardRule.Unit.POINTS, gettext_lazy("At least a number of points")),
+        ],
+        help_text=gettext_lazy("Only for a draw."),
+    )
+    min_value = forms.DecimalField(
+        label=gettext_lazy("Minimum for the draw"),
+        required=False,
+        max_digits=12,
+        decimal_places=4,
+    )
+    winners = forms.IntegerField(
+        label=gettext_lazy("Winners"), required=False, min_value=1, max_value=rewards.MAX_WINNERS
+    )
+    alternates = forms.IntegerField(
+        label=gettext_lazy("Alternates"),
+        required=False,
+        min_value=0,
+        max_value=rewards.MAX_ALTERNATES,
+        initial=rewards.DEFAULT_ALTERNATES,
+        help_text=format_lazy(
+            gettext_lazy("Drawn after the winners, in order. Empty means {default}."),
+            default=rewards.DEFAULT_ALTERNATES,
+        ),
+    )
+
+    def __init__(
+        self,
+        *args: Any,
+        locales: Sequence[str],
+        structure_locked: bool,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.locales = list(locales)
+        self.structure_locked = structure_locked
+        for number, locale in enumerate(self.locales):
+            self.fields[f"name_{locale}"] = forms.CharField(
+                label=_("Name (%(locale)s)") % {"locale": locale},
+                max_length=80,
+                required=number == 0,
+            )
+            self.fields[f"description_{locale}"] = forms.CharField(
+                label=_("Description (%(locale)s)") % {"locale": locale},
+                max_length=500,
+                required=False,
+                widget=forms.Textarea(attrs={"rows": 2}),
+            )
+            self.fields[f"claim_{locale}"] = forms.CharField(
+                label=_("How to claim it (%(locale)s)") % {"locale": locale},
+                max_length=500,
+                required=False,
+                widget=forms.Textarea(attrs={"rows": 2}),
+            )
+        if structure_locked:
+            for name in _STRUCTURE_FIELDS:
+                self.fields[name].disabled = True
+
+    @staticmethod
+    def initial_of(rule: RewardRule) -> dict[str, Any]:
+        found: dict[str, Any] = {name: getattr(rule, name) for name in _STRUCTURE_FIELDS}
+        for name in ("threshold_value", "min_value"):
+            if found[name] is not None:
+                found[name] = found[name].normalize()
+        for locale, values in (rule.texts_json or {}).items():
+            for name in rewards.TEXT_FIELDS:
+                found[f"{name}_{locale}"] = values.get(name, "")
+        return found
+
+    def structure_fields(self) -> list[forms.BoundField]:
+        return [self[name] for name in _STRUCTURE_FIELDS]
+
+    def text_fields(self) -> list[forms.BoundField]:
+        return [self[f"{name}_{locale}"] for locale in self.locales for name in rewards.TEXT_FIELDS]
+
+    def texts(self) -> dict[str, dict[str, str]]:
+        """Texts of the quiz's languages; others the rule may hold are kept by the caller."""
+        return {
+            locale: {name: self.cleaned_data[f"{name}_{locale}"] for name in rewards.TEXT_FIELDS}
+            for locale in self.locales
+        }
+
+    def rule_data(self, texts: Mapping[str, Mapping[str, str]]) -> rewards.RuleData:
+        found = self.cleaned_data
+        return rewards.RuleData(
+            kind=found["kind"],
+            threshold_unit=found["threshold_unit"] or None,
+            threshold_value=found["threshold_value"],
+            min_unit=found["min_unit"] or None,
+            min_value=found["min_value"],
+            winners=found["winners"],
+            alternates=found["alternates"],
+            texts=texts,
+        )
+
+    def refuse(self, code: str) -> None:
+        """Puts a `rewards.RuleInvalid` refusal next to the field it is about."""
+        fields = _RULE_ERROR_FIELDS.get(code)
+        field = None
+        if fields is not None:
+            field = (
+                fields[1] if self.cleaned_data.get("kind") == RewardRule.Kind.DRAW else fields[0]
+            )
+        self.add_error(field, rule_refusal(code))
 
 
 class QuizBehaviourForm(forms.Form):
@@ -201,12 +632,33 @@ class QuizBehaviourForm(forms.Form):
             definition = settings.CATALOGUE[key]
             current = definition.value_labels[settings.resolve(key)]
             inherit = _("Use global setting (now: %(value)s)") % {"value": current}
+            if key == settings.ATTEMPT_LIMIT:
+                self.fields[key] = _MinutesField(
+                    label=definition.label,
+                    help_text=f"{_limit_help()} {_('Empty:')} {inherit}",
+                    initial=settings.quiz_override(key, quiz) or "",
+                    required=False,
+                )
+                continue
             self.fields[key] = forms.ChoiceField(
                 label=definition.label,
                 help_text=definition.help or "",
                 choices=[("", inherit), *_value_choices(key)],
                 initial=settings.quiz_override(key, quiz) or "",
                 required=False,
+            )
+            if key == SCOREBOARD_UNNAMED:
+                self._add_labels(quiz)
+
+    def _add_labels(self, quiz: Quiz) -> None:
+        """Free text per language, so a quiz field beside the scoreboard settings (ADR-0051)."""
+        for code in quiz.supported_locales:
+            self.fields[f"anonymous_label_{code}"] = forms.CharField(
+                label=f"{_('Anonymous participant on the scoreboard')} ({code})",
+                max_length=results.MAX_LABEL,
+                required=False,
+                initial=quiz.anonymous_label.get(code, ""),
+                help_text=_('NN stands for the number. Empty uses "Player NN" in that language.'),
             )
 
     def clean_slug(self) -> str:
@@ -216,11 +668,19 @@ class QuizBehaviourForm(forms.Form):
         cleaned = super().clean()
         _refuse_flow_conflict(self)
         _refuse_visibility_conflict(self)
+        _refuse_stateless_conflict(self)
+        _refuse_result_conflict(self, getattr(self, "quiz", None))
+        _refuse_reward_conflict(self, getattr(self, "quiz", None))
         return cleaned
 
     def apply_to(self, quiz: Quiz) -> None:
         quiz.slug = self.cleaned_data["slug"]
         quiz.featured = self.cleaned_data["featured"]
+        shown = [code for code in PUBLIC_LOCALES if f"anonymous_label_{code}" in self.fields]
+        if shown:  # none without the results module; a language the quiz dropped keeps its text
+            kept = {k: v for k, v in quiz.anonymous_label.items() if k not in shown}
+            typed = {code: self.cleaned_data[f"anonymous_label_{code}"].strip() for code in shown}
+            quiz.anonymous_label = kept | {code: text for code, text in typed.items() if text}
         quiz.save()
 
 
