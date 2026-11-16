@@ -37,6 +37,8 @@ Deployment smoke test; backup/restore drill.
 
 ## More Information
 
+Amended by [ADR-0066](0066-single-container-image.md): a single-container image beside Compose, for an orchestrator such as Kubernetes behind an ingress.
+
 [../../deployment.md](../../deployment.md).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)

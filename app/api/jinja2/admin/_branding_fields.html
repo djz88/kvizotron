@@ -1,3 +1,4 @@
+{% from "admin/_form_errors.html" import form_errors %}
 {# `branding_group` from admin_view.branding_group; `branding_sources` is set at a quiz. A separate form: it carries a file. #}
 {% from "admin/_setting_row.html" import setting_row, info_row %}
 {% if branding_group %}
@@ -16,7 +17,7 @@
   {% set own_logos = {"logo": src["logo"] == ("quiz" if branding_sources else "global"), "hero_logo": src["hero_logo"] == ("quiz" if branding_sources else "global")} %}
   <form method="post" enctype="multipart/form-data" action="{{ branding_action }}">
     {{ csrf_input }}
-    {{ branding_form.non_field_errors() }}
+    {{ form_errors(branding_form) }}
     {% for field in branding_group.fields %}
     {% if field.name in ("remove_logo", "remove_hero_logo") %}
     {# A set logo is removed by a button, not a checkbox; no logo of its own, nothing to remove. #}

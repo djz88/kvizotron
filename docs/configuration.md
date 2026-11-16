@@ -41,13 +41,16 @@ Counted per client address and minute (the login has two buckets: per user name 
 | `KVZ_CODE_ATTEMPTS_PER_MINUTE` | no | `10` | Wrong access codes one client address may try | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_SUBMITS_PER_MINUTE` | no | `120` | Submit requests per client address | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_STARTS_PER_MINUTE` | no | `300` | Start requests per client address | `app/settings.py`, `app/api/rate_limit.py` | app |
+| `KVZ_TRUSTED_PROXIES` | no | `1` | Proxies in front of the application that append the client address to `X-Forwarded-For` (Caddy in Compose, the ingress in Kubernetes); `0` when clients reach the application directly ([ADR-0066](_architecture/adr/0066-single-container-image.md)) | `app/settings.py`, `app/api/rate_limit.py` | no |
 
 The counters live in process memory, so a restart resets them, and the application runs as one
-process on purpose: a second worker would count on its own. The client address is the first
-`X-Forwarded-For` value, which Caddy writes: Caddy replaces any `X-Forwarded-For` a client sends with
-the real address, which is why the first value can be trusted, and only because the application is
-reachable through Caddy alone ([ADR-0058](_architecture/adr/0058-rate-limit-buckets.md)). Behind
-another proxy in front of Caddy all clients would share the proxy's address.
+process on purpose: a second worker would count on its own. The client address is the N-th
+`X-Forwarded-For` value from the right, N = `KVZ_TRUSTED_PROXIES`: the one the outermost trusted
+proxy appended (with one proxy, the one it appended); values further left come from the client or unknown proxies and can be forged. In Compose Caddy
+replaces any `X-Forwarded-For` a client sends with the real address, so the default `1` takes it, and
+only because the application is reachable through Caddy alone
+([ADR-0058](_architecture/adr/0058-rate-limit-buckets.md), [ADR-0066](_architecture/adr/0066-single-container-image.md)).
+Behind another proxy in front of Caddy all clients would share the proxy's address.
 
 ### Backups
 

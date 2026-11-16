@@ -1,15 +1,16 @@
+{% from "admin/_form_errors.html" import form_errors %}
 {# One rule's form: `form` (RewardRuleForm), `action`, and `can_delete`; no save button when `editable` is false. Locked structure fields render disabled. #}
 <form method="post" action="{{ action }}">
   {{ csrf_input }}
-  {{ form.non_field_errors() }}
+  {{ form_errors(form) }}
   <fieldset>
     <legend>{{ _("Who gets it") }}</legend>
     {% if form.structure_locked %}<p><small>{{ _("The kind, threshold and counts can change only while the run is planned.") }}</small></p>{% endif %}
-    {% for field in form.structure_fields() %}{{ field.as_field_group() }}{% endfor %}
+    {% for field in form.structure_fields() %}<div>{{ field.as_field_group() }}</div>{% endfor %}
   </fieldset>
   <fieldset>
     <legend>{{ _("Texts for participants") }}</legend>
-    {% for field in form.text_fields() %}{{ field.as_field_group() }}{% endfor %}
+    {% for field in form.text_fields() %}<div>{{ field.as_field_group() }}</div>{% endfor %}
   </fieldset>
   {% if editable|default(true) %}<button type="submit">{{ _("Save the reward") }}</button>{% endif %}
   {% if can_delete %}<button type="submit" name="action" value="delete" class="secondary outline" formnovalidate>{{ _("Delete the reward") }}</button>{% endif %}

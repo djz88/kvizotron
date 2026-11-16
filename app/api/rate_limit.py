@@ -20,10 +20,18 @@ _lock = threading.Lock()
 
 
 def client_ip(request: HttpRequest) -> str:
-    """Caddy writes the real client address as the only X-Forwarded-For value."""
+    """The N-th X-Forwarded-For value from the right, N = KVZ_TRUSTED_PROXIES (ADR-0066).
+
+    That is the value the outermost trusted proxy appended; values further left came from the
+    client or proxies we do not know, so they can be forged.
+    Caddy writes one value; with no trusted proxy the address of the connection counts.
+    """
+    hops: int = settings.KVZ_TRUSTED_PROXIES
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    first = forwarded.split(",")[0].strip()
-    return first or request.META.get("REMOTE_ADDR", "").strip() or "unknown"
+    values = [value.strip() for value in forwarded.split(",") if value.strip()]
+    if hops and values:
+        return values[-min(hops, len(values))]
+    return request.META.get("REMOTE_ADDR", "").strip() or "unknown"
 
 
 def _limit(bucket: str) -> int:

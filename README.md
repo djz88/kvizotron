@@ -34,7 +34,8 @@ Ostré nasazení popisuje [docs/deployment.md](docs/deployment.md).
 - `make help` — seznam cílů
 - `make env-update` — nainstaluje verze nástrojů, které projekt deklaruje (uv, Python a balíčky, pre-commit s hooky, Docker image)
 - `make setup` — nainstaluje závislosti (vyžaduje uv z `pyproject.toml`, viz `make env-update`)
-- `make hooks` — nainstaluje git hooky (gitleaks)
+- `make hooks` — nainstaluje git hooky pro commit, zprávu commitu a push: gitleaks a kontrolu lokálních stop (`tools/private_traces.py`: domovský adresář, dočasné adresáře agenta, odkazy na sezení agenta)
+- `make private-traces` — založí prázdný `.git/info/private-traces`, kam si každý napíše svá osobní slova (jméno, adresu domácí sítě, e-mail; jedno na řádek). Soubor je v `.git/`, takže ho git nikdy necommitne ani nepushne; bez něj hooky osobní slova nekontrolují a připomenou ho
 - `make lint`, `make test`, `make secrets` — jednotlivé kontroly
 - `make quality` — všechny kontroly; totéž běží v CI
 - `make smoke` — ověří celé nasazení v Dockeru

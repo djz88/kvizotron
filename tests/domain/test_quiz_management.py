@@ -14,11 +14,12 @@ def ids(questions):
 
 
 def test_duplicate_copies_title_languages_and_questions_as_draft():
+    """The title is copied in every language, marked as a copy so the two stay apart."""
     quiz = published_quiz(locales=("cs", "uk"), questions=2)
     add_question(quiz, prompt="Rozepsaná")
     copy = authoring.duplicate_quiz(quiz, "kopie", admin_id=ADMIN_ID)
     assert copy.id != quiz.id and copy.slug == "kopie"
-    assert copy.title == quiz.title
+    assert copy.title == {"cs": "Název cs (kopie)", "uk": "Název uk (копія)"}
     assert copy.supported_locales == ["cs", "uk"] and copy.default_locale == "cs"
     draft = copy.revisions.get()
     assert draft.status == Status.DRAFT and draft.revision_no == 1

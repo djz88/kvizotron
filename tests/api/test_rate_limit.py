@@ -44,10 +44,28 @@ def test_an_unknown_bucket_raises():
         rate_limit.record("nope", "1.2.3.4", 0.0)
 
 
-def test_client_ip_takes_the_first_forwarded_value_and_strips_spaces(rf):
-    request = rf.get("/", HTTP_X_FORWARDED_FOR="  1.1.1.1 , 2.2.2.2", REMOTE_ADDR="3.3.3.3")
+def test_client_ip_is_the_value_the_nearest_trusted_proxy_wrote(rf, settings):
+    """A client may send its own X-Forwarded-For; only the values our proxies add count."""
+    request = rf.get("/", HTTP_X_FORWARDED_FOR=" 6.6.6.6 , 1.1.1.1 ", REMOTE_ADDR="3.3.3.3")
+    settings.KVZ_TRUSTED_PROXIES = 1  # Caddy or one ingress: it appends the address it saw
+    assert rate_limit.client_ip(request) == "1.1.1.1"
+    settings.KVZ_TRUSTED_PROXIES = 2  # a load balancer in front of the ingress
+    assert rate_limit.client_ip(request) == "6.6.6.6"
+    settings.KVZ_TRUSTED_PROXIES = 0  # reached directly: the header is the client's own
+    assert rate_limit.client_ip(request) == "3.3.3.3"
+
+
+def test_fewer_forwarded_values_than_proxies_take_the_first(rf, settings):
+    settings.KVZ_TRUSTED_PROXIES = 3
+    request = rf.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2", REMOTE_ADDR="3.3.3.3")
     assert rate_limit.client_ip(request) == "1.1.1.1"
     assert rate_limit.client_ip(rf.get("/", REMOTE_ADDR="3.3.3.3")) == "3.3.3.3"
+
+
+def test_caddy_writes_one_value_so_the_default_takes_it(rf):
+    """Compose: Caddy replaces the header with the one address it saw (ADR-0058)."""
+    request = rf.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1", REMOTE_ADDR="172.18.0.5")
+    assert rate_limit.client_ip(request) == "1.1.1.1"
 
 
 def test_a_blank_address_becomes_unknown_and_does_not_raise(rf):
@@ -207,3 +225,8 @@ def test_compose_passes_the_ceiling_through_as_empty_by_default():
     compose = (Path(__file__).parents[2] / "deploy" / "compose.yaml").read_text()
     name = "KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE"
     assert f"    {name}: ${{{name}:-}}" in compose
+
+
+def test_a_header_of_separators_only_falls_back_to_the_connection(rf):
+    request = rf.get("/", HTTP_X_FORWARDED_FOR=" , ,", REMOTE_ADDR="3.3.3.3")
+    assert rate_limit.client_ip(request) == "3.3.3.3"

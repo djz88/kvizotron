@@ -12,7 +12,8 @@
     <button type="submit">{{ start_label }}</button>
   </form>
   {% endif %}
-  <a href="{{ url('admin_run_plan', args=[quiz.id]) }}" class="secondary">{{ _("Plan…") }}</a>
+  {# A plan needs a published revision: an unpublished quiz goes through publication first. #}
+  <a href="{{ publish_url ~ '?then=plan' if state.published_no is none else url('admin_run_plan', args=[quiz.id]) }}" class="secondary">{{ _("Plan…") }}</a>
   {% elif state.main == "start_now" %}
   <form method="post" action="{{ url('admin_plan_start', args=[state.planned_run.id]) }}">
     {{ csrf_input }}

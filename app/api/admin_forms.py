@@ -33,6 +33,7 @@ from app.api.admin_forms_quiz import (
     result_messages,
     setting_label,
     setting_value_label,
+    title_taken_message,
 )
 from app.api.admin_forms_rewards import (
     RewardNameForm,
@@ -458,6 +459,7 @@ __all__ = [
     "conflict_messages",
     "free_slug",
     "result_messages",
+    "title_taken_message",
     "rule_refusal",
     "setting_label",
     "setting_value_label",

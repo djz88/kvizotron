@@ -47,10 +47,12 @@ from app.contracts import (
     SCOREBOARD_UNNAMED,
 )
 from app.domain import (
+    authoring,
     data_policy,
     quiz_types,
     results,
     rewards,
+    run_links,
     setting_rules,
     settings,
 )
@@ -60,6 +62,30 @@ _LANGUAGE_NAMES = dict(django_settings.LANGUAGES)
 
 
 LOCALE_CHOICES = [(code, _LANGUAGE_NAMES[code]) for code in PUBLIC_LOCALES]
+
+
+def public_origin_field() -> forms.CharField:
+    return forms.CharField(
+        label=gettext_lazy("Address of the QR code"),
+        max_length=run_links.MAX_ORIGIN,
+        required=False,
+        help_text=gettext_lazy(
+            "Start of the public address, such as https://kviz.example.com, when participants "
+            "come through another name or a redirect. Empty uses the address you are on now. "
+            "Changing it changes the QR code; print it again."
+        ),
+    )
+
+
+def clean_public_origin(value: str) -> str:
+    try:
+        return run_links.clean_origin(value or "")
+    except run_links.OriginInvalid as refused:
+        raise forms.ValidationError(str(refused)) from refused
+
+
+def title_taken_message() -> str:
+    return _("Another quiz that is not archived already has this title. Choose another one.")
 
 
 def _slug_is_free(slug: str, quiz: Quiz | None) -> str:
@@ -126,6 +152,10 @@ class QuizContentForm(forms.Form):
             self.add_error(
                 "default_locale", _("The default language must be among the selected languages.")
             )
+        title = {code: cleaned.get(f"title_{code}") or "" for code in PUBLIC_LOCALES}
+        changed = authoring.new_titles(title, self.quiz)  # an unchanged title is never refused
+        for code in authoring.taken_titles(changed, besides=self.quiz):
+            self.add_error(f"title_{code}", title_taken_message())
         return cleaned
 
     def apply_to(self, quiz: Quiz) -> Quiz:
@@ -160,7 +190,11 @@ class QuizForm(QuizContentForm):
         help_text=gettext_lazy("Leave empty to derive it from the name"),
     )
     featured = forms.BooleanField(label=gettext_lazy("Highlight on the home page"), required=False)
-    field_order = ("slug", "supported_locales", "default_locale", "featured")
+    public_origin = public_origin_field()
+    field_order = ("slug", "public_origin", "supported_locales", "default_locale", "featured")
+
+    def clean_public_origin(self) -> str:
+        return clean_public_origin(self.cleaned_data.get("public_origin", ""))
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         default = django_settings.LANGUAGE_CODE
@@ -207,6 +241,7 @@ class QuizForm(QuizContentForm):
     def apply_to(self, quiz: Quiz) -> Quiz:
         quiz.slug = self.cleaned_data["slug"]
         quiz.featured = self.cleaned_data["featured"]
+        quiz.public_origin = self.cleaned_data["public_origin"]
         return super().apply_to(quiz)
 
 
@@ -402,10 +437,14 @@ class QuizBehaviourForm(forms.Form):
         ),
     )
     featured = forms.BooleanField(label=gettext_lazy("Highlight on the home page"), required=False)
+    public_origin = public_origin_field()
 
     def __init__(self, *args: Any, quiz: Quiz, **kwargs: Any) -> None:
         self.quiz = quiz
-        kwargs.setdefault("initial", {"slug": quiz.slug, "featured": quiz.featured})
+        kwargs.setdefault(
+            "initial",
+            {"slug": quiz.slug, "featured": quiz.featured, "public_origin": quiz.public_origin},
+        )
         super().__init__(*args, **kwargs)
         if quiz.revisions.exclude(status=QuizRevision.Status.DRAFT).exists():
             self.fields["slug"].disabled = True
@@ -453,6 +492,9 @@ class QuizBehaviourForm(forms.Form):
     def clean_slug(self) -> str:
         return _slug_is_free(self.cleaned_data["slug"], self.quiz)
 
+    def clean_public_origin(self) -> str:
+        return clean_public_origin(self.cleaned_data.get("public_origin", ""))
+
     def clean(self) -> dict[str, Any] | None:
         cleaned = super().clean()
         _refuse_clashes(self, getattr(self, "quiz", None))
@@ -462,6 +504,7 @@ class QuizBehaviourForm(forms.Form):
     def apply_to(self, quiz: Quiz) -> None:
         quiz.slug = self.cleaned_data["slug"]
         quiz.featured = self.cleaned_data["featured"]
+        quiz.public_origin = self.cleaned_data["public_origin"]
         shown = [code for code in PUBLIC_LOCALES if f"anonymous_label_{code}" in self.fields]
         if shown:  # none without the results module; a language the quiz dropped keeps its text
             kept = {k: v for k, v in quiz.anonymous_label.items() if k not in shown}

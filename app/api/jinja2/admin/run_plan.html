@@ -1,18 +1,25 @@
 {% extends "admin/base.html" %}
+{% from "admin/_form_errors.html" import form_errors %}
 {% block content %}
 {% set panel_before = [("plan", _("Plan the run") if planned else _("Plan a run"))] %}
-{% set panel_after = [("rewards", _("Rewards")), ("clock", _("Time"))] %}
+{% set panel_after = [] if unpublished else [("rewards", _("Rewards")), ("clock", _("Time"))] %}
 <div class="with-panel">
 {% include "admin/_section_panel.html" %}
 <div class="panel-main">
 {% include "admin/_quiz_header.html" %}
 <section class="form-section" id="plan">
   <h2>{{ _("Plan the run") if planned else _("Plan a run") }}</h2>
+  {% if unpublished %}
+  <div class="notice form-errors" role="alert">
+    <p>{{ _("Publish the quiz first.") }} {{ _("A run takes the published revision of the quiz.") }}</p>
+    <p><a href="{{ url('admin_quiz_publish', args=[quiz.id]) }}?then=plan" role="button">{{ _("Publish and plan a run") }}</a></p>
+  </div>
+  {% else %}
   <p>{{ _("Times are in the time zone %(zone)s.", zone=server_clock().zone) }}</p>
   <form method="post">
     {{ csrf_input }}
-    {{ form.non_field_errors() }}
-    {% for field in ungrouped %}{{ field.as_field_group() }}{% endfor %}
+    {{ form_errors(form) }}
+    {% for field in ungrouped %}<div>{{ field.as_field_group() }}</div>{% endfor %}
     <p>{{ _("The run takes the quiz's settings.") }} <a href="{{ url('admin_quiz_settings', args=[quiz.id]) }}">{{ _("Settings of the quiz") }}</a></p>
     {% include "admin/_setting_groups.html" %}
     <h3 id="rewards">{{ _("Rewards") }}</h3>
@@ -26,6 +33,7 @@
     <p><small>{{ _("The cookie that tells participants apart does not guarantee one person: someone can clear it or use another browser. \"When to ask\" applies only when a name or an e-mail is on.") }}</small></p>
     <button type="submit">{{ _("Save") }}</button>
   </form>
+  {% endif %}
 </section>
 {% include "admin/_clock.html" %}
 </div>

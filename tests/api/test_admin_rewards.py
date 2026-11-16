@@ -231,7 +231,7 @@ def test_conflict_messages_shown_on_plan(logged_in):
     quiz = with_template(rule_data("draw", name="Cena"))
     settings.set_override(WINNER_CONTACT, quiz, "require_email", admin_id=ADMIN_ID)
     planned = logged_in.post(f"/admin/quizzes/{quiz.id}/plan?lang=en", {"starts_at": START})
-    assert planned.status_code == 200
+    assert planned.status_code == 409
     assert CONTACT_REFUSAL in text(planned)
     opened = logged_in.post(f"/admin/quizzes/{quiz.id}/plan?lang=en", {"starts_at": ""})
     assert CONTACT_REFUSAL in text(opened)
@@ -243,12 +243,12 @@ def test_conflict_messages_shown_on_plan(logged_in):
     edited = logged_in.post(
         f"/admin/runs/{run.id}/plan?lang=en", {"starts_at": START, ASK_EMAIL: "off"}
     )
-    assert edited.status_code == 200 and CONTACT_REFUSAL in text(edited)
+    assert edited.status_code == 409 and CONTACT_REFUSAL in text(edited)
     # Start now when the quiz changed after planning.
     settings.set_override(settings.NAVIGATION_MODE, quiz, "step_back", admin_id=ADMIN_ID)
     settings.set_override(settings.REVEAL_MOMENT, quiz, "after_each", admin_id=ADMIN_ID)
     started = logged_in.post(f"/admin/runs/{run.id}/plan/start?lang=en")
-    assert started.status_code == 200
+    assert started.status_code == 409
     assert "Answers after each question cannot go with rewards." in text(started)
     run.refresh_from_db()
     assert run.status == QuizRun.Status.SCHEDULED
@@ -389,7 +389,7 @@ def test_refused_start_now_still_shows_the_rewards(logged_in):
     settings.set_override(settings.NAVIGATION_MODE, quiz, "step_back", admin_id=ADMIN_ID)
     settings.set_override(settings.REVEAL_MOMENT, quiz, "after_each", admin_id=ADMIN_ID)
     refused = logged_in.post(f"/admin/runs/{run.id}/plan/start?lang=en")
-    assert refused.status_code == 200
+    assert refused.status_code == 409
     html = text(refused)
     assert "Answers after each question cannot go with rewards." in html
     assert "Cena" in html and "No rewards." not in html

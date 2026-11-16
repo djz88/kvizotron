@@ -7,7 +7,8 @@
 	# Prohlížeč si šest měsíců pamatuje, že se sem chodí jen přes HTTPS. Bez includeSubDomains a bez preload:
 	# jiné adresy téhož jména se tím nezamknou a návrat na HTTP zůstává možný. Přes IP adresu ani s
 	# nedůvěryhodným certifikátem prohlížeč hlavičku ignoruje (docs/deployment.md).
-	header Strict-Transport-Security "max-age=15552000"
+	# ">" replaces the header the application sends as well (ADR-0066).
+	header >Strict-Transport-Security "max-age=15552000"
 
 	# ADR-0028: největší nahrávaný soubor má 15 MB, zbytek je rezerva na formulář.
 	# ADR-0045: import přijímá ZIP do 100 MB.
@@ -15,10 +16,10 @@
 	@large path /admin/import/* /a/*/submit
 	@other not path /admin/import/* /a/*/submit
 	request_body @large {
-		max_size 101MB
+		max_size 101MiB
 	}
 	request_body @other {
-		max_size 16MB
+		max_size 16MiB
 	}
 	# Gunicorn zavře nečinné spojení po 2 s. POST poslaný na spojení zavřené právě tehdy dostane
 	# reset a Caddy odpoví 502 (ukázal to `make load`), proto Caddy nečinná spojení zavře dřív.

@@ -310,6 +310,16 @@ def test_taken_slug_gets_a_number_with_warning():
     assert any("kviz-2" in issue.message for issue in outcome.issues)
 
 
+def test_taken_title_gets_a_number_with_warning():
+    """Two quizzes that are not archived never share a title."""
+    Quiz.objects.create(
+        slug="jiny", title={"cs": "Kvíz"}, default_locale="cs", supported_locales=["cs"]
+    )
+    outcome = question_import.apply(plan_of([QUIZ_ROW, GOOD]), NEW, admin_id=ADMIN_ID)
+    assert outcome.quiz.title == {"cs": "Kvíz (2)", "en": "Quiz (2)"}
+    assert any("Kvíz (2)" in issue.message for issue in outcome.issues)
+
+
 def test_apply_to_draft_adds_after_existing_questions():
     quiz = published_quiz(locales=("cs", "en"))
     add_question(quiz, prompt="Stávající")

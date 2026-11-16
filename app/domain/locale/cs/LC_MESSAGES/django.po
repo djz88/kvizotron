@@ -4,6 +4,16 @@ msgstr "Složka není v této bance."
 
 #: authoring.py
 #, python-format
+msgid "%(title)s (copy)"
+msgstr "%(title)s (kopie)"
+
+#: authoring.py
+#, python-format
+msgid "%(title)s (copy %(number)s)"
+msgstr "%(title)s (kopie %(number)s)"
+
+#: authoring.py
+#, python-format
 msgid "Question %(number)s needs a module that is disabled."
 msgstr "Otázka %(number)s potřebuje modul, který je vypnutý."
 
@@ -171,6 +181,11 @@ msgstr "Nahrazení potřebuje, aby šly použít všechny řádky. Opravte uvede
 #, python-format
 msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
 msgstr "Adresa %(wanted)s je obsazená, kvíz dostal %(slug)s."
+
+#: question_import.py
+#, python-format
+msgid "Another quiz already has the title %(wanted)s, so this one got %(title)s."
+msgstr "Jiný kvíz už má název %(wanted)s, proto tento dostal %(title)s."
 
 #: question_import.py
 msgid "A bank question must be complete in at least one language."

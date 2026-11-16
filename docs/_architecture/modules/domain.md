@@ -114,7 +114,7 @@ Read-only covers its runs too: grading, rewards (grant, hand over, cancel), draw
 nicknames and the access code of a run refuse with `QuizArchived` (the admin answers 409); pages that only show stay open.
 A quiz with an open round cannot be archived. Archiving moves the `PUBLISHED` revision to `ARCHIVED`, and restoring
 moves the highest `ARCHIVED` revision back; revisions have no archive action of their own.
-Duplicating a quiz copies its quiz type and every quiz setting override, not its branding.
+Duplicating a quiz copies its quiz type and every quiz setting override, not its branding. The copy keeps the address of the QR code (`public_origin`) and is named "(kopie)" in every language; a quiz title is unique per language among quizzes that are not archived, and every place that sets a title goes through `authoring.ensure_title_free` ([ADR-0067](../adr/0067-quiz-title-and-public-address.md)).
 
 ### Quiz types
 

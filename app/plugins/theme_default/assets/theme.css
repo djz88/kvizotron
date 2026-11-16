@@ -1032,6 +1032,17 @@ body.public {
   color: var(--kvz-text);
 }
 
+/* A form that was refused: the box says why, in the colour of an error. */
+.form-errors {
+  border-left-color: var(--pico-del-color);
+  font-weight: 600;
+}
+
+.form-errors p,
+.form-errors ul {
+  margin-bottom: 0;
+}
+
 .identity-form {
   margin: 1rem 0;
 }

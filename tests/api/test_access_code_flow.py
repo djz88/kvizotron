@@ -123,7 +123,7 @@ def test_limit_follows_the_client_ip(monkeypatch):
 
 def test_client_ip_prefers_forwarded_for(rf):
     request = rf.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2", REMOTE_ADDR="3.3.3.3")
-    assert rate_limit.client_ip(request) == "1.1.1.1"
+    assert rate_limit.client_ip(request) == "2.2.2.2"  # the one the trusted proxy added
     assert rate_limit.client_ip(rf.get("/", REMOTE_ADDR="3.3.3.3")) == "3.3.3.3"
 
 

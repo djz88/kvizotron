@@ -7,7 +7,7 @@ Start aplikace a správa modulů. Kernel neví, co je kvíz; proto je malý a m�
 - `discovery.py`, `manifest.py`, `bootstrap.py`: najde moduly přes entry pointy, ověří manifesty a závislosti, naplní `INSTALLED_APPS`.
 - `registry.py`: porty aktivních modulů. `lifecycle.py`: zapnutí, vypnutí, ověření při startu.
 - `events.py`: události v procesu. `audit.py`, `models.py`: `AuditEvent`, `AdminUser` (s volitelným `email`, který se může ukázat v patičce kvízu jako kontakt, ADR-0054), instalace modulů.
-- `middleware.py`: brána vypnutých modulů, odmítnutí multipart.
+- `middleware.py`: brána vypnutých modulů, odmítnutí multipart a strop těla požadavku podle `Content-Length` (`BodyLimitMiddleware`, v `MIDDLEWARE` hned po middlewaru s bezpečnostními hlavičkami, aby je nesla i odmítnutí: 16 MiB, 101 MiB pro import a veřejné odeslání, 413; bez délky 411; stejné hodnoty v MiB drží `deploy/Caddyfile`, hlídá to test, ADR-0066).
 
 Pozor: `blockers` vrací texty v aktivním jazyce, `set_enabled` je počítá v angličtině. Plugin s `always_on` nejde vypnout, jen zapnout.
 

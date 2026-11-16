@@ -86,7 +86,10 @@ def restore(request: HttpRequest, quiz_id: UUID, revision_no: int) -> HttpRespon
             % {"no": revision_no},
             reverse("admin_revision_restore", args=[quiz.id, revision_no]),
         )
-    authoring.use_as_draft(quiz, revision, admin_id=str(request.user.pk))
+    try:
+        authoring.use_as_draft(quiz, revision, admin_id=str(request.user.pk))
+    except authoring.TitleTaken:
+        return edit_page(request, quiz, run_error=_taken_message(), status=409)
     return redirect("admin_quiz_edit", quiz.id)
 
 
@@ -106,8 +109,18 @@ def discard(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
             _("Discard all unpublished changes? This cannot be undone."),
             reverse("admin_draft_discard", args=[quiz.id]),
         )
-    authoring.discard_draft(quiz, admin_id=str(request.user.pk))
+    try:
+        authoring.discard_draft(quiz, admin_id=str(request.user.pk))
+    except authoring.TitleTaken:
+        return edit_page(request, quiz, run_error=_taken_message(), status=409)
     return redirect("admin_quiz_edit", quiz.id)
+
+
+def _taken_message() -> str:
+    return _(
+        "Another quiz that is not archived now has the title of that revision. "
+        "Rename one of them first."
+    )
 
 
 def _confirm(request: HttpRequest, quiz: Quiz, message: str, action: str) -> HttpResponse:

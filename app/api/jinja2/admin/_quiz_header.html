@@ -17,7 +17,7 @@
     </div>
     {% endif %}
     <div class="quiz-meta">
-      <span>{{ _("Public address") }}: <a href="{{ url('quiz', args=[quiz.slug]) }}">/q/{{ quiz.slug }}</a> · {{ _("Languages") }}: {{ quiz.supported_locales|join(", ") }}</span>
+      <span>{{ _("Public address") }}: {% set public_path = url('quiz', args=[quiz.slug]) %}<a href="{{ quiz.public_origin ~ public_path }}">{{ quiz.public_origin ~ public_path if quiz.public_origin else public_path }}</a> · {{ _("Languages") }}: {{ quiz.supported_locales|join(", ") }}</span>
       <span class="status-area">{{ run_status(state) }}</span>
       <a href="{{ url('admin_preview', args=[quiz.id]) }}">{{ _("Preview") }}</a>
       {% if state.last_run %}<a href="{{ url('results_export_new') }}?quiz={{ quiz.id }}">{{ _("Export results") }}</a>{% endif %}

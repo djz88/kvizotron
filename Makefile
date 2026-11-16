@@ -15,7 +15,7 @@ TECH_DEBT := python3 tools/tech_debt.py --doc docs/_architecture/TECH_DEBT.md
 # Dockerfile instaluje tutéž (hlídá tests/test_makefile.py). Python a balíčky: pyproject.toml a uv.lock.
 # Hooky: .pre-commit-config.yaml. Image: digesty v Dockerfile a deploy/compose.yaml.
 UV_REQUIRED := $(shell sed -n 's/^required-version *= *">=\([0-9.]*\)".*/\1/p' pyproject.toml 2>/dev/null | awk -F. '{print $$1"."$$2"."($$3==""?0:$$3)}')
-.PHONY: wiring plan-check help env-update setup setup-reset doctor clean lint test secrets quality smoke load hooks fix messages worktree worktree-create worktree-remove tech-debt-check tech-debt-tidy tech-debt-create tech-debt-resolve
+.PHONY: wiring plan-check help env-update setup setup-reset doctor clean lint test secrets quality smoke load hooks private-traces fix messages worktree worktree-create worktree-remove tech-debt-check tech-debt-tidy tech-debt-create tech-debt-resolve
 
 # Jméno za cílem (make worktree-create JMÉNO) make nehledá jako další cíl.
 ifneq ($(filter worktree-create worktree-remove,$(MAKECMDGOALS)),)
@@ -43,6 +43,7 @@ doctor: ## Ověří nástroje: uv, docker, docker compose, pre-commit hooky
 	@docker --version
 	@docker compose version
 	@test -f .git/hooks/pre-commit && echo "pre-commit hook: ok" || echo "pre-commit hook: chybí, spusť make env-update"
+	@python3 tools/private_traces.py list || true
 
 # Záměrně výčet cest, ne `git clean -X`: ten by smazal i .env, databáze a zálohy.
 clean: ## Smaže build prostředí: .venv, cache nástrojů a výstupy buildu; data se nemažou
@@ -81,8 +82,17 @@ load: ## Zátěž: 50 účastníků odešle fotky naráz při záloze, obnova a 
 messages: ## Vytáhne texty k překladu a zkompiluje katalogy (locale/)
 	uv run python -m tools.messages
 
-hooks: ## Nainstaluje git hooky
+hooks: ## Nainstaluje git hooky pro commit, zprávu commitu a push
 	$(PRE_COMMIT) install
+	@python3 tools/private_traces.py list || true
+
+private-traces: ## Založí prázdný .git/info/private-traces (osobní slova, mimo git); existující nechá
+	@list="$$(git rev-parse --path-format=absolute --git-common-dir)/info/private-traces"; \
+	if [ -f "$$list" ]; then echo "private-traces: $$list už existuje"; \
+	else mkdir -p "$$(dirname "$$list")" && printf '%s\n' \
+	  '# Osobní slova, která nesmí do repozitáře: jméno, adresa domácí sítě, e-mail.' \
+	  '# Jedno na řádek, na velikosti písmen nezáleží; # je komentář. Kontroluje tools/private_traces.py.' \
+	  > "$$list" && echo "private-traces: založen $$list"; fi
 
 worktree: ## Vypíše worktree
 	@git worktree list

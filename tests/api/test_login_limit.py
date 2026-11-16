@@ -206,3 +206,10 @@ def test_a_refusal_by_the_ceiling_gives_the_name_slot_back(client, settings):
         assert login(client, WRONG, username=name).status_code == 200
     assert login(client, WRONG, username="carol").status_code == 429
     assert rate_limit.tracked() == 3  # alice and bob by name, the address; none for carol
+
+
+def test_a_forged_left_hand_address_does_not_open_a_new_bucket(client, admin_user):
+    """AC-182: only the address the trusted proxy appended counts, not what the client wrote."""
+    for forged in range(5):
+        assert login(client, WRONG, ip=f"6.6.6.{forged}, 10.0.0.1").status_code == 200
+    assert login(client, WRONG, ip="7.7.7.7, 10.0.0.1").status_code == 429

@@ -24,6 +24,8 @@ class Quiz(models.Model):
     archived_at = models.DateTimeField(null=True, blank=True)
     created_by = models.CharField(max_length=64, blank=True)  # admin id, like QuestionBank
     quiz_type = models.CharField(max_length=64, blank=True, default="")  # id of the applied type
+    # `https://host:port` its QR code and public link use; empty is the admin's own address.
+    public_origin = models.CharField(max_length=200, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "admin/_form_errors.html" import form_errors %}
 {% block content %}
 {% set panel_before = [("clock", _("Time"))] %}
 {% set panel_after = [("branding", _("Name, logo and texts"))] %}
@@ -11,7 +12,7 @@
 {% include "admin/_settings_search.html" %}
 <form method="post">
   {{ csrf_input }}
-  {{ form.non_field_errors() }}
+  {{ form_errors(form) }}
   {% set zone_field = form["time_zone"] %}
   {% include "admin/_clock.html" %}
   <section class="form-section settings-form">

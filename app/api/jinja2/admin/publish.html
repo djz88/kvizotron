@@ -35,6 +35,7 @@
   {{ csrf_input }}
   <input type="hidden" name="snapshot_hash" value="{{ snapshot_hash }}">
   {% if starting %}<input type="hidden" name="start" value="1">{% endif %}
+  {% if then_plan %}<input type="hidden" name="then" value="plan">{% endif %}
   {% if outcome == "ask" %}
   <fieldset>
     <legend>{{ _("A run is in progress. What should happen to it?") }}</legend>
@@ -47,7 +48,7 @@
   {% elif outcome == "let_finish" %}
   <p>{{ _("The running run moves to the new version; participants in progress finish on the old one.") }}</p>
   {% endif %}
-  <button type="submit">{{ _("Start the quiz") if starting else _("Publish") }}</button>
+  <button type="submit">{{ _("Start the quiz") if starting else _("Publish and plan a run") if then_plan else _("Publish") }}</button>
 </form>
 {% endif %}
 {% endblock %}

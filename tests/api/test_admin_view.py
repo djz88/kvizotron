@@ -7,7 +7,7 @@ import pytest
 from app.api import admin_view
 from app.api.admin_forms import GlobalSettingsForm
 from app.domain import settings
-from tests.domain.helpers import make_quiz, open_quiz_run
+from tests.domain.helpers import make_quiz, open_quiz_run, published_quiz
 
 pytestmark = pytest.mark.django_db
 GROUPS = [
@@ -221,9 +221,9 @@ def test_missing_module_settings_do_not_break_grouping():
 
 def test_switch_on_a_page_drawn_by_a_post_returns_to_a_page(logged_in):
     """A page drawn by a POST-only address must not send the switch back there (405)."""
-    quiz = make_quiz()
+    quiz = published_quiz()
     response = logged_in.post(f"/admin/quizzes/{quiz.id}/plan?lang=en", {"starts_at": "nonsense"})
-    assert response.status_code == 200
+    assert response.status_code == 400
     target = re.search(r'name="next" value="([^"]*)"', panel(text(response))).group(1)
     assert logged_in.get(target or "/admin/").status_code in (200, 302)  # not 405
 

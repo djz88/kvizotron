@@ -25,3 +25,10 @@ def test_caddy_closes_an_idle_upstream_connection_before_gunicorn_does():
     )
     assert found is not None, "reverse_proxy needs `transport http { keepalive 1s }`"
     assert int(found[1]) < 2
+
+
+def test_caddy_replaces_the_hsts_header_of_the_application():
+    """ADR-0066: the application sends HSTS too; Caddy must replace it (`>` defers the set until
+    the upstream answered), or a response would carry two headers."""
+    caddyfile = (ROOT / "deploy" / "Caddyfile").read_text()
+    assert re.search(r"^\s*header >Strict-Transport-Security ", caddyfile, re.M)

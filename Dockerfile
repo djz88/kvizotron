@@ -1,5 +1,5 @@
 # Python je pinnutý podle ADR-0022, digest se mění jen vědomě.
-FROM python:3.15-slim@sha256:e97b88e416c3c01eb427b21fd8cd3ebf006e6ee38afcfcc3cae1c54ee2ab0a75
+FROM python:3.15-slim@sha256:e97b88e416c3c01eb427b21fd8cd3ebf006e6ee38afcfcc3cae1c54ee2ab0a75 AS app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -31,3 +31,13 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
 
 # Jeden proces: SQLite a limity v paměti procesu na tom závisí (ADR-0036).
 CMD ["gunicorn", "app.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8"]
+
+# Jeden kontejner (ADR-0066): migrace, aplikace a `jobs` vedle sebe, třeba jako pod v Kubernetes
+# za ingressem. Sestavení: `docker build --target single`.
+FROM app AS single
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD ["sh", "-c", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=2)\" && python -m app.domain.heartbeat check"]
+CMD ["python", "manage.py", "serve"]
+
+# Výchozí sestavení (bez --target) je obraz, který spouští Compose.
+FROM app

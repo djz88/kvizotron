@@ -158,12 +158,12 @@ Special cases:
 | Data access | Django ORM and migrations; `PersistenceProvider` supplies database settings | [ADR-0036](adr/0036-django-web-framework-and-orm.md) |
 | Database v1.0 | SQLite in WAL mode (local persistent volume) | [ADR-0036](adr/0036-django-web-framework-and-orm.md) |
 | Auth | Local admins on Django auth, Argon2id password hashing | [ADR-0014](adr/0014-local-admin-auth-argon2id-equal-roles.md) |
-| HTTPS | Caddy reverse proxy, automatic certificates | [ADR-0015](adr/0015-docker-compose-caddy-systemd-alt.md) |
-| Run | Docker Compose; alternatively systemd | [ADR-0015](adr/0015-docker-compose-caddy-systemd-alt.md) |
+| HTTPS | Caddy reverse proxy, automatic certificates; as a single container, the ingress in front of it | [ADR-0015](adr/0015-docker-compose-caddy-systemd-alt.md), [ADR-0066](adr/0066-single-container-image.md) |
+| Run | Docker Compose; alternatively one container (`docker build --target single`, for example a Kubernetes pod) or systemd | [ADR-0015](adr/0015-docker-compose-caddy-systemd-alt.md), [ADR-0066](adr/0066-single-container-image.md) |
 | Scheduled jobs | Compose service `jobs` looping `manage.py jobs`: one retention pass per hour (which also deletes expired login sessions) and one backup per local day; `manage.py retention` and `manage.py backup` for one by hand ([ADR-0056](adr/0056-retention-job-summary-held-runs.md), [ADR-0059](adr/0059-backup-and-restore.md)) | [providers/retention.md](providers/retention.md) |
 | Media and backups | Local persistent volumes; a daily verified backup of the database (SQLite backup API) and the media into a `backups` volume that only `jobs` mounts, and a manual restore ([ADR-0059](adr/0059-backup-and-restore.md)) | [../deployment.md](../deployment.md#backup-and-restore) |
 
-Not needed for this size: Redis, Kubernetes, message broker, external database.
+Not needed for this size: Redis, a Kubernetes-specific design (one replica in one container is enough, [ADR-0066](adr/0066-single-container-image.md)), message broker, external database.
 
 ## 8. Code layout (recommended)
 

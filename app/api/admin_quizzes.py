@@ -31,6 +31,7 @@ from app.api.admin_forms import (
     free_slug,
     result_messages,
     setting_initial,
+    title_taken_message,
 )
 from app.api.admin_workspace import image_check, name_field, quiz_title, type_bar, workspace
 from app.api.i18n import PUBLIC_LOCALES
@@ -309,6 +310,12 @@ def quiz_name(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
             return render_field(request, field, status=400)
         return edit_page(request, quiz, status=400, field=field)
     new = form.cleaned_data["name"]
+    changed = authoring.new_titles({quiz.default_locale: new}, quiz)
+    if authoring.taken_titles(changed, besides=quiz):  # a field that did not validate: 400
+        field = name_field(quiz, editing=True, value=typed, error=title_taken_message())
+        if wants_partial(request):
+            return render_field(request, field, status=400)
+        return edit_page(request, quiz, status=400, field=field)
     if new != quiz_title(quiz):  # what the field showed, the address when there is no title
         quiz.title = {**quiz.title, quiz.default_locale: new}
         quiz.save(update_fields=["title"])
@@ -656,6 +663,11 @@ def _publication_problems(quiz: Quiz) -> list[str]:
     return [problem_text(problem) for problem in problems]
 
 
+def _then_plan(request: HttpRequest) -> bool:
+    """Publication on the way to a run plan: afterwards the plan page opens."""
+    return "plan" in (request.GET.get("then"), request.POST.get("then"))
+
+
 def _starting(request: HttpRequest, quiz: Quiz) -> bool:
     """`Start` publishes and opens a run; if a run appeared meanwhile, only publication is left."""
     wanted = "1" in (request.GET.get("start"), request.POST.get("start"))
@@ -698,6 +710,7 @@ def _publish_page(request: HttpRequest, quiz: Quiz, message: str | None = None) 
         "outcome": authoring.round_outcome(quiz),
         "snapshot_hash": authoring.snapshot_hash(quiz),
         "starting": _starting(request, quiz),
+        "then_plan": _then_plan(request),
     }
     return page(request, "admin/publish.html", context, request.locale)  # type: ignore[attr-defined]
 
@@ -734,6 +747,8 @@ def quiz_publish(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
             "The running stateless run keeps its revision: the new one has a photo question."
         )
         return edit_page(request, quiz, run_error=notice)
+    if _then_plan(request):
+        return redirect("admin_run_plan", quiz.id)
     return redirect("admin_quiz_edit", quiz.id)
 
 
@@ -781,5 +796,11 @@ def quiz_archive(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
 @require_POST
 def quiz_restore(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     quiz = get_object_or_404(Quiz, pk=quiz_id)
-    authoring.restore_quiz(quiz, admin_id=str(request.user.pk))
+    try:
+        authoring.restore_quiz(quiz, admin_id=str(request.user.pk))
+    except authoring.TitleTaken:
+        message = _(
+            "Another quiz that is not archived has this title now. Rename one of them first."
+        )
+        return edit_page(request, quiz, run_error=message, status=409)
     return redirect("admin_quiz_edit", quiz.id)

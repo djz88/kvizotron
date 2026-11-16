@@ -354,6 +354,18 @@ msgstr "Nebo adresa loga úvodní stránky"
 msgid "Remove the landing page logo"
 msgstr "Odstranit logo na úvodní stránce"
 
+#: admin_forms_quiz.py
+msgid "Address of the QR code"
+msgstr "Adresa QR kódu"
+
+#: admin_forms_quiz.py
+msgid "Start of the public address, such as https://kviz.example.com, when participants come through another name or a redirect. Empty uses the address you are on now. Changing it changes the QR code; print it again."
+msgstr "Začátek veřejné adresy, například https://kviz.example.com, když účastníci přicházejí přes jiné jméno nebo přesměrování. Prázdné použije adresu, na které jste teď. Změna změní QR kód; vytiskněte ho znovu."
+
+#: admin_forms_quiz.py
+msgid "Another quiz that is not archived already has this title. Choose another one."
+msgstr "Jiný kvíz, který není v archivu, už tento název má. Zvolte jiný."
+
 #: admin_forms_quiz.py admin_quizzes.py
 msgid "Another quiz already uses this identifier."
 msgstr "Tento identifikátor už používá jiný kvíz."
@@ -880,7 +892,7 @@ msgstr "Otázka %(number)s: její typ není k dispozici."
 msgid "Question %(number)s, language %(locale)s: %(detail)s"
 msgstr "Otázka %(number)s, jazyk %(locale)s: %(detail)s"
 
-#: admin_quizzes.py admin_runs.py
+#: admin_quizzes.py admin_runs.py jinja2/admin/run_plan.html
 msgid "Publish the quiz first."
 msgstr "Nejdřív kvíz publikujte."
 
@@ -903,6 +915,10 @@ msgstr "Běžící běh, který nic neukládá, ponechá svou revizi: nová má 
 #: admin_quizzes.py
 msgid "A run is in progress. End it before archiving the quiz."
 msgstr "Běh právě probíhá. Před archivací kvízu ho ukončete."
+
+#: admin_quizzes.py
+msgid "Another quiz that is not archived has this title now. Rename one of them first."
+msgstr "Jiný kvíz, který není v archivu, má teď stejný název. Nejdřív jeden z nich přejmenujte."
 
 #: admin_results_export.py admin_retention.py jinja2/admin/run.html
 msgid "Attempts"
@@ -1064,6 +1080,10 @@ msgstr "Tento kvíz nebyl nikdy publikován, takže se není k čemu vrátit."
 #: admin_revisions.py
 msgid "Discard all unpublished changes? This cannot be undone."
 msgstr "Zahodit všechny nepublikované změny? Nejde to vrátit."
+
+#: admin_revisions.py
+msgid "Another quiz that is not archived now has the title of that revision. Rename one of them first."
+msgstr "Jiný kvíz, který není v archivu, má teď název té revize. Nejdřív jeden z nich přejmenujte."
 
 #: admin_rewards.py
 msgid "Threshold"
@@ -2893,6 +2913,10 @@ msgstr "Běh se přepne na novou verzi; rozehraní účastníci dostanou upozorn
 msgid "The running run moves to the new version; participants in progress finish on the old one."
 msgstr "Běh se přepne na novou verzi; rozehraní účastníci dokončí starou."
 
+#: jinja2/admin/publish.html jinja2/admin/run_plan.html
+msgid "Publish and plan a run"
+msgstr "Publikovat a naplánovat běh"
+
 #: jinja2/admin/question_form.html
 msgid "Question settings"
 msgstr "Nastavení otázky"
@@ -3496,6 +3520,10 @@ msgstr "Naplánovat běh"
 #: jinja2/admin/run_plan.html
 msgid "Plan a run"
 msgstr "Naplánovat běh"
+
+#: jinja2/admin/run_plan.html
+msgid "A run takes the published revision of the quiz."
+msgstr "Běh používá publikovanou revizi kvízu."
 
 #: jinja2/admin/run_plan.html
 #, python-format

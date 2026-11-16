@@ -94,22 +94,23 @@ def test_empty_limit_means_no_limit_for_this_run(logged_in):
 
 
 @pytest.mark.parametrize(
-    ("starts_at", "deadline_at", "limit", "message"),
+    ("starts_at", "deadline_at", "limit", "message", "status"),
     [
-        ("2030-01-01T09:00", "", "", "already passed"),
-        (START, "2030-01-01T17:00", "", "after the start"),
-        (START, "", "1441", "1440"),
-        ("2030-03-31T02:30", "", "", "does not exist"),
-        ("nonsense", "", "", "valid time"),
+        ("2030-01-01T09:00", "", "", "already passed", 409),
+        (START, "2030-01-01T17:00", "", "after the start", 409),
+        (START, "", "1441", "1440", 400),
+        ("2030-03-31T02:30", "", "", "does not exist", 400),
+        ("nonsense", "", "", "valid time", 400),
     ],
 )
-def test_refusals_show_a_message(logged_in, starts_at, deadline_at, limit, message):
+def test_refusals_show_a_message(logged_in, starts_at, deadline_at, limit, message, status):
+    """A field that does not validate is 400, a refusal of the rules 409, both in an alert."""
     quiz = published_quiz()
     response = logged_in.post(
         plan_url(quiz), {"starts_at": starts_at, "deadline_at": deadline_at, "limit_minutes": limit}
     )
     html = text(response)
-    assert response.status_code == 200
+    assert response.status_code == status
     assert message in html
     assert 'name="starts_at"' in html
     assert not quiz.runs.exists()
@@ -184,7 +185,7 @@ def test_edit_needs_a_start(logged_in):
     response = logged_in.post(
         f"/admin/runs/{run.id}/plan", {"starts_at": "", "deadline_at": "", "limit_minutes": ""}
     )
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert QuizRun.objects.get(pk=run.pk).starts_at == START_UTC
 
 
@@ -473,5 +474,54 @@ def test_plan_form_refuses_a_pass_mark_over_100(logged_in):
         plan_url(quiz),
         {"starts_at": START, "deadline_at": "", "limit_minutes": "", "pass_mark": "101"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert not quiz.runs.exists()
+
+
+def test_a_refused_plan_says_why_in_an_alert_above_the_form(logged_in):
+    """The message was a plain line between paragraphs and went unnoticed."""
+    quiz = published_quiz()
+    response = logged_in.post(plan_url(quiz), {"starts_at": "2030-01-01T09:00"})
+    alert = re.search(
+        r'<div class="notice form-errors" role="alert">(.*?)</div>', text(response), re.S
+    )
+    assert alert is not None and "already passed" in alert.group(1)
+
+
+def test_every_form_shows_its_own_errors_through_the_alert_macro():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2] / "app"
+    raw = [
+        str(path.relative_to(root))
+        for path in root.rglob("*.html")
+        if "non_field_errors()" in path.read_text() and path.name != "_form_errors.html"
+    ]
+    assert raw == []
+
+
+def test_an_unpublished_quiz_offers_publication_before_the_plan(logged_in):
+    """AC-180: a plan needs a published revision; the page says so instead of a dead form."""
+    quiz = make_quiz()
+    add_question(quiz)
+    edit = text(logged_in.get(f"/admin/quizzes/{quiz.id}/edit"))
+    assert f"/admin/quizzes/{quiz.id}/publish?then=plan" in edit
+    page = logged_in.get(plan_url(quiz))
+    html = text(page)
+    assert page.status_code == 200
+    assert 'name="starts_at"' not in html
+    assert re.search(r'role="alert"[^>]*>.*Publish the quiz first', html, re.S)
+    assert f"/admin/quizzes/{quiz.id}/publish?then=plan" in html
+    assert logged_in.post(plan_url(quiz), {"starts_at": START}).status_code == 409
+    assert not quiz.runs.exists()
+
+
+def test_publishing_on_the_way_to_a_plan_goes_on_to_the_plan(logged_in):
+    quiz = make_quiz()
+    add_question(quiz)
+    url = f"/admin/quizzes/{quiz.id}/publish?then=plan"
+    found = re.search(r'name="snapshot_hash" value="([^"]*)"', text(logged_in.get(url))).group(1)
+    response = logged_in.post(url, {"snapshot_hash": found})
+    assert response.status_code == 302
+    assert response["Location"] == f"/admin/quizzes/{quiz.id}/plan"
+    assert authoring.latest_published(quiz) is not None

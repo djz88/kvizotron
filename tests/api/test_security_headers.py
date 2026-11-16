@@ -74,7 +74,8 @@ def test_other_asset_names_are_404(client, name):
 # on both (app/settings.py). `Cache-Control: private, no-store` on the pages that hold a result link
 # is set by the views themselves. Missing and added: the policy of `/media/<id>` replaces
 # `SECURE_CSP` and had no `frame-ancestors`, which does not fall back to `default-src`;
-# app/api/public.py names it. HSTS is not here: Caddy sends it (tests/test_deploy_headers.py).
+# app/api/public.py names it. HSTS: Caddy sends it (tests/test_deploy_headers.py) and so does the
+# application on HTTPS requests, for a single container without Caddy (ADR-0066, test below).
 
 NO_STORE = "private, no-store"
 
@@ -170,3 +171,10 @@ def test_cookies_are_secure_and_not_readable_by_scripts(admin_user):
     csrf, session = client.cookies["csrftoken"], client.cookies["sessionid"]
     assert csrf["secure"] and csrf["samesite"] == "Lax"
     assert session["secure"] and session["httponly"] and session["samesite"] == "Lax"
+
+
+def test_a_secure_response_carries_six_months_of_hsts(client):
+    """ADR-0066: the application sends HSTS itself, so it holds without Caddy too (AC-132)."""
+    response = client.get("/healthz", secure=True)
+    assert response["Strict-Transport-Security"] == "max-age=15552000"
+    assert "Strict-Transport-Security" not in client.get("/healthz")

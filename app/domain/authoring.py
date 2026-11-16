@@ -14,7 +14,7 @@ from typing import Any, Literal, cast
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
-from django.utils.translation import gettext
+from django.utils.translation import gettext, override
 
 from app.contracts import IMAGE_MODE_COPY, JSON, QuestionTypePlugin, ScoringStrategyPlugin
 from app.domain import (
@@ -95,6 +95,14 @@ class RunStillOpen(AuthoringError):
 
 class SlugTaken(AuthoringError):
     pass
+
+
+class TitleTaken(AuthoringError):
+    """Another quiz that is not archived has this title; `locales` names the languages."""
+
+    def __init__(self, locales: Sequence[str]):
+        super().__init__(", ".join(locales))
+        self.locales = list(locales)
 
 
 class RequirementUnmet(AuthoringError):
@@ -670,7 +678,85 @@ def freeze_copy(quiz: Quiz) -> QuizRevision:
     return frozen
 
 
+def _title_key(text: str) -> str:
+    return " ".join(text.split()).casefold()
+
+
+def taken_titles(title: Mapping[str, str], *, besides: Quiz | None = None) -> list[str]:
+    """The languages in which another quiz that is not archived already has this title.
+
+    Letter case and runs of spaces do not tell titles apart; archived quizzes do not count.
+    """
+    wanted = {code: _title_key(text) for code, text in title.items() if text and text.strip()}
+    if not wanted:
+        return []
+    others = Quiz.objects.filter(archived_at__isnull=True)
+    if besides is not None and besides.pk is not None:
+        others = others.exclude(pk=besides.pk)
+    taken = {
+        code
+        for other in others.only("title")
+        for code, key in wanted.items()
+        if _title_key(str(other.title.get(code, ""))) == key
+    }
+    return sorted(taken)
+
+
+MAX_TITLE = 200  # the length the quiz forms accept
+
+
+def new_titles(title: Mapping[str, str], quiz: Quiz | None) -> dict[str, str]:
+    """The languages whose title differs from what `quiz` has; all of them for a new quiz.
+
+    Only a changed title is checked, so quizzes that shared a title before the rule are not
+    locked out of saving, going back or discarding.
+    """
+    current = quiz.title if quiz is not None else {}
+    return {
+        code: text
+        for code, text in title.items()
+        if _title_key(text or "") != _title_key(str(current.get(code, "")))
+    }
+
+
+def ensure_title_free(title: Mapping[str, str], *, besides: Quiz | None = None) -> None:
+    taken = taken_titles(title, besides=besides)
+    if taken:
+        raise TitleTaken(taken)
+
+
+def _marked(code: str, text: str, number: int, copy_mark: bool) -> str:
+    """The title with its mark, the title cut so that the whole stays within `MAX_TITLE`."""
+    with override(code):
+        if copy_mark and number == 1:
+            pattern = gettext("%(title)s (copy)")
+        elif copy_mark:
+            pattern = gettext("%(title)s (copy %(number)s)")
+        else:
+            pattern = "%(title)s (%(number)s)"
+    mark_length = len(pattern % {"title": "", "number": number})
+    kept = text[: max(MAX_TITLE - mark_length, 1)].rstrip()
+    return pattern % {"title": kept, "number": number}
+
+
+def free_title(title: Mapping[str, str], *, copy_mark: bool = False) -> dict[str, str]:
+    """The title itself when free, else the first numbered one that is free in every language.
+
+    A copy always says so, "Title (copy)", "Title (copy 2)", even of an archived quiz whose
+    title is free; otherwise "Title (2)", "Title (3)".
+    """
+    if not copy_mark and not taken_titles(title):
+        return dict(title)
+    number = 1 if copy_mark else 2
+    while True:
+        candidate = {code: _marked(code, text, number, copy_mark) for code, text in title.items()}
+        if not taken_titles(candidate):
+            return candidate
+        number += 1
+
+
 def _restore_quiz_fields(quiz: Quiz, snapshot: Mapping[str, Any]) -> None:
+    ensure_title_free(new_titles(snapshot["title"], quiz), besides=quiz)
     quiz.title = snapshot["title"]
     quiz.description = snapshot.get("description", {})  # older revisions have none
     quiz.supported_locales = snapshot["locales"]
@@ -787,7 +873,8 @@ def duplicate_quiz(quiz: Quiz, slug: str, *, admin_id: str) -> Quiz:
         with transaction.atomic():
             copied = Quiz.objects.create(
                 slug=slug,
-                title=copy.deepcopy(quiz.title),
+                title=free_title(quiz.title, copy_mark=True),
+                public_origin=quiz.public_origin,
                 description=copy.deepcopy(quiz.description),
                 default_locale=quiz.default_locale,
                 supported_locales=list(quiz.supported_locales),
@@ -831,6 +918,7 @@ def restore_quiz(quiz: Quiz, *, admin_id: str) -> None:
     with transaction.atomic():
         if not Quiz.objects.filter(pk=quiz.pk, archived_at__isnull=False).exists():
             return
+        ensure_title_free(quiz.title, besides=quiz)
         quiz.archived_at = None
         quiz.save(update_fields=["archived_at"])
         archived = _latest_archived(quiz)

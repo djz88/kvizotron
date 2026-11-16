@@ -1,9 +1,10 @@
 {% extends "admin/base.html" %}
+{% from "admin/_form_errors.html" import form_errors %}
 {% block content %}
 <h1>{{ _("New quiz") }}</h1>
 <form method="post">
   {{ csrf_input }}
-  {{ form.non_field_errors() }}
+  {{ form_errors(form) }}
   {% for field in form if field.name != "quiz_type" %}<div{% if field.css_classes() %} class="{{ field.css_classes() }}"{% endif %}>{{ field.as_field_group() }}</div>{% endfor %}
   {% if "quiz_type" in form.fields %}
   <details class="quiz-type-choice" open>

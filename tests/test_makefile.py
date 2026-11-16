@@ -91,8 +91,11 @@ def test_hooks_and_secrets_use_the_pinned_pre_commit(tmp_path: Path) -> None:
     pyproject = '[tool.uv]\nrequired-version = ">=0.13.7"\n'
     shown = _make_dry(tmp_path, "hooks", pyproject) + _make_dry(tmp_path, "secrets", pyproject)
 
-    assert shown
-    assert all(line.startswith("uvx --python 3.14 pre-commit@4.7.0 ") for line in shown)
+    calls = [line for line in shown if "pre-commit" in line]
+
+    assert len(calls) == 3
+    assert all(line.startswith("uvx --python 3.14 pre-commit@4.7.0 ") for line in calls)
+    assert "python3 tools/private_traces.py list || true" in shown
 
 
 def test_the_image_installs_the_uv_the_project_declares() -> None:

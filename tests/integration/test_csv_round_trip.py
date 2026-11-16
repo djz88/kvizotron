@@ -190,7 +190,9 @@ def test_round_trip_keeps_the_content_of_both_types_images_settings_and_formula_
     reimport(client, response)
     imported = Quiz.objects.exclude(pk=quiz.pk).get()
     assert imported.slug == "bohaty-2"
-    assert content_of(imported) == content_of(quiz)
+    # The original is still there, so the copy takes the next free title, as it takes the address.
+    numbered = {code: f"{text} (2)" for code, text in quiz.title.items()}
+    assert content_of(imported) == content_of(quiz) | {"title": numbered}
 
 
 def test_bank_round_trip_keeps_tags(client):

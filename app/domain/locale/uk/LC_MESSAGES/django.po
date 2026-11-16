@@ -4,6 +4,16 @@ msgstr "Теки немає в цьому банку."
 
 #: authoring.py
 #, python-format
+msgid "%(title)s (copy)"
+msgstr "%(title)s (копія)"
+
+#: authoring.py
+#, python-format
+msgid "%(title)s (copy %(number)s)"
+msgstr "%(title)s (копія %(number)s)"
+
+#: authoring.py
+#, python-format
 msgid "Question %(number)s needs a module that is disabled."
 msgstr "Запитання %(number)s потребує вимкненого модуля."
 
@@ -171,6 +181,11 @@ msgstr "Для заміни потрібно, щоб можна було вик�
 #, python-format
 msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
 msgstr "Адреса %(wanted)s зайнята, тому вікторина отримала %(slug)s."
+
+#: question_import.py
+#, python-format
+msgid "Another quiz already has the title %(wanted)s, so this one got %(title)s."
+msgstr "Інша вікторина вже має назву %(wanted)s, тому ця отримала %(title)s."
 
 #: question_import.py
 msgid "A bank question must be complete in at least one language."

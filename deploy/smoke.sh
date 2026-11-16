@@ -130,6 +130,12 @@ case "$header" in
 esac
 hsts=$(curl -skI --resolve "localhost:$HTTPS_PORT:127.0.0.1" "$BASE/" | tr -d '\r' | sed -n 's/^[Ss]trict-[Tt]ransport-[Ss]ecurity: //p')
 check "HSTS header" "$hsts" "max-age=15552000"
+# The application sends HSTS too (ADR-0066): Caddy must replace it, never add a second one.
+hsts_count=$(curl -skI --resolve "localhost:$HTTPS_PORT:127.0.0.1" "$BASE/" | tr -d '\r' | grep -ci '^strict-transport-security:')
+check "one HSTS header" "$hsts_count" "1"
+# A body without a length cannot slip past the ceiling: 17 MiB sent chunked is refused (ADR-0066).
+chunked=$(head -c 17825792 /dev/zero | curl -sk --resolve "localhost:$HTTPS_PORT:127.0.0.1" -o /dev/null -w '%{http_code}' -H 'Transfer-Encoding: chunked' -H 'Content-Type: application/octet-stream' --data-binary @- "$BASE/admin/login")
+check "an oversized chunked body is refused" "$chunked" "413"
 check "admin needs login" "$(web -o /dev/null -w '%{redirect_url}' "$BASE/admin/quizzes")" "$BASE/admin/login?next=/admin/quizzes"
 
 JAR=$(mktemp)

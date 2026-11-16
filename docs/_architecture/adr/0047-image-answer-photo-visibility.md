@@ -31,7 +31,7 @@ Chosen option: "A three-level setting with approval per photo, and a share carri
 * Grading arrives in Stage B. A row holds automatic and manual points, the score recalculates, and an attempt leaves `PENDING_GRADING` when no photo waits. Only a logged-in admin can change them, and every change is audited.
 * Photos are private assets: `/media/<id>` answers 404, and they are served only through routes that check the right, with `Cache-Control: private, no-store`, so a withdrawn photo stays in no cache. Multipart on a public address is admitted only for `/a/<id>/submit` of an attempt holding such a question, in progress or finished, checked before the body is read. A finished one stores nothing, so a repeat after a lost answer still gets its result.
 * A photo can become public only if the page warned about it when that attempt began. `told_public` on the attempt lists such questions, so raising the level later makes no earlier photo public, and only later attempts can be approved.
-* One submission carries all photos of an attempt, so Caddy allows 101 MB on `/a/*/submit`, as on an import. Each file stays within 15 MB, and the application admits multipart only as above.
+* One submission carries all photos of an attempt, so Caddy allows 101 MB on `/a/*/submit`, as on an import (amended by [ADR-0066](0066-single-container-image.md): 101 MiB, held by the application too). Each file stays within 15 MB, and the application admits multipart only as above.
 * A file is stored before the transaction, under [ADR-0028](0028-upload-limits.md). One stored for a submission that then fails, or that lost to another, is removed at once. A form field naming an asset is dropped: the value comes only from a file received.
 
 ### Consequences

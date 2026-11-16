@@ -552,9 +552,17 @@ def _created_quiz(planned: PlannedQuiz, admin_id: str) -> tuple[Quiz, list[Issue
     if slug != wanted[:80]:
         message = _("The address %(wanted)s is taken, so the quiz got %(slug)s.")
         issues.append(Issue(planned.row, "slug", message % {"wanted": wanted, "slug": slug}, False))
+    title = authoring.free_title(planned.title)
+    if title != planned.title:
+        message = _("Another quiz already has the title %(wanted)s, so this one got %(title)s.")
+        named = {
+            "wanted": planned.title[planned.default_locale],
+            "title": title[planned.default_locale],
+        }
+        issues.append(Issue(planned.row, "title", message % named, False))
     quiz = Quiz.objects.create(
         slug=slug,
-        title=planned.title,
+        title=title,
         description=planned.description,
         default_locale=planned.default_locale,
         supported_locales=planned.locales,

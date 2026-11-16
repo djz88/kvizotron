@@ -7,6 +7,7 @@ Decision: [ADR-0015](_architecture/adr/0015-docker-compose-caddy-systemd-alt.md)
 
 - **Docker Compose** (primary): `caddy` (reverse proxy, automatic HTTPS) + `app` (Django under gunicorn, single
   process) + `jobs` (same image: deletes data past their period and makes the daily backup) + persistent volumes for SQLite, media and backups. Files: `deploy/compose.yaml`, `deploy/Caddyfile`.
+- **Single container** (alternative): the `single` target of the same Dockerfile runs migrations, the application and `jobs` in one container, for example one pod in Kubernetes behind an ingress that terminates TLS ([Kubernetes](#kubernetes-single-container), [ADR-0066](_architecture/adr/0066-single-container-image.md)). Documented, not covered by `make smoke`.
 - **systemd** (alternative): app as a service behind Caddy, without Docker. Documented only; not tested
   or supported like Compose.
 - Runs on the operator's own Linux server and domain.
@@ -18,7 +19,7 @@ cp deploy/.env.example deploy/.env    # then fill in the values
 docker compose -f deploy/compose.yaml up -d --build
 ```
 
-Caddy refuses request bodies over 16 MB, or 101 MB on an import and a public submit (`deploy/Caddyfile`), and the application refuses multipart requests except where a file is expected.
+Caddy and the application refuse request bodies over 16 MiB, or 101 MiB on an import and a public submit (`deploy/Caddyfile`, `app/kernel/middleware.py`, ADR-0066; Caddy sends the application a length even for a chunked body and refuses one over its limit with 413), and the application refuses multipart requests except where a file is expected.
 
 A one-shot `migrate` service applies database migrations before `app` starts; Caddy starts when `app` is
 healthy. The application serves its few static files itself, so no collect step is needed. Errors and warnings go to the container log (`docker compose logs app`). Neither gunicorn nor Caddy writes request paths there, and keeping it so protects the tokens in test links ([ADR-0044](_architecture/adr/0044-preview-and-test-links.md)). Caddy accepts up to 101 MB on `/admin/import/*` for ZIP imports and 16 MB elsewhere. Caddy closes its idle connections to the application after 1 second (`keepalive 1s`), because gunicorn closes an idle one after 2 seconds, and a POST sent on a connection closed at that moment was answered 502 ([ADR-0058](_architecture/adr/0058-rate-limit-buckets.md#proxy-keep-alive)). If you start gunicorn with another `--keep-alive`, keep Caddy's value below it. A changed `deploy/Caddyfile` reaches a running proxy only after `docker compose -f deploy/compose.yaml up -d --force-recreate caddy`.
@@ -29,7 +30,7 @@ After upgrading to the version with this service, runs already past their period
 
 `make smoke` runs the whole topology under a separate project name and removes only that project afterwards. `make load` does the same for the load test ([Release checks](#release-checks-v10)).
 
-Since D5 the application is fit for public deployment, and only in this topology: behind Caddy, in one application process. The request limits take the client address from the `X-Forwarded-For` header that Caddy writes and count in the memory of that one process ([ADR-0058](_architecture/adr/0058-rate-limit-buckets.md)). If another proxy sits in front of Caddy, or Docker hides the real address (rootless Docker, a userland proxy), all clients share one address and the limits; `make load` ends with an address probe that shows it.
+Since D5 the application is fit for public deployment, behind Caddy in this topology or behind an ingress as a [single container](#kubernetes-single-container), in one application process. The request limits take the client address that the nearest trusted proxy (Caddy here, an ingress in Kubernetes) wrote into `X-Forwarded-For` and count in the memory of that one process ([ADR-0058](_architecture/adr/0058-rate-limit-buckets.md), [ADR-0066](_architecture/adr/0066-single-container-image.md)). If another proxy sits in front of Caddy, or Docker hides the real address (rootless Docker, a userland proxy), all clients share one address and the limits; `make load` ends with an address probe that shows it.
 
 The administration login has two limits ([ADR-0060](_architecture/adr/0060-login-reservation-and-address-ceiling.md)): 5 wrong logins a minute per user name and address (`KVZ_LOGIN_ATTEMPTS_PER_MINUTE`), and a ceiling of 30 wrong logins a minute per address across all user names (`KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE`). The ceiling is per address, never per account. On a shared address (an office or a school behind one NAT) every administrator there shares the 30, which is far above honest typos, but a spray of guesses from that address blocks all of them from logging in for as long as the spray goes on (a restart clears it), even with the right password, because the check comes before the password is looked at. A restart of the application clears both counters. Raise the ceiling only if you really see that many typos; do not lower the per-name limit below what one person needs.
 
@@ -118,6 +119,149 @@ docker compose -f deploy/compose.yaml run --rm app python manage.py modules disa
 `run` also works while the application cannot start. It refuses to start while migrations are unapplied,
 including after a new module is installed, and while an enabled module depends on a disabled one. Rules: [modules/kernel.md](_architecture/modules/kernel.md#module-installation-and-activation).
 
+## Kubernetes (single container)
+
+The image's `single` target runs everything in one container ([ADR-0066](_architecture/adr/0066-single-container-image.md)):
+
+```sh
+docker build --target single -t kvizotron:single .
+```
+
+Its command, `python manage.py serve`, applies the migrations, then runs gunicorn (one worker) and `jobs` side by side. Before the migrations it creates the directory of the database, since a fresh volume does not show the image's own. A stop sends SIGTERM to both and, counted from that moment, waits up to 30 s for gunicorn and 115 s for a backup in progress; a child that ends ends the container (a signal that killed it gives 128 + its number), so the orchestrator restarts it whole. gunicorn keeps idle connections for 75 s, longer than an ingress keeps them (ingress-nginx: 60 s), or a POST sent on a connection gunicorn just closed would get 502. The image's health check calls `/healthz` and `python -m app.domain.heartbeat check`, which passes before the first pass of `jobs` and fails when its heartbeat stops.
+
+What Caddy does in Compose is split between the ingress and the application:
+
+| Duty | In Kubernetes |
+|---|---|
+| TLS and certificates | The ingress (with cert-manager or your own certificate); it must send `X-Forwarded-Proto: https` |
+| HSTS, six months | The application, on HTTPS requests |
+| Body ceiling: 16 MiB, 101 MiB on `/admin/import/…` and `/a/<id>/submit` | The application (413), also for Caddy's limits in Compose; a body that reaches the application without `Content-Length` (chunked) is refused with 411; browsers always send a length, and in Compose Caddy forwards one. Set the ingress at least as high, for example `nginx.ingress.kubernetes.io/proxy-body-size: 101m` |
+| Client address for the request limits | The ingress appends it to `X-Forwarded-For`; `KVZ_TRUSTED_PROXIES` counts the proxies that do so (default 1, the ingress). With a cloud load balancer in front, make the ingress see the real address (`externalTrafficPolicy: Local` or the PROXY protocol), or all clients share one limit |
+| Slow clients and idle connections | The ingress; never expose the container's port directly. A NetworkPolicy that lets only the ingress controller reach port 8000 keeps other pods from sending their own `X-Forwarded-For` |
+
+Constraints of the pod:
+
+- **One replica** and `strategy: Recreate`: SQLite and the in-memory limits allow one process, and a rolling update would briefly run two pods on one database.
+- **A `ReadWriteOnce` volume** on local or block storage (not NFS) at `/data` for `db` and `media`, and **a second one at `/data/backups`**, so that losing one volume does not take the data and its backups together; give it another storage class or snapshots if you can, and copy the backups out of the cluster as well (for example a CronJob with `rsync` or `kubectl cp`). The image runs as uid 1000; set `fsGroup: 1000`.
+- **`terminationGracePeriodSeconds: 120`** at least, so a backup in progress can finish its step.
+- **Probes:** readiness asks `/healthz`; liveness asks `/healthz` and `python -m app.domain.heartbeat check --alive`, which fails only when the `jobs` loop stopped beating. The full `check` (a pass running over an hour, none finished for two) is the status Compose shows, and as a liveness probe it would restart the pod in the middle of a long backup ([ADR-0066](_architecture/adr/0066-single-container-image.md)).
+- **Secret** `KVZ_SECRET_KEY` (at least 32 characters), created outside the repository: `kubectl create secret generic kvizotron --from-literal=secret-key="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"`. Other variables as in [configuration.md](configuration.md).
+- **NetworkPolicy:** only the ingress controller may reach port 8000. A pod that reaches it directly can write its own `X-Forwarded-For` and `X-Forwarded-Proto`, and then the request limits, the login limit among them, no longer hold. The policy needs a network plugin that enforces it.
+- **Client address:** behind an L4 load balancer, make the ingress see the real address (`externalTrafficPolicy: Local` on its Service, or the PROXY protocol) and keep `KVZ_TRUSTED_PROXIES` at 1; an L7 load balancer that appends to `X-Forwarded-For` makes it 2. Otherwise all clients share one limit.
+
+An example, to adapt (names, namespace of the ingress controller, storage class, ingress class, host, resources):
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kvizotron}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: kvizotron}}
+  template:
+    metadata: {labels: {app: kvizotron}}
+    spec:
+      terminationGracePeriodSeconds: 120
+      automountServiceAccountToken: false  # the application never calls the Kubernetes API
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: kvizotron
+          image: registry.example.com/kvizotron:single
+          ports: [{containerPort: 8000}]
+          env:
+            - {name: KVZ_DOMAIN, value: kviz.example.com}
+            - name: KVZ_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: kvizotron, key: secret-key}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:  # about 50 participants; a backup and an export run in the same container
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: backups, mountPath: /data/backups}
+          # The kubelet sends the pod IP as Host, which ALLOWED_HOSTS refuses; localhost is allowed.
+          startupProbe:
+            httpGet: {path: /healthz, port: 8000, httpHeaders: [{name: Host, value: localhost}]}
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8000, httpHeaders: [{name: Host, value: localhost}]}
+            periodSeconds: 10
+          livenessProbe:  # the application answers and the jobs loop beats; never the pass age
+            exec:
+              command:
+                - sh
+                - -c
+                - >-
+                  python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=2)"
+                  && python -m app.domain.heartbeat check --alive
+            periodSeconds: 60
+            timeoutSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: kvizotron-data}
+        - name: backups
+          persistentVolumeClaim: {claimName: kvizotron-backups}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: kvizotron-data}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: kvizotron-backups}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 20Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: kvizotron}
+spec:
+  selector: {app: kvizotron}
+  ports: [{port: 80, targetPort: 8000}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: kvizotron}
+spec:
+  podSelector: {matchLabels: {app: kvizotron}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: ingress-nginx}}
+      ports: [{port: 8000}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kvizotron
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 101m
+spec:
+  ingressClassName: nginx
+  tls: [{hosts: [kviz.example.com], secretName: kvizotron-tls}]
+  rules:
+    - host: kviz.example.com
+      http:
+        paths:
+          - {path: /, pathType: Prefix, backend: {service: {name: kvizotron, port: {number: 80}}}}
+```
+
+The first administrator: `kubectl exec -it deploy/kvizotron -- python manage.py init_admin <login>`. A restore needs the application stopped: scale to 0, wait a minute (the heartbeat of the stopped application must be older than 60 s, see [Restore](#restore)), run `python manage.py restore <date|latest>` in a one-off pod with the same volumes and image, then scale back to 1.
+
 ## Constraints
 
 - Database volume constraints (local disk only, WAL, single writer): see
@@ -125,8 +269,8 @@ including after a new module is installed, and while an enabled module depends o
 
 ### HSTS
 
-Caddy sends `Strict-Transport-Security: max-age=15552000` (six months), without `includeSubDomains`
-and without `preload`. Browsers ignore the header for an IP address and over a certificate they do
+The application sends `Strict-Transport-Security: max-age=15552000` (six months) on HTTPS requests,
+without `includeSubDomains` and without `preload`; in Compose Caddy replaces it with the same value. Browsers ignore the header for an IP address and over a certificate they do
 not trust (RFC 6797, section 8.1), so a LAN deployment reached by IP address is unaffected. A LAN
 host name with a certificate from a local authority that browsers trust is different: after one visit
 the browser refuses certificate exceptions for that name for six months, so a broken or expired

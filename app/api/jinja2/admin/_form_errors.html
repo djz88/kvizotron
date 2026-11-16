@@ -1,0 +1,2 @@
+{# The errors of a whole form, in a box that stands out and is read out at once. #}
+{% macro form_errors(form) %}{% set errors = form.non_field_errors() %}{% if errors %}<div class="notice form-errors" role="alert">{% if errors|length == 1 %}<p>{{ errors[0] }}</p>{% else %}<ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</div>{% endif %}{% endmacro %}

@@ -86,7 +86,9 @@ def _deletion(run: QuizRun, now: datetime) -> dict[str, Any] | None:
 
 
 def _public_url(request: HttpRequest, quiz: Quiz) -> str:
-    return request.build_absolute_uri(reverse("quiz", args=[quiz.slug]))
+    """The quiz's own address start when it has one, else the address the admin is on."""
+    path = reverse("quiz", args=[quiz.slug])
+    return quiz.public_origin + path if quiz.public_origin else request.build_absolute_uri(path)
 
 
 @admin_required
@@ -303,7 +305,9 @@ def _plan_page(
         }
         | _plan_rewards(request, run)
     )
-    return page(request, "admin/run_plan.html", context, request.locale)  # type: ignore[attr-defined]
+    # A refusal of the rules is 409, a field that did not validate 400; both keep the page.
+    status = 200 if not form.is_bound else 409 if form.non_field_errors() else 400
+    return page(request, "admin/run_plan.html", context, request.locale, status=status)  # type: ignore[attr-defined]
 
 
 def _plan_rewards(request: HttpRequest, run: QuizRun | None) -> dict[str, Any]:
@@ -389,6 +393,10 @@ def _show_code(request: HttpRequest, run: QuizRun, code: str) -> HttpResponse:
 @not_archived
 def run_plan(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     quiz = get_object_or_404(Quiz, pk=quiz_id)
+    if authoring.latest_published(quiz) is None:  # nothing a run could take: publish first
+        status = 409 if request.method == "POST" else 200
+        context = workspace(quiz, "runs") | {"unpublished": True, "planned": None}
+        return page(request, "admin/run_plan.html", context, request.locale, status=status)  # type: ignore[attr-defined]
     if request.method != "POST":
         seconds = settings.attempt_limit_seconds(quiz)
         form = RunPlanForm(
@@ -516,7 +524,7 @@ def plan_start(request: HttpRequest, run_id: UUID) -> HttpResponse:
         | {"form": RunPlanForm(), "planned": run}
         | _plan_rewards(request, run)
     )
-    return page(request, "admin/run_plan.html", context, request.locale)  # type: ignore[attr-defined]
+    return page(request, "admin/run_plan.html", context, request.locale, status=409)  # type: ignore[attr-defined]
 
 
 def _has_deletion_records(run: QuizRun) -> bool:

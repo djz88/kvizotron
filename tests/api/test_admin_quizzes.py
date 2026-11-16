@@ -749,9 +749,11 @@ def test_new_quiz_without_slug_derives_it_from_the_name(logged_in):
 
 
 def test_a_derived_slug_that_is_taken_gets_a_number(logged_in):
-    fields = {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": "Vánoční kvíz"}
-    for _ in range(3):
-        assert logged_in.post("/admin/quizzes/new", fields).status_code == 302
+    """Different titles may still give one address; two quizzes never share a title."""
+    fields = {"supported_locales": ["cs"], "default_locale": "cs"}
+    for title in ("Vánoční kvíz", "Vánoční kvíz!", "Vánoční  kvíz?"):
+        response = logged_in.post("/admin/quizzes/new", fields | {"title_cs": title})
+        assert response.status_code == 302
     assert sorted(Quiz.objects.values_list("slug", flat=True)) == [
         "vanocni-kviz",
         "vanocni-kviz-2",

@@ -18,6 +18,34 @@ UPLOAD_ROUTE = re.compile(
 public_upload_check: Callable[[Any], bool] | None = None
 
 
+MB = 1024 * 1024
+# The ceilings deploy/Caddyfile keeps: an import or a public submit may carry photos (ADR-0066).
+LARGE_BODY_ROUTE = re.compile(r"/admin/import/.*|/a/[^/]+/submit")
+LARGE_BODY = 101 * MB
+BODY = 16 * MB
+
+
+class BodyLimitMiddleware:
+    """Refuses an oversized body by its declared length, before anything reads it.
+
+    Caddy holds the same ceilings in Compose; without Caddy (one container) this is the only one.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if "HTTP_TRANSFER_ENCODING" in request.META:
+            return HttpResponse("Length required.", status=411, content_type="text/plain")
+        raw = request.META.get("CONTENT_LENGTH") or "0"
+        if not raw.isdecimal():
+            return HttpResponse("Bad request.", status=400, content_type="text/plain")
+        ceiling = LARGE_BODY if LARGE_BODY_ROUTE.fullmatch(request.path) else BODY
+        if int(raw) > ceiling:
+            return HttpResponse("Request too large.", status=413, content_type="text/plain")
+        return self.get_response(request)
+
+
 class ModuleGateMiddleware:
     """Routes of a disabled module answer 404; other routes are not touched."""
 

@@ -158,10 +158,26 @@ def jobs_healthy(now: datetime, directory: Path | None = None) -> bool:
     return True
 
 
+def jobs_alive(now: float, directory: Path | None = None) -> bool:
+    """Only whether the `jobs` loop still beats: what a probe that restarts may ask (ADR-0066).
+
+    A long pass (a big backup) is no reason to kill the container in the middle of it, so the
+    pass record is left to `jobs_healthy` and the pages. A missing heartbeat (first start) is alive.
+    """
+    folder = _resolve(directory)
+    if folder is None:
+        return True
+    stale = age("jobs", folder, now)
+    return stale is None or stale <= 3 * JOBS_INTERVAL
+
+
 def main(argv: list[str]) -> int:
-    if argv != ["check"]:
-        return 2
-    return 0 if jobs_healthy(datetime.now().astimezone()) else 1
+    """`check`: the status Compose shows; `check --alive`: what a Kubernetes liveness probe asks."""
+    if argv == ["check"]:
+        return 0 if jobs_healthy(datetime.now().astimezone()) else 1
+    if argv == ["check", "--alive"]:
+        return 0 if jobs_alive(datetime.now().timestamp()) else 1
+    return 2
 
 
 if __name__ == "__main__":

@@ -31,6 +31,8 @@ DEBUG = os.environ.get("KVZ_DEBUG") == "1"
 ALLOWED_HOSTS = [_DOMAIN, "localhost"]
 CSRF_TRUSTED_ORIGINS = [f"https://{_DOMAIN}"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Six months, no subdomains, no preload, as Caddy sends it (AC-132); held here without Caddy too.
+SECURE_HSTS_SECONDS = 15552000
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_AGE = 12 * 60 * 60
@@ -47,6 +49,15 @@ def _positive_int(name: str, default: int) -> int:
     return int(raw)
 
 
+def _count(name: str, default: int) -> int:
+    raw = os.environ.get(name, "")
+    if not raw:
+        return default
+    if not raw.isdecimal():
+        raise ImproperlyConfigured(f"Environment variable {name} must be a whole number")
+    return int(raw)
+
+
 # ADR-0030: request limits per client address and minute.
 KVZ_LOGIN_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_LOGIN_ATTEMPTS_PER_MINUTE", 5)
 KVZ_CODE_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_CODE_ATTEMPTS_PER_MINUTE", 10)
@@ -54,6 +65,9 @@ KVZ_SUBMITS_PER_MINUTE = _positive_int("KVZ_SUBMITS_PER_MINUTE", 120)
 KVZ_STARTS_PER_MINUTE = _positive_int("KVZ_STARTS_PER_MINUTE", 300)
 # Wrong logins from one address across all names; above the per-name limit on purpose.
 KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE", 30)
+# ADR-0066: proxies in front of the application that append the client address to
+# X-Forwarded-For (Caddy in Compose, the ingress in Kubernetes); 0 when it is reached directly.
+KVZ_TRUSTED_PROXIES = _count("KVZ_TRUSTED_PROXIES", 1)
 
 # D5: the daily backup of the database and the media, made by the `jobs` service.
 KVZ_BACKUP_PATH = os.environ.get("KVZ_BACKUP_PATH", "/data/backups")
@@ -89,6 +103,9 @@ AUTH_PASSWORD_VALIDATORS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
+    # Before anything that reads the body, after the two that add headers to every answer, so a
+    # refusal carries them too (ADR-0066).
+    "app.kernel.middleware.BodyLimitMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # Ahead of everything that reads the form: reading it spools the upload.

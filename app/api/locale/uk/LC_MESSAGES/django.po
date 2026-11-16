@@ -354,6 +354,18 @@ msgstr ""
 msgid "Remove the landing page logo"
 msgstr ""
 
+#: admin_forms_quiz.py
+msgid "Address of the QR code"
+msgstr ""
+
+#: admin_forms_quiz.py
+msgid "Start of the public address, such as https://kviz.example.com, when participants come through another name or a redirect. Empty uses the address you are on now. Changing it changes the QR code; print it again."
+msgstr ""
+
+#: admin_forms_quiz.py
+msgid "Another quiz that is not archived already has this title. Choose another one."
+msgstr ""
+
 #: admin_forms_quiz.py admin_quizzes.py
 msgid "Another quiz already uses this identifier."
 msgstr ""
@@ -880,7 +892,7 @@ msgstr ""
 msgid "Question %(number)s, language %(locale)s: %(detail)s"
 msgstr ""
 
-#: admin_quizzes.py admin_runs.py
+#: admin_quizzes.py admin_runs.py jinja2/admin/run_plan.html
 msgid "Publish the quiz first."
 msgstr ""
 
@@ -902,6 +914,10 @@ msgstr "Поточний запуск, що нічого не зберігає, 
 
 #: admin_quizzes.py
 msgid "A run is in progress. End it before archiving the quiz."
+msgstr ""
+
+#: admin_quizzes.py
+msgid "Another quiz that is not archived has this title now. Rename one of them first."
 msgstr ""
 
 #: admin_results_export.py admin_retention.py jinja2/admin/run.html
@@ -1063,6 +1079,10 @@ msgstr ""
 
 #: admin_revisions.py
 msgid "Discard all unpublished changes? This cannot be undone."
+msgstr ""
+
+#: admin_revisions.py
+msgid "Another quiz that is not archived now has the title of that revision. Rename one of them first."
 msgstr ""
 
 #: admin_rewards.py
@@ -2893,6 +2913,10 @@ msgstr ""
 msgid "The running run moves to the new version; participants in progress finish on the old one."
 msgstr ""
 
+#: jinja2/admin/publish.html jinja2/admin/run_plan.html
+msgid "Publish and plan a run"
+msgstr ""
+
 #: jinja2/admin/question_form.html
 msgid "Question settings"
 msgstr ""
@@ -3496,6 +3520,10 @@ msgstr "Запланувати запуск"
 #: jinja2/admin/run_plan.html
 msgid "Plan a run"
 msgstr "Запланувати запуск"
+
+#: jinja2/admin/run_plan.html
+msgid "A run takes the published revision of the quiz."
+msgstr ""
 
 #: jinja2/admin/run_plan.html
 #, python-format
