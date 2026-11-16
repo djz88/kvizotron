@@ -7,6 +7,8 @@ from app.contracts import IMAGE_MODE_EXTERNAL
 from app.domain import authoring, banks, questions, selection, settings
 from app.domain.models import Quiz
 
+FETCHES_SECONDS = 25.0  # all address fetches of one save together (ADR-0043)
+
 
 def _questions_of(quiz: Quiz) -> Iterable[Mapping[str, Any]]:
     yield from authoring.editable_questions(quiz)

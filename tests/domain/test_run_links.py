@@ -218,3 +218,94 @@ def test_each_change_is_audited_without_the_token():
         "test_link.deleted",
     }
     assert all(token not in str(row.details_json) for row in rows)
+
+
+@pytest.mark.parametrize(
+    ("typed", "origin"),
+    [
+        ("192.168.1.10:8443", "https://192.168.1.10:8443"),
+        ("http://kviz.example.cz/", "http://kviz.example.cz"),
+        ("https://[::1]:8443", "https://[::1]:8443"),
+        (" HTTPS://Kviz.Example.cz ", "https://kviz.example.cz"),
+        ("localhost", "https://localhost"),
+        ("", ""),
+        ("   ", ""),
+    ],
+)
+def test_clean_origin_accepts_host_ip_and_port(typed, origin):
+    assert run_links.clean_origin(typed) == origin
+
+
+@pytest.mark.parametrize(
+    "typed",
+    [
+        "https://a.cz/t/x",
+        "https://a.cz?x=1",
+        "https://a.cz#x",
+        "https://user@a.cz",
+        "https://a.cz:0",
+        "https://a.cz:65536",
+        "https://a.cz:port",
+        "javascript:alert(1)",
+        "ftp://a.cz",
+        "a b.cz",
+        "https://-a.cz",
+        "https://a..cz",
+        "https://[::1",
+        "https://[::1%<b>]",
+        'https://[fe80::1%"onx=y]',
+        "https://[fe80::1%'x]:80",
+        "https://[fe80::1%]]",
+        "https://999.1.1.1",
+        "https://1.2.3",
+        "https://123",
+        "192.168.1.1000:8443",
+        "https://",
+        "https://" + "a" * 200,
+    ],
+)
+def test_clean_origin_refuses_anything_else(typed):
+    with pytest.raises(run_links.OriginInvalid):
+        run_links.clean_origin(typed)
+
+
+def test_set_origin_saves_only_that_link_and_audits_without_the_value():
+    """AC-167: the shown address is saved with that one link and changes nothing else."""
+    quiz = published_quiz()
+    published = authoring.latest_published(quiz)
+    end = timezone.now() + timedelta(days=2)
+    first = link_on(quiz, published, expires_at=end)
+    second = link_on(quiz, published)
+    token = first.token
+    run_links.set_origin(first, "10.0.0.5:8080", admin_id=ADMIN_ID)
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.shown_origin == "https://10.0.0.5:8080"
+    assert second.shown_origin == ""
+    assert first.token == token
+    assert first.expires_at == end
+    rows = AuditEvent.objects.filter(action="test_link.address_changed")
+    assert rows.count() == 1
+    details = str(rows.get().details_json)
+    assert "10.0.0.5" not in details
+    assert token not in details
+
+
+def test_set_origin_with_a_bad_value_saves_nothing():
+    quiz = published_quiz()
+    link = link_on(quiz, authoring.latest_published(quiz))
+    run_links.set_origin(link, "a.cz", admin_id=ADMIN_ID)
+    with pytest.raises(run_links.OriginInvalid):
+        run_links.set_origin(link, "https://b.cz/x", admin_id=ADMIN_ID)
+    link.refresh_from_db()
+    assert link.shown_origin == "https://a.cz"
+    assert AuditEvent.objects.filter(action="test_link.address_changed").count() == 1
+
+
+def test_set_origin_is_refused_for_an_archived_quiz():
+    quiz = published_quiz()
+    link = link_on(quiz, authoring.latest_published(quiz))
+    authoring.archive_quiz(quiz, admin_id=ADMIN_ID)
+    link.refresh_from_db()
+    with pytest.raises(authoring.QuizArchived):
+        run_links.set_origin(link, "a.cz", admin_id=ADMIN_ID)

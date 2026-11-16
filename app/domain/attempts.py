@@ -38,6 +38,9 @@ from app.kernel import events, registry
 
 # The token outlives any limit or deadline, which `_check_still_valid` enforces on its own.
 ATTEMPT_LIFETIME = timedelta(hours=24)
+# A photo sent as a run ends still gets a real answer, and answers shown after the run closes wait
+# this long, so that the last attempts are in before anyone sees the solutions.
+LATE_UPLOAD_WINDOW = timedelta(minutes=10)
 DEFAULT_FLOW: dict[str, Any] = {
     "navigation": settings.Navigation.ALL_AT_ONCE.value,
     "moment": settings.RevealMoment.NEVER.value,
@@ -124,7 +127,7 @@ def questions_of(attempt: Attempt) -> list[dict[str, Any]]:
 
 def flow_of(attempt: Attempt) -> dict[str, Any]:
     """Behaviour fixed at start, so a settings change reaches only new attempts."""
-    return attempt.settings_json or DEFAULT_FLOW
+    return DEFAULT_FLOW | (attempt.settings_json or {})  # an older attempt may lack a key
 
 
 def option_seed(attempt: Attempt) -> str | None:
@@ -453,6 +456,7 @@ def _replacement(attempt: Attempt) -> Attempt:
     run = attempt.run
     if attempt.revision_id == run.current_revision_id:
         return attempt
+    _require_modules(run.current_revision)
     flow = flow_of(attempt)
     replacement = Attempt.objects.create(
         run=run,
@@ -694,6 +698,14 @@ def _check_not_played(attempt: Attempt) -> None:
         raise AttemptError("already_played")
 
 
+def _is_submission_key_conflict(exc: IntegrityError) -> bool:
+    """SQLite words it "UNIQUE constraint failed: attempt.submission_key"."""
+    meta = Attempt._meta
+    named = f"{meta.db_table}.{meta.get_field('submission_key').column}"
+    _, _, columns = str(exc).partition("UNIQUE constraint failed:")
+    return named in (column.strip() for column in columns.split(","))
+
+
 def _store(
     attempt: Attempt,
     result: AttemptResult,
@@ -755,6 +767,8 @@ def _store(
                     },
                 )
     except IntegrityError as exc:
+        if not _is_submission_key_conflict(exc):
+            raise  # e.g. from the rewards: its cause must not pose as a used key
         raise AttemptError("submission_key_used") from exc
     return bool(changed)
 

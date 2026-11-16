@@ -34,7 +34,7 @@
   ([ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md)).
 - Publishing the winners is a per-rule switch, off by default; the public scoreboard page then lists
   them by nickname or anonymous label, never by e-mail. A published winner whose participant link was
-  removed (D3) is left out of that list.
+  removed is left out of that list.
 - Draw is auditable at application level, not cryptographically indisputable towards the DB admin.
 
 ## Contract
@@ -49,7 +49,8 @@ audit live in `app/domain/draws.py`.
 
 `draw` (one row per action, never updated) and `draw_entry` (participant link, pseudonym, position,
 role) ([../data-model.md](../data-model.md)). The pseudonym is a salted HMAC-SHA256 of the participant
-id, so D3 can drop the participant link and keep the draw metadata (FR-39).
+id, so deleting a participant clears the link and keeps the draw metadata (FR-39,
+[ADR-0056](../adr/0056-retention-job-summary-held-runs.md)).
 
 The module cannot be disabled while a planned, open or closed run has a draw rule
 ([ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md)); the draw page and every action call it.

@@ -1,5 +1,6 @@
 """A preview plays like the real thing and stores nothing (AC-45, AC-75)."""
 
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -115,7 +116,10 @@ def test_no_run_is_needed_and_public_address_is_not_opened(logged_in):
     quiz = make_quiz()
     add_question(quiz)
     assert logged_in.get(f"/admin/quizzes/{quiz.id}/preview").status_code == 200
-    assert FormClient().get(f"/q/{quiz.slug}").status_code == 404
+    public = FormClient().get(f"/q/{quiz.slug}?lang=en")
+    assert public.status_code == 200
+    assert "This quiz is not running right now." in text(public)
+    assert "/start" not in text(public)
 
 
 def test_draft_problems_listed_on_top(logged_in):
@@ -225,6 +229,16 @@ def test_reveal_follows_settings(logged_in):
     assert "reveal-list" in text(submit(logged_in, quiz, html))
 
 
+def test_preview_shows_at_end_with_the_after_close_note(logged_in):
+    quiz = published_quiz(locales=("cs", "en"))
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
+    result = text(submit(logged_in, quiz, html))
+    assert "reveal-list" in result
+    assert "In a real run, the correct answers are shown only after the run closes." in result
+    assert "at this link after the run closes" not in result
+
+
 def test_answer_key_absent_before_reveal_is_allowed(logged_in):
     quiz = published_quiz(locales=("cs", "en"))
     html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
@@ -257,6 +271,16 @@ def test_submit_requires_csrf(admin_user):
         content_type="application/x-www-form-urlencoded",
     )
     assert response.status_code == 403
+
+
+def test_the_preview_submit_does_not_carry_a_language_into_the_admin_session(logged_in):
+    """`?lang` on an admin address is stored in the admin session (i18n._for_admin)."""
+    quiz = published_quiz(locales=("cs", "en"))
+    add_question(quiz, prompt="Koncept")
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/preview?lang=en"))
+    form = re.search(r"<form[^>]*data-flow[^>]*>", html).group(0)
+    assert f"/admin/quizzes/{quiz.id}/preview/submit" in form
+    assert "lang=" not in form
 
 
 def test_public_page_output_keeps_its_addresses():

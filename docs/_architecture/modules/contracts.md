@@ -16,8 +16,10 @@ Selected by the operator; changed by a controlled restart and, if needed, a data
 | `AuthenticationProvider` | Admin identity and login | exactly one | [`local-auth`](../providers/auth-local.md) |
 | `PersistenceProvider` | Database settings and health check | exactly one | [`sqlite`](../providers/persistence-sqlite.md) |
 | `MediaStorageProvider` | Upload, fetching an address, checking addresses, MIME/limits, serving | exactly one | [`local-media`](../providers/media-local.md) |
-| `RetentionProvider` | Deletion, anonymisation, jobs | exactly one | [`local-retention`](../providers/retention.md) |
+| `RetentionProvider` | The trail of deletions (`retention_job`); what is due and what goes is the domain's ([ADR-0056](../adr/0056-retention-job-summary-held-runs.md)) | exactly one | [`local-retention`](../providers/retention.md) |
 | `ImporterProvider` / `ExporterProvider` | Data formats, validation, mapping | one per format | [CSV](../providers/csv-io.md) |
+| `ResultsExporterProvider` | Background results export: jobs, their files, links valid 24 hours, removing what names a run whose data were deleted ([ADR-0055](../adr/0055-results-export-background-job-and-csv-dialect.md)) | one (`csv`) | [CSV](../providers/csv-io.md) |
+| `TableSinkProvider` | Sends named tables (`ExportTable`) somewhere and says where; the Google Sheets contract (FR-44) | none in v1.0; a test fake | — |
 
 ### Plugins (features)
 
@@ -29,6 +31,7 @@ manifest allows it.
 | `QuestionTypePlugin` | Configuration, admin editor, public rendering incl. a given answer, the solution for a reveal, answer validation, readable description for comparing revisions | [eight base types + image answer](../plugins/question-types.md) |
 | `ScoringStrategyPlugin` | Weighing a type's grade, breakdown, max points | [basic and partial](../plugins/scoring.md) |
 | `QuizFlowPlugin` | Navigation modes and what the page offers | [all-at-once / step](../plugins/quiz-flow.md) |
+| `QuizTypePlugin` | Named bundles of quiz settings; applying them, deviations and clashes stay in the domain | [quiz_types.basic](../plugins/quiz-types.md) |
 | `ParticipantPolicyPlugin` | Attempts, cookie identity, repetition rules | [browser-anonymous](../plugins/participants.md) |
 | `ResultViewPlugin` | Official attempt, scoreboard order and ties, score summaries; storage and visibility stay in the domain | [results.local](../plugins/results.md) |
 | `RewardPlugin` | Which thresholds an attempt reaches, on exact values, and the tier choice; rules and entitlements stay in the domain | [rewards.threshold](../plugins/rewards.md) |

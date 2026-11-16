@@ -250,7 +250,7 @@
 
   function runOf(event) {
     var path = (event.detail && event.detail.pathInfo && event.detail.pathInfo.requestPath) || "";
-    var found = /\/r\/([0-9a-f-]+)\/resume$/.exec(path);
+    var found = /\/r\/([0-9a-f-]+)\/resume(\?.*)?$/.exec(path);
     return found ? found[1] : null;
   }
 
@@ -297,7 +297,7 @@
       showStart();
     } else if (xhr.getResponseHeader("X-Kvz-Drop-Copy") && lastRun) {
       drop(lastRun);
-    } else if (/\/submit$/.test(path) && xhr.status === 200 && !resumable() && lastRun) {
+    } else if (/\/submit(\?.*)?$/.test(path) && xhr.status === 200 && !resumable() && lastRun) {
       // The questions are gone from the page, so the answers went in.
       drop(lastRun);
     }

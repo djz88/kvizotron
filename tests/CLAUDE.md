@@ -7,8 +7,8 @@ Struktura kopíruje `app/`. Pravidla pro testy jsou v kořenovém `CLAUDE.md`; t
 - `contracts/`: sady, které musí projít každý modul. `question_type.py` je základ, `test_<typ>.py` ho dědí.
 - `domain/`, `api/`, `kernel/`, `providers/`: testy jednotlivých vrstev.
 - `integration/`: celé toky přes HTTP a testy v samostatném procesu.
-- `test_docs.py`: ID v dokumentaci, odkazy, cesty a jména skillů a AC, které žádný test nejmenuje; ten seznam se smí jen zmenšovat, nové AC potřebuje test se svým ID. `test_agent_hooks.py`: hook proti mazání svazků. `test_wiring.py`: moduly, šablony, adresy, skripty, styly a nastavení jsou napojené.
-- `support/`: `FormClient`, `run_manage`, `make_module`, `waiting` (`busy.py`: opakuje volání při zámku sdílené testovací databáze, kde SQLite nečeká jako v provozu). `fixtures/`: ukázkové moduly a instalace pro AC-01 a AC-02.
+- `test_docs.py`: ID v dokumentaci, odkazy, cesty a jména skillů a AC, které žádný test nejmenuje; ten seznam se smí jen zmenšovat (AC-01 až AC-18 už v něm nejsou), AC, které test pojmenuje, musí ze seznamu zmizet a nové AC potřebuje test se svým ID v docstringu (`AC-129: …`). `test_request_limits.py` v `api/` vyžaduje u každé veřejné routy s POST koš limitu nebo důvod. `test_agent_hooks.py`: hook proti mazání svazků. `test_wiring.py`: moduly, šablony, adresy, skripty, styly a nastavení jsou napojené.
+- `support/`: `FormClient`, `run_manage`, `make_module`, `sheets_fake.py` (`SheetsFake` pro port `table_sink`, AC-109), `waiting` (`busy.py`: opakuje volání při zámku sdílené testovací databáze, kde SQLite nečeká jako v provozu). `file_database.py` (fixture `file_db`: skutečný soubor SQLite s produkčním schématem a volbami vedle databáze v paměti; používej `sqlite3` nebo kód s parametrem cesty, ne ORM). `server.py` (`running_server`: skutečný `gunicorn` jako v provozu na souboru databáze, adresa pro `urllib`; log je `server.log` vedle databáze). `fixtures/`: ukázkové moduly a instalace pro AC-01 a AC-02.
 - `domain/helpers.py`: staví kvízy přes tytéž služby jako administrace.
 
 ## Pozor

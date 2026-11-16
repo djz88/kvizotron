@@ -38,7 +38,7 @@ Values are configurable.
 
 ### Consequences
 
-* Good, because 50 participants behind one IP can submit together
+* Good, because 50 participants behind one IP can submit together at the defaults, with each participant sending once; repeats of the automatic submission after a failure can add sends ([ADR-0060](0060-login-reservation-and-address-ceiling.md), [TD-091](../TECH_DEBT.md))
 * Good, because no extra service or custom proxy build is needed
 * Bad, because a restart resets the counters
 * Bad, because it works only with a single application process
@@ -51,4 +51,4 @@ taken correctly from the reverse proxy.
 
 ## More Information
 
-Resolves [OQ-09](../open-questions.md).
+Resolves [OQ-09](../open-questions.md). Refined by [ADR-0058](0058-rate-limit-buckets.md): the failed-only login keyed by name and address, a start limit and what a refusal looks like, and again by [ADR-0060](0060-login-reservation-and-address-ceiling.md): a login slot reserved before the password is checked and a ceiling per address.

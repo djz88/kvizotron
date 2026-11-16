@@ -75,6 +75,7 @@ def test_scoreboard_form_saves_display_values(logged_in):
 
 
 def test_after_each_refused_on_quiz_with_visible_board(logged_in):
+    """AC-18: answers after each question are refused, with a reason, beside a visible board."""
     quiz = published_quiz()
     authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
     response = logged_in.post(

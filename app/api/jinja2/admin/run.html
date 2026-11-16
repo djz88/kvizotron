@@ -1,5 +1,13 @@
 {% extends "admin/base.html" %}
+{% from "admin/_inline_name.html" import inline_name with context %}
 {% block content %}
+{% set basic = admin_basic(request) %}
+{% set has_access_section = not basic or has_code or new_code %}
+{% set panel_before = ([("access-code", _("Access code"))] if has_access_section else []) + ([("data", _("Data"))] if not basic else []) + [("rewards", _("Rewards")), ("scoreboard", _("Scoreboard")), ("statistics", _("Statistics")), ("attempts", _("Attempts")), ("export", _("Export"))] %}
+<div class="with-panel">
+{% set groups = [] %}
+{% include "admin/_section_panel.html" %}
+<div class="panel-main">
 {% include "admin/_quiz_header.html" %}
 <div class="panel">
   <img class="qr-code" src="{{ url('admin_quiz_qr', args=[quiz.id]) }}" alt="{{ _('QR code of the public address') }}">
@@ -13,9 +21,10 @@
     {% if run.starts_at %}<p>{{ _("Start time") }}: {{ run.starts_at|when }}</p>{% endif %}
     <p>{{ _("Deadline") }}: {{ run.deadline_at|when }}</p>
     <p>{{ _("Time limit") }}: {% if limit_minutes %}{{ limit_minutes }} min{% else %}{{ _("No limit") }}{% endif %}</p>
-    {% set basic = admin_basic(request) %}
-    {% if not basic or has_code or new_code %}
-    <h3>{{ _("Access code") }}</h3>
+    {% if deletion %}<p>{% include "admin/_deletion.html" %}</p>{% endif %}
+    {% if has_deletion_records %}<p><a href="{{ url('retention_history') }}?run={{ run.id }}">{{ _("See this run in the deletion history") }}</a></p>{% endif %}
+    {% if has_access_section %}
+    <h3 id="access-code">{{ _("Access code") }}</h3>
     {% if new_code %}
     <p class="notice" role="status">{{ _("The access code is") }} <strong><code>{{ new_code }}</code></strong>. {{ _("It is shown only now. Write it down: afterwards it can only be replaced.") }}</p>
     {% endif %}
@@ -34,7 +43,7 @@
     {% endif %}
     {% endif %}
     {% if not basic %}
-    <h3>{{ _("Data") }}</h3>
+    <h3 id="data">{{ _("Data") }}</h3>
     <ul>{% for label, value in data_rules %}<li>{{ label }}: {{ value }}</li>{% endfor %}</ul>
     {% if can_set_period %}
     <form method="post" action="{{ url('admin_run_period', args=[run.id]) }}">
@@ -53,20 +62,12 @@
     {% if contact_warning %}<p class="notice" role="note">{{ _("This run has a draw but does not collect e-mail.") }}</p>{% endif %}
     <p>{% if reward_count %}{{ _("Rewards: %(count)s", count=reward_count) }}{% else %}{{ _("No rewards.") }}{% endif %} · <a href="{{ url('admin_run_rewards', args=[run.id]) }}">{{ _("Rewards and who has them") }}</a>{% if has_draw %} · <a href="{{ url('admin_run_draw', args=[run.id]) }}">{{ _("Prize draw") }}</a>{% endif %}</p>
     <h3 id="scoreboard">{{ _("Scoreboard") }}</h3>
+    {% if board_numbers %}<p class="notice" role="note">{{ _("Shared scoreboard of runs %(runs)s", runs=board_numbers) }}</p>{% endif %}
+    {% if board_main_run %}<p class="notice" role="note"><a href="{{ url('admin_run', args=[board_main_run.id]) }}">{{ _("Part of the shared scoreboard of run %(no)s", no=board_main_run.run_no) }}</a></p>{% endif %}
     <ul>
       {% for label, value in result_fixed %}<li>{{ label }}: {{ value }}</li>{% endfor %}
-      <li>{{ _("Revisions") }}: {% if revision_mode == "merged" %}{{ _("Merged into one table") }}{% elif revision_mode == "latest" %}{{ _("Only the latest revision") }}{% else %}{{ _("One table per revision") }}{% endif %}</li>
     </ul>
-    {% if public_board_url %}<p><a href="{{ public_board_url }}">{{ _("Public scoreboard") }}</a> · <a href="{{ public_board_url }}?view=projector">{{ _("Projector") }}</a></p>{% endif %}
-    {% if basic %}
-    {% elif revision_mode == "merged" %}
-    <form method="post" action="{{ url('admin_run_unmerge', args=[run.id]) }}">
-      {{ csrf_input }}
-      <button type="submit" class="secondary outline">{{ _("Separate the revisions again") }}</button>
-    </form>
-    {% elif can_merge and revision_mode == "separate" %}
-    <p><a href="{{ url('admin_run_merge', args=[run.id]) }}">{{ _("Merge the revisions into one table") }}</a></p>
-    {% endif %}
+    {% if public_board_url %}<p><a href="{{ public_board_url }}">{{ _("Public scoreboard") }}</a> · <a href="{{ public_board_url }}?view=projector" target="_blank" rel="noopener">{{ _("Projector") }}</a></p>{% endif %}
     {% for table in admin_board.tables %}
     {% if admin_board.tables|length > 1 %}<h4>{{ _("Revision %(no)s", no=table.revision_no) }}</h4>{% endif %}
     {% if table.rows %}
@@ -77,7 +78,7 @@
         <tr>
           <td data-label="{{ _('Place') }}">{{ row.rank }}.</td>
           <td data-label="{{ _('Name') }}">{{ row.label }}</td>
-          <td data-label="{{ _('Score') }}">{{ row.score|number }} / {{ row.max_score|number }} ({{ row.percent }} %)</td>
+          <td data-label="{{ _('Score') }}">{{ row.score|number }} / {{ row.max_score|number }} ({{ row.percent }} %){% if row.passed %} <span aria-hidden="true">✓</span><span class="visually-hidden">{{ _("passed") }}</span>{% endif %}</td>
           <td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>
         </tr>
         {% endfor %}
@@ -108,6 +109,7 @@
       <li>{{ _("Started attempts") }}: {{ numbers.started }}</li>
       <li>{{ _("Submitted attempts") }}: {{ numbers.submitted }}</li>
       <li>{{ _("Not sent") }}: {{ numbers.unsent }}</li>
+      {% if numbers.passed is not none %}<li>{{ _("Passed: %(passed)s of %(judged)s", passed=numbers.passed, judged=numbers.judged) }}</li>{% endif %}
     </ul>
     {% if numbers.summary and numbers.summary.count %}
     <ul>
@@ -153,13 +155,14 @@
     {% elif attempt_rows %}
     <table>
       {% macro sortable(key, label) %}{% set h = attempt_headers[key] %}<th{% if h.aria %} aria-sort="{{ h.aria }}"{% endif %}><a href="{{ h.href }}">{{ label }}</a></th>{% endmacro %}
-      <thead><tr>{{ sortable("name", _("Name")) }}<th>{{ _("E-mail") }}</th>{{ sortable("score", _("Score")) }}{{ sortable("submitted", _("Submitted")) }}{% if attempt_durations %}{{ sortable("duration", _("Duration")) }}{% endif %}</tr></thead>
+      <thead><tr>{{ sortable("name", _("Name")) }}<th>{{ _("E-mail") }}</th>{{ sortable("score", _("Score")) }}{% if attempt_passes %}<th>{{ _("Pass mark") }}</th>{% endif %}{{ sortable("submitted", _("Submitted")) }}{% if attempt_durations %}{{ sortable("duration", _("Duration")) }}{% endif %}</tr></thead>
       <tbody>
         {% for row in attempt_rows %}
         <tr data-attempt-row>
-          <td data-label="{{ _('Name') }}">{% if row.name %}{{ row.name }}{% else %}<em>{{ _("no name") }}</em>{% endif %}</td>
+          <td data-label="{{ _('Name') }}">{% if name_fields[loop.index0] %}{{ inline_name(name_fields[loop.index0]) }}{% elif row.name %}{{ row.name }}{% else %}<em>{{ _("no name") }}</em>{% endif %}</td>
           <td data-label="{{ _('E-mail') }}">{{ row.email or "" }}</td>
           <td data-label="{{ _('Score') }}">{% if row.score is not none %}{{ row.score|number }} / {{ row.max_score|number }}{% endif %}</td>
+          {% if attempt_passes %}<td data-label="{{ _('Pass mark') }}">{% if row.passed is not none %}{{ _("Passed") if row.passed else _("Not passed") }}{% endif %}</td>{% endif %}
           <td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>
           {% if attempt_durations %}<td data-label="{{ _('Duration') }}">{% if row.duration_ms is not none %}{{ (row.duration_ms // 1000) // 60 }}:{{ "%02d"|format((row.duration_ms // 1000) % 60) }}{% endif %}</td>{% endif %}
         </tr>
@@ -168,6 +171,8 @@
     </table>
     {% else %}<p>{{ _("No attempt has been submitted yet.") }}</p>{% endif %}
     {% if walkthrough_url %}<p><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+    <h3 id="export">{{ _("Export") }}</h3>
+    <p><a href="{{ url('results_export_new') }}?quiz={{ quiz.id }}&amp;runs={{ run.id }}">{{ _("Export the results of this run") }}</a></p>
     {% if is_open %}
     <form method="post" action="{{ url('admin_run_deadline', args=[run.id]) }}">
       {{ csrf_input }}
@@ -177,10 +182,7 @@
       <small>{{ _("Empty means the run lasts until you end it. It applies to attempts in progress too.") }}</small>
       <button type="submit" class="secondary">{{ _("Save the deadline") }}</button>
     </form>
-    <form method="post" action="{{ url('admin_run_close', args=[run.id]) }}">
-      {{ csrf_input }}
-      <button type="submit" class="secondary outline">{{ _("End the run") }}</button>
-    </form>
+    <a href="{{ url('admin_run_close', args=[run.id]) }}" role="button" class="secondary outline">{{ _("End the run") }}</a>
     {% elif run.status == "CLOSED" %}
     <form method="post" action="{{ url('admin_run_archive', args=[run.id]) }}">
       {{ csrf_input }}
@@ -192,7 +194,15 @@
       <button type="submit" class="secondary outline">{{ _("Restore this run") }}</button>
     </form>
     {% endif %}
+    {% if can_delete_data %}
+    <form method="post" action="{{ url('admin_run_delete_data', args=[run.id]) }}">
+      {{ csrf_input }}
+      <button type="submit" class="secondary outline">{{ _("Delete data now") }}</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 {% include "admin/_clock.html" %}
+</div>
+</div>
 {% endblock %}

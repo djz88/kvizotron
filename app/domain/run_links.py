@@ -1,11 +1,14 @@
 """Test links: a hidden run fixed to one version, played without an account (ADR-0044)."""
 
+import ipaddress
+import re
 import secrets
 from datetime import datetime
 from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from app.domain import authoring
 from app.domain.models import (
@@ -51,6 +54,72 @@ def create(
         )
         _audit("created", link, admin_id, {"revision_no": chosen.revision_no})
     return link
+
+
+MAX_ORIGIN = 200
+_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
+
+
+class OriginInvalid(ValueError):
+    pass
+
+
+def _host_ok(host: str) -> bool:
+    if host.startswith("["):
+        if not host.endswith("]"):
+            return False
+        try:
+            address = ipaddress.IPv6Address(host[1:-1])
+        except ValueError:
+            return False
+        return address.scope_id is None  # a zone id would let any character in
+    if host.rsplit(".", 1)[-1].isdigit():  # a browser reads it as IPv4, so it must be one
+        try:
+            ipaddress.IPv4Address(host)
+        except ValueError:
+            return False
+        return True
+    return all(_LABEL.fullmatch(label) for label in host.split("."))
+
+
+def clean_origin(value: str) -> str:
+    """`https://host:port` as typed, normalised; empty means the admin's own address."""
+    typed = value.strip()
+    if not typed:
+        return ""
+    if "://" not in typed:
+        typed = f"https://{typed}"
+    scheme, _sep, rest = typed.partition("://")
+    scheme = scheme.lower()
+    rest = rest.removesuffix("/")
+    if (
+        scheme not in ("http", "https")
+        or not rest
+        or any(char in rest for char in "/?#@\\")
+        or any(char.isspace() for char in rest)
+    ):
+        raise OriginInvalid(_("Type only the start of the address, such as https://host:8443."))
+    host, port = rest.lower(), ""
+    if not host.endswith("]") and ":" in host:  # "[::1]" has colons but no port
+        host, _sep, port = host.rpartition(":")
+    if port and not (port.isascii() and port.isdigit() and 1 <= int(port) <= 65535):
+        raise OriginInvalid(_("The port must be a number from 1 to 65535."))
+    if not _host_ok(host):
+        raise OriginInvalid(_("Type a host name or an IP address."))
+    origin = f"{scheme}://{host}" + (f":{port}" if port else "")
+    if len(origin) > MAX_ORIGIN:
+        raise OriginInvalid(_("The address is too long."))
+    return origin
+
+
+def set_origin(link: RunTestLink, value: str, *, admin_id: str) -> None:
+    """Only how this link is shown and copied; the audit holds neither the address nor the token."""
+    authoring.ensure_editable(link.run.quiz)
+    origin = clean_origin(value)
+    with transaction.atomic():
+        link.shown_origin = origin
+        link.save(update_fields=["shown_origin"])
+        _audit("address_changed", link, admin_id)
 
 
 def is_playable(link: RunTestLink, now: datetime) -> bool:

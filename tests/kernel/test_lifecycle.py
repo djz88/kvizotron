@@ -79,7 +79,9 @@ def test_provider_cannot_be_toggled(db):
 def test_usage_check_blocks_disable(db):
     lifecycle.set_enabled("plug.b", False, **CLI)
     audit_rows = AuditEvent.objects.count()
-    lifecycle.register_usage_check(lambda module_id: ["active quiz Pub"])
+    lifecycle.register_usage_check(
+        lambda module_id: [lifecycle.Blocker("in_use", "active quiz Pub")]
+    )
     with pytest.raises(lifecycle.ModuleInUse, match="active quiz Pub"):
         lifecycle.set_enabled("plug.a", False, **CLI)
     assert registry.is_enabled("plug.a")
@@ -163,3 +165,65 @@ def test_verify_rejects_enabled_module_whose_dependency_is_disabled(db):
     )
     with pytest.raises(StartupError, match=r"plug\.b.*cap_a"):
         lifecycle.verify_startup()
+
+
+LOCKED = manifest("plug.locked", provides=["cap_locked"], always_on=True)
+
+
+@pytest.fixture
+def always_on_module():
+    with override_settings(KVZ_MODULES=[PLUGIN, DEPENDENT, OPTIONAL_USER, PROVIDER, LOCKED]):
+        yield LOCKED.id
+
+
+def test_blockers_are_empty_for_a_free_plugin(db):
+    assert lifecycle.blockers("plug.c", False) == []
+
+
+def test_a_provider_has_a_provider_blocker(db):
+    assert [b.kind for b in lifecycle.blockers("prov.auth", False)] == ["provider"]
+
+
+def test_a_dependency_is_a_dependency_blocker(db):
+    assert [b.kind for b in lifecycle.blockers("plug.a", False)] == ["dependency"]
+
+
+def test_blockers_for_the_state_it_already_has_are_empty(db):
+    assert lifecycle.blockers("plug.a", True) == []
+
+
+def test_blockers_of_an_unknown_module_raise(db):
+    with pytest.raises(lifecycle.UnknownModule):
+        lifecycle.blockers("nope", False)
+
+
+def test_always_on_module_refuses_with_module_locked(db, always_on_module):
+    assert [b.kind for b in lifecycle.blockers(always_on_module, False)] == ["locked"]
+    with pytest.raises(lifecycle.ModuleLocked):
+        lifecycle.set_enabled(always_on_module, False, **CLI)
+
+
+def test_an_already_disabled_always_on_module_can_be_enabled(db, always_on_module):
+    PluginInstallation.objects.update_or_create(
+        pk=always_on_module, defaults={"enabled": False, "version": "1.0.0", "manifest_json": {}}
+    )
+    assert lifecycle.blockers(always_on_module, True) == []
+    lifecycle.set_enabled(always_on_module, True, **CLI)
+    assert registry.is_enabled(always_on_module)
+
+
+def test_usage_check_blockers_keep_their_target(db):
+    lifecycle.register_usage_check(
+        lambda module_id: (
+            [lifecycle.Blocker("in_use", "open run", ("run", "1"))] if module_id == "plug.c" else []
+        )
+    )
+    assert lifecycle.blockers("plug.c", False)[0].target == ("run", "1")
+    with pytest.raises(lifecycle.ModuleInUse, match="open run"):
+        lifecycle.set_enabled("plug.c", False, **CLI)
+
+
+def test_manifest_name_and_description_are_optional():
+    assert PLUGIN.name is None
+    assert PLUGIN.description is None
+    assert PLUGIN.always_on is False

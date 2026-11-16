@@ -1,10 +1,10 @@
 # Modul: app/plugins/results
 
-Plugin `results.local`, port `result_view`: čistá pravidla výsledků. Který pokus účastníka se počítá (`pick_official`), pořadí a shody žebříčku (`rank`, ADR-0026) a souhrn skóre pro statistiky (`summarize`).
+Plugin `results.local`, port `result_view`: čistá pravidla výsledků. Který pokus účastníka se počítá (`pick_official`), pořadí a shody žebříčku (`rank`, ADR-0026) a souhrn skóre pro statistiky (`summarize`). Hranici úspěchu ani odhalení odpovědí neposuzuje: to dělá doména z hodnot u běhu.
 
 ## Co modul obsahuje
 
-`ranking.py` (`LocalResultView`), `manifest.py` s dvanácti nastaveními žebříčku (rozsah global a kvíz, platí pro celý běh), `apps.py`.
+`ranking.py` (`LocalResultView`), `manifest.py` se třinácti nastaveními: dvanáct žebříčku a `pass_mark` (rozsah global a kvíz, platí pro celý běh; `official_attempt` má i `last` a `average`, ADR-0063), `apps.py`.
 
 ## Co modul není
 

@@ -11,7 +11,7 @@ from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST
 
-from app.api import i18n
+from app.api import i18n, pass_mark
 from app.api.admin_auth import admin_required
 from app.api.admin_quizzes import problem_text
 from app.api.play import (
@@ -38,7 +38,6 @@ from app.api.rendering import (
 from app.contracts import ASK_WHEN, ImageRefused
 from app.domain import attempts, authoring, participants, preview, reveal, selection, settings
 from app.domain.models import Attempt, Quiz, QuizRevision
-from app.kernel import registry
 
 PREVIEW_PHOTO = "0" * 32
 
@@ -113,7 +112,7 @@ def _message_page(
     request: HttpRequest, quiz: Quiz, locale: str, problems: list[str], message: Any = None
 ) -> HttpResponse:
     context = {
-        "palette_quiz": quiz,
+        "branding_quiz": quiz,
         "mode_bar": _bar(quiz, problems),
         "preview_message": message,
         "restart_url": reverse("admin_preview", args=[quiz.id]),
@@ -156,7 +155,7 @@ def preview_page(
     if not questions:
         return _message_page(request, quiz, locale, texts)
     context = {
-        "palette_quiz": quiz,
+        "branding_quiz": quiz,
         "mode_bar": _bar(quiz, texts, _limit_switch(request, quiz, timed)),
         "attempt": started.attempt,
         "time_left": attempts.time_left(started.attempt),
@@ -210,10 +209,10 @@ def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         return response
     except attempts.AttemptError as error:
         return _error(request, error.code, locale)
-    except registry.UnknownPort:
+    except LookupError:
         return _error(request, "revision_unavailable", locale)
     context = {
-        "palette_quiz": quiz,
+        "branding_quiz": quiz,
         "mode_bar": _bar(quiz),
         "revealed": revealed,
         "earned": result.earned_points,
@@ -223,10 +222,25 @@ def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         "correct_count": result.correct_count,
         "pending": result.pending,
         "time_ran_out": automatic,
+        "after_close_note": _preview_note(attempt, locale),
         "back_url": reverse("admin_preview", args=[quiz.id]),
         "back_label": _("Preview again"),
+        **pass_mark.preview_context(
+            quiz,
+            locale,
+            score=result.earned_points,
+            maximum=result.max_points,
+            pending=result.pending,
+        ),
     }
     return _respond(request, "public/_result.html", context, locale)
+
+
+def _preview_note(attempt: Attempt, locale: str) -> str:
+    """A preview lists the answers at the end; the note says what a real run would do."""
+    if not attempts.flow_of(attempt).get("after_close"):
+        return ""
+    return reveal.rehearsal_note(locale)
 
 
 @admin_required

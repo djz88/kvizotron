@@ -21,7 +21,7 @@ RUN uv sync --frozen --no-dev --no-cache
 
 # Pojmenované svazky přebírají vlastníka těchto adresářů, aplikace proto může běžet bez roota.
 RUN useradd --uid 1000 --no-create-home --shell /usr/sbin/nologin kvizotron \
-    && mkdir -p /data/db /data/media \
+    && mkdir -p /data/db /data/media /data/backups \
     && chown -R kvizotron:kvizotron /data
 USER kvizotron
 

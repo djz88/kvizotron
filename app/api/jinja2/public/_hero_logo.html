@@ -1,0 +1,8 @@
+{# `width`, `height` and `alt` come from the includer; `about` asks for the full logo of the About page. The built-in logos have a transparent background and a light and a dark twin; a chosen logo is shown as it is. #}
+{% set builtin = branding.hero_logo_dark_url %}
+{% set light = branding.about_logo_url if about else branding.hero_logo_url %}
+{% set dark = branding.about_logo_dark_url if about else branding.hero_logo_dark_url %}
+<picture>
+  {% if builtin %}<source media="(prefers-color-scheme: dark)" srcset="{{ dark }}">{% endif %}
+  <img class="about-logo about-logo-centered{% if builtin %} about-logo-builtin{% if about %} about-logo-full{% endif %}{% endif %}" src="{{ light }}" alt="{{ alt }}" width="{{ width }}" height="{{ height }}">
+</picture>

@@ -9,6 +9,13 @@ x-app: &app
     KVZ_SECRET_KEY: ${KVZ_SECRET_KEY:?KVZ_SECRET_KEY must be set, see deploy/.env.example}
     KVZ_DOMAIN: ${KVZ_DOMAIN:?KVZ_DOMAIN must be set, see deploy/.env.example}
     TZ: ${KVZ_SERVER_TZ:-Europe/Prague}
+    # Empty means the default of app/settings.py.
+    KVZ_LOGIN_ATTEMPTS_PER_MINUTE: ${KVZ_LOGIN_ATTEMPTS_PER_MINUTE:-}
+    KVZ_CODE_ATTEMPTS_PER_MINUTE: ${KVZ_CODE_ATTEMPTS_PER_MINUTE:-}
+    KVZ_SUBMITS_PER_MINUTE: ${KVZ_SUBMITS_PER_MINUTE:-}
+    KVZ_STARTS_PER_MINUTE: ${KVZ_STARTS_PER_MINUTE:-}
+    KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE: ${KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE:-}
+    KVZ_BACKUP_RETENTION_DAYS: ${KVZ_BACKUP_RETENTION_DAYS:-}
   volumes:
     - db:/data/db
     - media:/data/media
@@ -31,6 +38,33 @@ services:
     expose:
       - "8000"
     restart: unless-stopped
+    # Gunicorn's graceful timeout (30 s) plus 5 s before Compose kills it.
+    stop_grace_period: 35s
+
+  jobs:
+    <<: *app
+    command: ["python", "manage.py", "jobs"]
+    # A pass started before SIGTERM may be copying the database and the media.
+    stop_grace_period: 120s
+    # Zálohy vidí jen `jobs`; seznam se v YAML nesčítá, proto je celý.
+    volumes:
+      - db:/data/db
+      - media:/data/media
+      - backups:/data/backups
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      # The image's check calls port 8000, which only `app` listens on, and `up --wait` refuses
+      # a running service with no check. This one reads the files beside the database file (no
+      # network, no database): it fails when the `jobs` heartbeat is older than three beat periods
+      # or when the pass record shows a pass that finished or started too long ago.
+      test: ["CMD", "python", "-m", "app.domain.heartbeat", "check"]
+      interval: 60s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
   caddy:
     image: caddy:2-alpine@sha256:f6228111e5fafa1a5238258d0858e103f10599b8d1659a146e7726681a002bb9
@@ -53,5 +87,6 @@ services:
 volumes:
   db:
   media:
+  backups:
   caddy_data:
   caddy_config:

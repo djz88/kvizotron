@@ -5,12 +5,14 @@ from pathlib import Path
 
 import pytest
 
+from app.contracts import COLOR_PALETTE, CUSTOM_PALETTE
 from app.domain import settings
+from app.plugins.theme_default.manifest import PALETTE_CHOICES
 
 CSS = (
     Path(__file__).resolve().parents[1] / "app/plugins/theme_default/assets/theme.css"
 ).read_text(encoding="utf-8")
-PALETTES = [palette.value for palette in settings.Palette]
+PALETTES = [choice for choice in PALETTE_CHOICES if choice != CUSTOM_PALETTE]
 MODES = ["light", "dark"]
 
 
@@ -64,7 +66,7 @@ def test_contrast_formula():
 
 
 def test_default_tokens_equal_the_default_palette_so_unknown_values_stay_readable():
-    default = settings.CATALOGUE[settings.COLOR_PALETTE].default
+    default = settings.CATALOGUE[COLOR_PALETTE].default
     for mode in MODES:
         assert block(f"default {mode}") == tokens(default, mode)
 
@@ -78,3 +80,12 @@ def test_violet_palette_is_violet_and_white():
     for mode in MODES:
         values = tokens("violet_white", mode)
         assert "#ffffff" in (values["accent"], values["on-accent"])
+
+
+def test_footer_paragraphs_use_the_page_text_colour() -> None:
+    """AC-97: Pico colours every `<p>` with `--kvz-text`, which is dark on the page gradient in
+    light mode. The footer's paragraphs must set the on-page colour themselves, not inherit it."""
+    rules = re.findall(r"([^{}]+)\{([^}]*)\}", CSS)
+    footer_text = [body for selector, body in rules if ".site-footer-line" in selector]
+    assert footer_text, "no rule for .site-footer-line"
+    assert any("color: var(--kvz-on-page)" in body for body in footer_text)

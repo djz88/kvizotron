@@ -1,0 +1,13 @@
+{# The scoreboard of the shown run as a wide button, and the other runs when the admin offers them (AC-176). #}
+{% if scoreboard_url or other_boards %}
+<section class="card boards" aria-label="{{ _('Scoreboards') }}">
+  {% if scoreboard_url %}<a href="{{ scoreboard_url }}?lang={{ locale }}" role="button" class="wide outline">{{ _("Scoreboard") }}</a>{% endif %}
+  {% if other_boards %}
+  <p>{{ _("Scoreboards of other runs") }}</p>
+  <ul>
+    {% for board in other_boards %}<li><a href="{{ board.url }}?lang={{ locale }}">{{ _("Run %(number)s · %(date)s", number=board.number, date=board.date) }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endif %}

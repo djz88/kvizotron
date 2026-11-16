@@ -28,6 +28,10 @@ class ScheduleRefused(Exception):
         self.code = code
 
 
+class PeriodNeedsConfirmation(Exception):
+    """The new period would delete the run's data on the next pass."""
+
+
 def _system_audit(action: str, run: QuizRun) -> None:
     audit.record(
         actor_type="system",
@@ -70,12 +74,13 @@ def _unmet(run: QuizRun) -> list[requirements.Requirement]:
 
 
 def _stateless_conflicts(run: QuizRun) -> list[str]:
+    profile = data_policy.of(run)[data_policy.PROFILE]
     return data_policy.conflicts(
-        data_policy.of(run)[data_policy.PROFILE],
+        profile,
         participants.rules_of(run),
         settings.resolve(settings.ANSWERS_VISIBILITY, run.quiz),
         run.current_revision.snapshot_json,
-    )
+    ) + data_policy.after_close_conflicts(run.quiz, profile)
 
 
 def _refuse_opening(run: QuizRun, keys: list[str]) -> None:
@@ -157,6 +162,7 @@ def plan(
     revision = authoring.latest_published(quiz)
     if revision is None:
         raise authoring.NothingPublished(str(quiz.id))
+    authoring.ensure_modules_enabled(revision.snapshot_json)
     missing = requirements.unmet(quiz, requirements.of_snapshot(revision.snapshot_json, quiz))
     if missing:
         raise authoring.RequirementUnmet([item.text for item in missing])
@@ -254,8 +260,11 @@ def update_plan(
         _admin_audit("run.plan_changed", run, admin_id)
 
 
-def set_period(run: QuizRun, period: str, *, admin_id: str) -> None:
-    """The period can change at any time; the profile cannot, as attempts already follow it."""
+def set_period(run: QuizRun, period: str, *, admin_id: str, confirmed: bool = False) -> None:
+    """The period can change until the data go; the profile cannot, as attempts already follow it.
+
+    A held run stays held while its period is in the past: only confirming the list releases it.
+    """
     if period not in settings.CATALOGUE[settings.RETENTION_PERIOD].choices:
         raise ScheduleRefused("invalid_period")
     if run.kind == QuizRun.Kind.TEST:
@@ -264,18 +273,30 @@ def set_period(run: QuizRun, period: str, *, admin_id: str) -> None:
         current = QuizRun.objects.select_for_update().filter(pk=run.pk).first()
         if current is None:  # `objects` holds normal runs only
             raise ScheduleRefused("not_a_normal_run")
+        if current.data_deleted_at is not None:
+            raise ScheduleRefused("data_deleted")
+        now = timezone.now()
+        was_due = data_policy.is_due(current, now)
         current.retention_json = data_policy.of(current) | {data_policy.PERIOD: period}
-        current.save(update_fields=["retention_json"])
+        if data_policy.is_due(current, now) and not was_due and not confirmed:
+            raise PeriodNeedsConfirmation
+        ends_at = data_policy.deletion_at(current)
+        if ends_at is None or ends_at > now:
+            current.retention_held_at = None
+        current.save(update_fields=["retention_json", "retention_held_at"])
         _admin_audit("run.period_changed", run, admin_id, {"period": period})
 
 
 def cancel_plan(run: QuizRun, *, admin_id: str) -> None:
     """No attempt can exist yet, so the row goes and its number is free."""
+    main_id = QuizRun.objects.filter(pk=run.pk).values_list("board_main_id", flat=True).first()
     with transaction.atomic():
         deleted, _rows = QuizRun.objects.filter(pk=run.pk, status=QuizRun.Status.SCHEDULED).delete()
         if not deleted:
             raise ScheduleRefused("not_planned")
         _admin_audit("run.plan_cancelled", run, admin_id)
+    if main_id is not None:  # the main run's cached board showed this run's rows
+        run_results.clear_board_cache(main_id)
 
 
 def start_now(run: QuizRun, *, admin_id: str) -> None:

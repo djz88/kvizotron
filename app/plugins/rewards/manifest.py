@@ -20,13 +20,15 @@ def _setting(key, choices, default, label, value_labels, help_text=""):
         "label": label,
         "value_labels": value_labels,
         "help": help_text,
-        "group": "scoreboard",
+        "group": "rewards",
         "level": "advanced",
     }
 
 
 MANIFEST = {
     "id": "rewards.threshold",
+    "name": _("Rewards"),
+    "description": _("Rewards for reaching a threshold."),
     "kind": "plugin",
     "version": "1.0.0",
     "app": "app.plugins.rewards.apps.RewardsConfig",

@@ -9,9 +9,10 @@
 {% else %}
 {% if report.refused %}<p class="notice" role="alert">{{ report.refused }}</p>{% endif %}
 <p>{{ _("Questions added: %(count)s", count=report.added) }}</p>
+{% if report.removed %}<p>{{ _("Questions removed: %(count)s", count=report.removed) }}</p>{% endif %}
 {% if report.link %}<p><a href="{{ report.link }}" role="button">{{ _("Open what was imported") }}</a></p>{% endif %}
-{{ issues(report.errors, _("Rows that were skipped")) }}
-{{ issues(report.warnings, _("Warnings")) }}
+{{ issues(report.errors, _("Rows that were skipped"), issue_view) }}
+{{ issues(report.warnings, _("Warnings"), issue_view) }}
 {% if report.unused %}<p>{{ _("Columns not used: %(columns)s", columns=report.unused|join(", ")) }}</p>{% endif %}
 {% endif %}
 {% endblock %}

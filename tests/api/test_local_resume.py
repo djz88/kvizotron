@@ -170,3 +170,32 @@ def test_every_public_page_loads_the_script_that_sweeps_old_copies():
         html = FormClient().get(path).content.decode()
         assert "/resume.js" in html, path
     assert 'startsWith("kvz-attempt-")' in open("app/api/assets/resume.js").read()
+
+
+def _script_pattern(name):
+    """The regex literal of resume.js that ends in `name`, as a Python pattern."""
+    source = open("app/api/assets/resume.js").read()
+    found = re.search(rf"/(\\/[^\n]*?{name}[^/\n]*?\$)/\.", source)
+    assert found, f"resume.js has no address pattern for /{name}"
+    return re.compile(found.group(1).replace("\\/", "/"))
+
+
+@pytest.mark.parametrize(
+    ("name", "address", "matches"),
+    [
+        ("submit", "/a/123/submit", True),
+        ("submit", "/a/123/submit?lang=cs", True),
+        ("submit", "/a/123/submitx", False),
+        ("submit", "/a/123/check", False),
+        ("resume", "/r/0a-b/resume", True),
+        ("resume", "/r/0a-b/resume?lang=uk", True),
+        ("resume", "/r/0a-b/resumex", False),
+        ("resume", "/r/0a-b/start", False),
+    ],
+)
+def test_resume_script_matches_addresses_with_the_language_query(name, address, matches):
+    """AC-141, TD-084: addresses ending in ?lang=... must still match resume.js."""
+    pattern = _script_pattern(name)
+    assert bool(pattern.search(address)) is matches, (
+        f"resume.js /{name}/ pattern {pattern.pattern!r} on {address}"
+    )

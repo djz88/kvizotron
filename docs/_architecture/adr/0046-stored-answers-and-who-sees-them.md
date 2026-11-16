@@ -46,3 +46,5 @@ Chosen option: "One table of stored answers, two settings and a signed link", be
 ## More Information
 
 Photos have their own setting: [ADR-0047](0047-image-answer-photo-visibility.md). Results and export of answers remain in C4 and D2.
+
+Refined by [ADR-0056](0056-retention-job-summary-held-runs.md): since D3 a private link works until the run's data are deleted, and then says the result is not available.

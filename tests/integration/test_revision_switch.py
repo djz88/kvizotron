@@ -35,7 +35,7 @@ class Participant:
 
     @property
     def attempt_id(self):
-        return re.search(r'action="/a/([^/"]+)/submit"', self.html).group(1)
+        return re.search(r'action="/a/([^/"]+)/submit[?"]', self.html).group(1)
 
     def fields(self):
         return {

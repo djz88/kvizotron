@@ -1,400 +1,763 @@
-#: question_import.py:165
+#: authoring.py
+msgid "The folder is not in this bank."
+msgstr "Теки немає в цьому банку."
+
+#: authoring.py
+#, python-format
+msgid "Question %(number)s needs a module that is disabled."
+msgstr "Запитання %(number)s потребує вимкненого модуля."
+
+#: bank_folders.py
+#, python-format
+msgid "This folder is used by these quizzes: %(quizzes)s"
+msgstr "Цю теку використовують такі вікторини: %(quizzes)s"
+
+#: bank_folders.py
+#, python-format
+msgid "A folder name has 1 to %(count)s characters and no slash."
+msgstr "Назва теки має від 1 до %(count)s символів і не містить скісної риски."
+
+#: bank_folders.py
+msgid "There is a folder with this name already."
+msgstr "Тека з такою назвою вже існує."
+
+#: bank_folders.py
+#, python-format
+msgid "Folders can be at most %(count)s levels deep."
+msgstr "Теки можуть мати щонайбільше %(count)s рівні вкладеності."
+
+#: bank_folders.py banks.py
+msgid "The folder is in another bank."
+msgstr "Тека належить іншому банку."
+
+#: bank_folders.py
+msgid "A folder cannot be moved into itself or into one of its subfolders."
+msgstr "Теку не можна перемістити в саму себе або в одну з її підтек."
+
+#: bank_folders.py
+msgid "Move or delete the questions and subfolders first."
+msgstr "Спершу перемістіть або видаліть питання й підтеки."
+
+#: bank_folders.py
+msgid "A chosen question is not in this bank."
+msgstr "Вибране питання не належить цьому банку."
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Easy"
+msgstr "Легка"
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Normal"
+msgstr "Звичайна"
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Hard"
+msgstr "Складна"
+
+#: banks.py
+msgid "Random mix"
+msgstr "Випадковий мікс"
+
+#: branding.py
+msgid "Turn on your brain. Start Kvízotron."
+msgstr "Увімкни мозок. Запусти Kvízotron."
+
+#: question_import.py
 msgid "This setting cannot be set here."
 msgstr "Це налаштування тут не можна використати."
 
-#: question_import.py:167
+#: question_import.py
 msgid "This value is not offered for this setting."
 msgstr "Це налаштування не пропонує такого значення."
 
-#: question_import.py:178
+#: question_import.py
 msgid "Points must be a positive whole number."
 msgstr "Бали мають бути додатним цілим числом."
 
-#: question_import.py:185
+#: question_import.py
 #, python-format
 msgid "At most %(count)s sources are allowed."
 msgstr "Дозволено не більше %(count)s джерел."
 
-#: question_import.py:189
+#: question_import.py
 #, python-format
 msgid "A source can have at most %(count)s characters."
 msgstr "Джерело може мати не більше %(count)s символів."
 
-#: question_import.py:208
+#: question_import.py
 msgid "Images cannot be stored on this installation."
 msgstr "Це встановлення не може зберігати зображення."
 
-#: question_import.py:215
+#: question_import.py
 #, python-format
 msgid "The file %(name)s is not in the upload."
 msgstr "Файлу %(name)s немає у завантаженні."
 
-#: question_import.py:229
+#: question_import.py
 msgid "This question type is not known."
 msgstr "Цей тип запитання невідомий."
 
-#: question_import.py:232
+#: question_import.py
 msgid "This scoring is not offered for this question type."
 msgstr "Цей тип запитання не пропонує такого оцінювання."
 
-#: question_import.py:264
+#: question_import.py
+msgid "A question can have only one of the tags easy, normal and hard."
+msgstr "Запитання може мати лише один із тегів easy, normal і hard."
+
+#: question_import.py
 #, python-format
 msgid "Language %(locale)s: %(detail)s"
 msgstr "Мова %(locale)s: %(detail)s"
 
-#: question_import.py:277
+#: question_import.py
 msgid "No answer is marked as correct."
 msgstr "Жодну відповідь не позначено як правильну."
 
-#: question_import.py:284
+#: question_import.py
 msgid "The quiz row needs a title."
 msgstr "Рядок вікторини потребує назви."
 
-#: question_import.py:289
+#: question_import.py
 msgid "The quiz row lists a language this application does not have."
 msgstr "Рядок вікторини вказує мову, якої застосунок не має."
 
-#: question_import.py:293
+#: question_import.py
 msgid "The default language must be among the listed ones."
 msgstr "Основна мова має бути серед указаних."
 
-#: question_import.py:343
+#: question_import.py
 #, python-format
 msgid "Text in language %(locale)s was left out: the target does not use it."
 msgstr "Текст мовою %(locale)s пропущено: ціль не використовує цю мову."
 
-#: question_import.py:358
+#: question_import.py
+msgid "The chosen folder is not a folder of this bank."
+msgstr "Вибрана тека не належить до цього банку."
+
+#: question_import.py
+#, python-format
+msgid "The folder %(path)s would be deeper than %(count)s levels."
+msgstr "Тека %(path)s мала б більше ніж %(count)s рівні."
+
+#: question_import.py
 msgid "This file uses a format version this application does not know."
 msgstr "Файл використовує версію формату, невідому застосунку."
 
-#: question_import.py:365
+#: question_import.py
 msgid "A new quiz needs a row with row_type quiz."
 msgstr "Нова вікторина потребує рядка з row_type quiz."
 
-#: question_import.py:371
+#: question_import.py
 msgid "A file can hold only one quiz row."
 msgstr "Файл може мати лише один рядок вікторини."
 
-#: question_import.py:377
+#: question_import.py
 msgid "The quiz row was ignored: the target already exists."
 msgstr "Рядок вікторини пропущено: ціль уже існує."
 
-#: question_import.py:389
+#: question_import.py
 msgid "Unknown row type."
 msgstr "Невідомий тип рядка."
 
-#: question_import.py:421
+#: question_import.py
+msgid "Replacing needs every row to be usable. Fix the rows listed, in the file or in the folder structure, and check again; nothing was changed."
+msgstr "Для заміни потрібно, щоб можна було використати всі рядки. Виправте наведені рядки у файлі або в структурі тек і перевірте ще раз; нічого не змінено."
+
+#: question_import.py
 #, python-format
 msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
 msgstr "Адреса %(wanted)s зайнята, тому вікторина отримала %(slug)s."
 
-#: question_import.py:452
+#: question_import.py
 msgid "A bank question must be complete in at least one language."
 msgstr "Запитання в банку має бути повним принаймні однією мовою."
 
-#: results.py:202
+#: results.py
 msgid "Player NN"
 msgstr "Гравець NN"
 
-#: revision_diff.py:103
+#: results.py
+#, python-format
+msgid "Run %(no)s · %(label)s"
+msgstr "Запуск %(no)s · %(label)s"
+
+#: results_export.py
+msgid "Run"
+msgstr "Запуск"
+
+#: results_export.py
+msgid "Revision"
+msgstr "Ревізія"
+
+#: results_export.py
+msgid "Attempt ID"
+msgstr "ID спроби"
+
+#: results_export.py
+msgid "Participant ID"
+msgstr "ID учасника"
+
+#: results_export.py
+msgid "Name"
+msgstr "Ім'я"
+
+#: results_export.py
+msgid "E-mail address"
+msgstr "Адреса електронної пошти"
+
+#: results_export.py
+msgid "Status"
+msgstr "Стан"
+
+#: results_export.py
+msgid "Score"
+msgstr "Бали"
+
+#: results_export.py
+msgid "Maximum"
+msgstr "Максимум"
+
+#: results_export.py
+msgid "Percent"
+msgstr "Відсоток"
+
+#: results_export.py
+msgid "Submitted at"
+msgstr "Надіслано"
+
+#: results_export.py
+msgid "Official"
+msgstr "Офіційна"
+
+#: results_export.py
+msgid "Place"
+msgstr "Місце"
+
+#: results_export.py
+msgid "Duration (s)"
+msgstr "Тривалість (с)"
+
+#: results_export.py
+msgid "Attempts"
+msgstr "Спроби"
+
+#: results_export.py
+msgid "Best score"
+msgstr "Найкращий результат"
+
+#: results_export.py
+msgid "Kept score (%)"
+msgstr "Зарахований результат (%)"
+
+#: results_export.py
+msgid "Passed"
+msgstr "Склав"
+
+#: results_export.py
+msgid "Submitted attempts"
+msgstr "Надіслані спроби"
+
+#: results_export.py
+msgid "Question no."
+msgstr "№ питання"
+
+#: results_export.py
+msgid "Question"
+msgstr "Питання"
+
+#: results_export.py
+msgid "Type"
+msgstr "Тип"
+
+#: results_export.py
+msgid "Answered"
+msgstr "Відповіли"
+
+#: results_export.py
+msgid "Full points (%)"
+msgstr "Повні бали (%)"
+
+#: results_export.py
+msgid "Average points"
+msgstr "Середні бали"
+
+#: results_export.py
+msgid "Answer"
+msgstr "Відповідь"
+
+#: results_export.py revision_diff.py
+msgid "Points"
+msgstr "Бали"
+
+#: results_export.py
+msgid "Graded by"
+msgstr "Оцінив"
+
+#: results_export.py
+msgid "Rule"
+msgstr "Правило"
+
+#: results_export.py
+msgid "Reward"
+msgstr "Винагорода"
+
+#: results_export.py
+msgid "Reason"
+msgstr "Причина"
+
+#: results_export.py
+msgid "State"
+msgstr "Стан"
+
+#: results_export.py
+msgid "Handed over at"
+msgstr "Передано"
+
+#: results_export.py
+msgid "Cancel reason"
+msgstr "Причина скасування"
+
+#: results_export.py
+msgid "Draw no."
+msgstr "№ розіграшу"
+
+#: results_export.py
+msgid "Kind"
+msgstr "Вид"
+
+#: results_export.py
+msgid "At"
+msgstr "Час"
+
+#: results_export.py
+msgid "Admin"
+msgstr "Адміністратор"
+
+#: results_export.py
+msgid "Eligible"
+msgstr "Допущених"
+
+#: results_export.py
+msgid "Fingerprint"
+msgstr "Відбиток"
+
+#: results_export.py
+msgid "Winners"
+msgstr "Переможці"
+
+#: results_export.py
+msgid "Alternates"
+msgstr "Запасні"
+
+#: results_export.py
+msgid "submitted"
+msgstr "надіслано"
+
+#: results_export.py
+msgid "waiting for grading"
+msgstr "чекає на оцінювання"
+
+#: results_export.py
+msgid "yes"
+msgstr "так"
+
+#: results_export.py
+msgid "no"
+msgstr "ні"
+
+#: results_export.py
+msgid "automatic"
+msgstr "автоматично"
+
+#: results_export.py
+msgid "admin"
+msgstr "адміністратор"
+
+#: results_export.py
+msgid "photo"
+msgstr "фото"
+
+#: results_export.py
+msgid "removed"
+msgstr "вилучено"
+
+#: results_export.py
+msgid "threshold"
+msgstr "поріг"
+
+#: results_export.py
+msgid "participation"
+msgstr "участь"
+
+#: results_export.py
+msgid "manual"
+msgstr "вручну"
+
+#: results_export.py
+msgid "draw"
+msgstr "розіграш"
+
+#: results_export.py
+msgid "granted"
+msgstr "надано"
+
+#: results_export.py
+msgid "handed over"
+msgstr "передано"
+
+#: results_export.py
+msgid "cancelled"
+msgstr "скасовано"
+
+#: results_export.py
+msgid "redraw"
+msgstr "повторний розіграш"
+
+#: results_export.py
+msgid "move up"
+msgstr "заміна запасним"
+
+#: results_export.py
+msgid "substitute"
+msgstr "інший переможець"
+
+#: reveal.py
+msgid "You will see the correct answers at this link after the run closes."
+msgstr "Правильні відповіді ви побачите за цим посиланням після завершення запуску."
+
+#: reveal.py
+#, python-format
+msgid "You will see the correct answers at this link after the run closes (from %(when)s)."
+msgstr "Правильні відповіді ви побачите за цим посиланням після завершення запуску (з %(when)s)."
+
+#: reveal.py
+#, python-format
+msgid "You will see the correct answers at this link after the run closes (at the earliest from %(when)s)."
+msgstr "Правильні відповіді ви побачите за цим посиланням після завершення запуску (не раніше ніж з %(when)s)."
+
+#: reveal.py
+msgid "In a real run, the correct answers are shown only after the run closes."
+msgstr "У справжньому запуску правильні відповіді з’являться лише після його завершення."
+
+#: revision_diff.py
 #, python-format
 msgid "%(count)s questions, %(points)s points each"
 msgstr "%(count)s питань, по %(points)s балів"
 
-#: revision_diff.py:116
+#: revision_diff.py
 #, python-format
 msgid "Draw from %(bank)s"
 msgstr "Вибірка з банку %(bank)s"
 
-#: revision_diff.py:153
+#: revision_diff.py
 msgid "Title"
 msgstr "Назва"
 
-#: revision_diff.py:159
+#: revision_diff.py
 msgid "Description"
 msgstr "Опис"
 
-#: revision_diff.py:163
+#: revision_diff.py
 msgid "Languages"
 msgstr "Мови"
 
-#: revision_diff.py:166
+#: revision_diff.py
 msgid "Default language"
 msgstr "Мова за замовчуванням"
 
-#: revision_diff.py:183
-msgid "Points"
-msgstr "Бали"
-
-#: revision_diff.py:194
+#: revision_diff.py
 msgid "Scoring"
 msgstr "Оцінювання"
 
-#: revision_diff.py:195
+#: revision_diff.py
 msgid "Sources"
 msgstr "Джерела"
 
-#: revision_diff.py:199
+#: revision_diff.py
 msgid "Explanation"
 msgstr "Пояснення"
 
-#: revision_diff.py:207
+#: revision_diff.py
 msgid "Question type version"
 msgstr "Версія типу питання"
 
-#: revision_diff.py:220
+#: revision_diff.py
 msgid "Question type"
 msgstr "Тип питання"
 
-#: revision_diff.py:223
+#: revision_diff.py
 msgid "Definition"
 msgstr "Визначення"
 
-#: rewards.py:75
+#: rewards.py
 msgid "Rewards need a data profile that keeps scores."
 msgstr "Для нагород потрібен профіль даних, який зберігає результати."
 
-#: rewards.py:76
+#: rewards.py
 msgid "Answers after each question cannot go with rewards."
 msgstr "Відповіді після кожного питання не можна поєднати з нагородами."
 
-#: rewards.py:77
+#: rewards.py
 msgid "A draw needs a required e-mail under the chosen contact setting."
 msgstr "За вибраного способу зв'язку з переможцями розіграш потребує обов'язкової електронної пошти."
 
-#: settings.py:165
+#: run_links.py
+msgid "Type only the start of the address, such as https://host:8443."
+msgstr "Введіть лише початок адреси, наприклад https://host:8443."
+
+#: run_links.py
+msgid "The port must be a number from 1 to 65535."
+msgstr "Порт має бути числом від 1 до 65535."
+
+#: run_links.py
+msgid "Type a host name or an IP address."
+msgstr "Введіть ім’я сервера або IP-адресу."
+
+#: run_links.py
+msgid "The address is too long."
+msgstr "Адреса задовга."
+
+#: settings.py
 msgid "No"
 msgstr "Ні"
 
-#: settings.py:165
+#: settings.py
 msgid "Yes"
 msgstr "Так"
 
-#: settings.py:171
+#: settings.py
 msgid "When a new version is published during a run"
 msgstr "Коли під час запуску публікується нова версія"
 
-#: settings.py:173
+#: settings.py
 msgid "Ask at publication"
 msgstr "Запитати під час публікації"
 
-#: settings.py:174
+#: settings.py
 msgid "Notify participants and let them switch"
 msgstr "Сповістити учасників і дозволити перейти"
 
-#: settings.py:175
+#: settings.py
 msgid "Let participants finish on the old version"
 msgstr "Дозволити учасникам завершити на старій версії"
 
-#: settings.py:185
-msgid "Colours"
-msgstr "Кольори"
-
-#: settings.py:187
-msgid "Blue and teal"
-msgstr "Синій і бірюзовий"
-
-#: settings.py:188
-msgid "Indigo and pink"
-msgstr "Індиго і рожевий"
-
-#: settings.py:189
-msgid "Violet and white"
-msgstr "Фіолетовий і білий"
-
-#: settings.py:190
-msgid "Green and blue"
-msgstr "Зелений і синій"
-
-#: settings.py:191
-msgid "Red and plum"
-msgstr "Червоний і сливовий"
-
-#: settings.py:202
+#: settings.py
 msgid "Answer \"None of the answers\""
 msgstr "Відповідь «Жодна з відповідей»"
 
-#: settings.py:205
+#: settings.py
 msgid "On every question, which hides trick questions"
 msgstr "У кожному запитанні, що приховує запитання-пастки"
 
-#: settings.py:207
+#: settings.py
 msgid "Only on trick questions"
 msgstr "Лише в запитаннях-пастках"
 
-#: settings.py:215
+#: settings.py
 msgid "What a run keeps"
 msgstr "Що зберігає запуск"
 
-#: settings.py:217
+#: settings.py
 msgid "Nothing: only counts"
 msgstr "Нічого: лише кількості"
 
-#: settings.py:218
+#: settings.py
 msgid "Score and photos"
 msgstr "Бали та фото"
 
-#: settings.py:219
+#: settings.py
 msgid "Score and all answers"
 msgstr "Бали та всі відповіді"
 
-#: settings.py:220
+#: settings.py
 msgid "Score, all answers and times"
 msgstr "Бали, всі відповіді та час"
 
-#: settings.py:231
+#: settings.py
 msgid "How long a run keeps its data"
 msgstr "Як довго запуск зберігає дані"
 
-#: settings.py:233
+#: settings.py
 msgid "30 days"
 msgstr "30 днів"
 
-#: settings.py:234
+#: settings.py
 msgid "90 days"
 msgstr "90 днів"
 
-#: settings.py:235
+#: settings.py
 msgid "180 days"
 msgstr "180 днів"
 
-#: settings.py:236
+#: settings.py
 msgid "1 year"
 msgstr "1 рік"
 
-#: settings.py:237
+#: settings.py
 msgid "3 years"
 msgstr "3 роки"
 
-#: settings.py:238
+#: settings.py
 msgid "Permanently"
 msgstr "Назавжди"
 
-#: settings.py:248
+#: settings.py
 msgid "Who sees stored answers"
 msgstr "Хто бачить збережені відповіді"
 
-#: settings.py:250
+#: settings.py
 msgid "Admins"
 msgstr "Адміністратори"
 
-#: settings.py:251
+#: settings.py
 msgid "Admins and the participant"
 msgstr "Адміністратори й учасник"
 
-#: settings.py:252
+#: settings.py
 msgid "Everyone, after the run ends"
 msgstr "Усі, після завершення запуску"
 
-#: settings.py:257
+#: settings.py
 msgid "Needs a profile that keeps all answers. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
 msgstr "Потребує профілю, який зберігає всі відповіді. Вільний текст може містити що завгодно: у публічному перегляді значення показується, доки адміністратор його не приховає."
 
-#: settings.py:266
+#: settings.py
 msgid "Grading page"
 msgstr "Сторінка оцінювання"
 
-#: settings.py:268
+#: settings.py
 msgid "By question"
 msgstr "За запитаннями"
 
-#: settings.py:269
+#: settings.py
 msgid "By attempt"
 msgstr "За спробами"
 
-#: settings.py:279
+#: settings.py
 msgid "Sources on the result"
 msgstr "Джерела в результаті"
 
-#: settings.py:281
+#: settings.py
 msgid "Show"
 msgstr "Показати"
 
-#: settings.py:282
+#: settings.py
 msgid "Hide"
 msgstr "Приховати"
 
-#: settings.py:290
+#: settings.py
+msgid "Large logo on the home and About pages"
+msgstr "Великий логотип на головній сторінці та сторінці «Про застосунок»"
+
+#: settings.py
 msgid "Moving through the questions"
 msgstr "Проходження питань"
 
-#: settings.py:292
+#: settings.py
 msgid "All questions at once"
 msgstr "Усі питання одразу"
 
-#: settings.py:293
+#: settings.py
 msgid "One by one, with going back"
 msgstr "По одному, з поверненням"
 
-#: settings.py:294
+#: settings.py
 msgid "One by one, without going back"
 msgstr "По одному, без повернення"
 
-#: settings.py:295
+#: settings.py
 msgid "Pages of questions"
 msgstr "Сторінками"
 
-#: settings.py:306
+#: settings.py
 msgid "Questions per page"
 msgstr "Питань на сторінці"
 
-#: settings.py:310
+#: settings.py
 msgid "Only for pages of questions."
 msgstr "Лише для проходження сторінками."
 
-#: settings.py:318
+#: settings.py
 msgid "When to show the answers"
 msgstr "Коли показувати відповіді"
 
-#: settings.py:320
+#: settings.py
 msgid "Never"
 msgstr "Ніколи"
 
-#: settings.py:321
+#: settings.py
 msgid "At the end"
 msgstr "Наприкінці"
 
-#: settings.py:322
+#: settings.py
 msgid "After each question"
 msgstr "Після кожного питання"
 
-#: settings.py:333
+#: settings.py
+msgid "After the run closes"
+msgstr "Після закриття запуску"
+
+#: settings.py
 msgid "What to show"
 msgstr "Що показувати"
 
-#: settings.py:335
+#: settings.py
 msgid "Whether each answer is right"
 msgstr "Лише чи відповідь правильна"
 
-#: settings.py:336
+#: settings.py
 msgid "And the correct answers"
 msgstr "Також правильні відповіді"
 
-#: settings.py:337
+#: settings.py
 msgid "And the correct answers and explanations"
 msgstr "Також правильні відповіді та пояснення"
 
-#: settings.py:347
+#: settings.py
 msgid "Shuffle the questions"
 msgstr "Перемішувати питання"
 
-#: settings.py:357
+#: settings.py
 msgid "Shuffle the options"
 msgstr "Перемішувати варіанти"
 
-#: settings.py:365
+#: settings.py
 msgid "Time limit for an attempt (minutes)"
 msgstr "Обмеження часу спроби (хвилини)"
 
-#: settings.py:367
+#: settings.py
 msgid "No limit"
 msgstr "Без обмеження"
 
-#: settings.py:379
+#: settings.py
 msgid "Show a planned quiz under \"Coming up\" on the public list"
 msgstr "Показувати заплановану вікторину в розділі «Незабаром» у публічному списку"
 
-#: settings.py:389
+#: settings.py
 msgid "Time zone"
 msgstr "Часовий пояс"
+
+#: usage.py
+#, python-format
+msgid "test link of quiz %(quiz)s"
+msgstr "тестове посилання вікторини %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "planned run %(number)s of quiz %(quiz)s"
+msgstr "запланований запуск %(number)s вікторини %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "open run %(number)s of quiz %(quiz)s"
+msgstr "відкритий запуск %(number)s вікторини %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "run %(number)s of quiz %(quiz)s"
+msgstr "запуск %(number)s вікторини %(quiz)s"
 

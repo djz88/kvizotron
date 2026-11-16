@@ -1,0 +1,20 @@
+#: lifecycle.py
+#, python-format
+msgid "Provider %(module)s cannot be toggled, it changes on restart"
+msgstr "Poskytovatele %(module)s nelze přepnout, mění se restartem."
+
+#: lifecycle.py
+#, python-format
+msgid "Module %(module)s requires %(capability)s; enable one of: %(providers)s"
+msgstr "Modul %(module)s potřebuje %(capability)s; zapni jeden z modulů: %(providers)s"
+
+#: lifecycle.py
+#, python-format
+msgid "The application cannot work without module %(module)s"
+msgstr "Aplikace bez modulu %(module)s nefunguje."
+
+#: lifecycle.py
+#, python-format
+msgid "Module %(module)s provides %(capability)s required by %(other)s"
+msgstr "Modul %(module)s poskytuje %(capability)s, které potřebuje %(other)s."
+

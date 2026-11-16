@@ -10,18 +10,24 @@
     <p>{{ _("Attempts submitted: %(count)s", count=running.submitted) }}</p>
     <p><a href="{{ url('admin_run', args=[running.id]) }}#statistics">{{ _("Statistics") }}</a> ·
       <a href="{{ url('admin_run', args=[running.id]) }}#scoreboard">{{ _("Scoreboard") }}</a> ·
-      <a href="{{ url('scoreboard', args=[quiz.slug, running.id]) }}?view=projector">{{ _("Projector") }}</a></p>
+      <a href="{{ url('scoreboard', args=[quiz.slug, running.id]) }}?view=projector" target="_blank" rel="noopener">{{ _("Projector") }}</a></p>
   </div>
 </div>
 {% endif %}
 {% if rows %}
+<form method="post" action="{{ url('admin_board_share', args=[quiz.id]) }}">
+{{ csrf_input }}
+{% if show_archived %}<input type="hidden" name="archived" value="1">{% endif %}
 <table class="stack">
-  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Start time") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Deadline") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Time limit") }}</th><th>{{ _("Revisions") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Not sent") }}</th></tr></thead>
+  <thead><tr>{% if can_share %}<th class="board-pick">{{ _("Share") }}</th>{% endif %}<th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Start time") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Deadline") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Time limit") }}</th><th>{{ _("Revisions") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Not sent") }}</th></tr></thead>
   <tbody>
     {% for item in rows %}
     <tr>
+      {% if can_share %}
+      <td class="board-pick" data-label="{{ _('Share') }}"><input type="checkbox" name="runs" value="{{ item.run.id }}" aria-label="{{ _('Run %(no)s to the shared scoreboard', no=item.run.run_no) }}"{% if item.board_chosen %} checked{% endif %}{% if item.board_locked %} disabled{% endif %}> <input type="radio" name="main" value="{{ item.run.id }}" aria-label="{{ _('Run %(no)s as the main run', no=item.run.run_no) }}"{% if item.board_is_main %} checked{% endif %}{% if item.board_locked %} disabled{% endif %}></td>
+      {% endif %}
       <td data-label="{{ _('Run') }}"><a href="{{ url('admin_run', args=[item.run.id]) }}">{{ item.run.run_no }}</a></td>
-      <td data-label="{{ _('Status') }}">{{ item.status }}</td>
+      <td data-label="{{ _('Status') }}"><div>{{ item.status }}{% if item.deletion %}<br>{% set deletion = item.deletion %}{% set compact = true %}{% include "admin/_deletion.html" %}{% endif %}</div></td>
       <td data-label="{{ _('Start time') }}">{{ item.run.starts_at|when }}</td>
       <td data-label="{{ _('Opened') }}">{{ item.run.opened_at|when }}</td>
       <td data-label="{{ _('Deadline') }}">{{ item.run.deadline_at|when }}</td>
@@ -34,16 +40,31 @@
     {% endfor %}
   </tbody>
 </table>
+{% if can_share %}
+<button type="submit" class="secondary">{{ _("Save the shared scoreboard") }}</button>
+<small>{{ _("Tick the runs for one shared scoreboard and choose its main run with the radio button. The main run's public scoreboard then shows the ticked runs too. Each run keeps its own page and settings.") }}</small>
+{% endif %}
+</form>
+{% for board in boards %}
+<form method="post" action="{{ url('admin_board_split', args=[board.main.id]) }}">
+  {{ csrf_input }}
+  <p>{{ _("Shared scoreboard of runs %(runs)s", runs=board.numbers) }} ({{ _("main run %(no)s", no=board.main.run_no) }})
+    <button type="submit" class="secondary outline">{{ _("Cancel the shared scoreboard") }}</button></p>
+</form>
+{% endfor %}
 {% else %}
 <p>{{ _("There are no runs yet.") }}</p>
 {% endif %}
 {% if comparison %}
 <h2>{{ _("Comparison of runs") }}</h2>
+<form method="get" action="{{ url('results_export_new') }}">
+<input type="hidden" name="quiz" value="{{ quiz.id }}">
 <table class="stack">
-  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Participants") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Average") }}</th><th>%</th><th>{{ _("Results") }}</th></tr></thead>
+  <thead><tr><th>{{ _("Export") }}</th><th>{{ _("Run") }}</th><th>{{ _("Opened") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Participants") }}</th><th>{{ _("Submitted") }}</th><th>{{ _("Average") }}</th><th>%</th><th>{{ _("Results") }}</th></tr></thead>
   <tbody>
     {% for row in comparison %}
     <tr>
+      <td data-label="{{ _('Export') }}"><input type="checkbox" name="runs" value="{{ row.run_id }}" aria-label="{{ _('Run %(no)s', no=row.run_no) }}"></td>
       <td data-label="{{ _('Run') }}">{{ row.run_no }}</td>
       <td data-label="{{ _('Opened') }}">{{ row.opened_at|when }}</td>
       <td data-label="{{ _('Ended') }}">{{ row.closed_at|when }}</td>
@@ -56,6 +77,9 @@
     {% endfor %}
   </tbody>
 </table>
+<button type="submit" class="secondary">{{ _("Export selected") }}</button>
+<small>{{ _("With no run selected, all runs are exported.") }}</small>
+</form>
 {% endif %}
 {% if has_archived %}
 <p><a href="?{% if not show_archived %}archived=1{% endif %}">{{ _("Hide archived runs") if show_archived else _("Show archived runs") }}</a></p>

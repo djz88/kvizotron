@@ -38,7 +38,7 @@ microservices.
   block deletes of core records. A management command refuses removal while an active quiz or a stored
   revision needs the module, otherwise it reverses the module's migrations; only then is the package
   removed. Details in Stage D.
-- Disabling a plugin that an active quiz depends on **MUST** be rejected.
+- Disabling a plugin that an active quiz depends on **MUST** be rejected: a planned or open run that plays its type or strategy, or a live reward rule that calls it. A plugin marked `always_on` cannot be disabled, as the application asks for it by name. The reasons come from `lifecycle.blockers`, shared by the Modules page and `manage.py modules`. A run cannot be opened or planned on a revision that needs a disabled module, and a reward rule of a quiz's template that needs one is not copied onto a new run ([ADR-0057](../adr/0057-plugin-admin-reasons-locks-no-configuration-table.md)).
 - Compatibility is evaluated **at startup and at publication**. An incompatible plugin blocks
   publication/activation with an explanation.
 - Admin may disable a feature for further quizzes without breaking running attempts.
@@ -78,7 +78,7 @@ Django's system checks do not query the database, so the last verification is do
 application entry point and in `manage.py modules verify`.
 
 Enabled state comes from `plugin_installation` at request time, so enabling a plugin needs no restart.
-`plugin_configuration` follows the same rule; it is added with the first configurable module.
+`plugin_configuration` will follow the same rule; it is added with the first configurable module, and no module needs it yet.
 
 ## Registry
 

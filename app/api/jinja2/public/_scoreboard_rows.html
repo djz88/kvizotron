@@ -5,7 +5,7 @@
   {% for table in board.tables %}
   {% if board.tables|length > 1 %}<h2>{{ _("Revision %(no)s", no=table.revision_no) }} · {{ _("of %(points)s points", points=table.max_score|number) }}</h2>{% endif %}
   {% if table.rows %}
-  <table class="stack">
+  <table class="stack compact">
     <thead>
       <tr>
         <th scope="col">{{ _("Place") }}</th>
@@ -21,13 +21,13 @@
     <tbody>
       {% for row in table.rows %}
       <tr{% if row.mine %} data-mine{% endif %}>
-        <td data-label="{{ _('Place') }}">{{ row.rank }}.</td>
-        <td data-label="{{ _('Name') }}">{{ row.label }}{% if row.mine %} <strong>({{ _("you") }})</strong>{% endif %}</td>
-        {% if projector or "score" in board.columns %}<td data-label="{{ _('Score') }}">{{ row.score|number }}{% if not projector %} / {{ row.max_score|number }}{% endif %}</td>{% endif %}
+        <td class="rank" data-label="{{ _('Place') }}">{{ row.rank }}.</td>
+        <td class="who" data-label="{{ _('Name') }}"><span class="who-name">{{ row.label }}</span>{% if row.mine %} <strong>({{ _("you") }})</strong>{% endif %}{% if row.passed and not (projector or "score" in board.columns) %} <span aria-hidden="true">✓</span><span class="visually-hidden">{{ _("passed") }}</span>{% endif %}</td>
+        {% if projector or "score" in board.columns %}<td class="row-score" data-label="{{ _('Score') }}">{{ row.score|number }}{% if not projector or table.max_score is none %} / {{ row.max_score|number }}{% endif %}{% if projector and table.max_score is none %} · {{ row.percent }} %{% endif %}{% if row.passed %} <span aria-hidden="true">✓</span><span class="visually-hidden">{{ _("passed") }}</span>{% endif %}</td>{% endif %}
         {% if not projector %}
         {% if "percent" in board.columns %}<td data-label="%">{{ row.percent }} %</td>{% endif %}
-        {% if "time" in board.columns %}<td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>{% endif %}
-        {% if "duration" in board.columns %}<td data-label="{{ _('Duration') }}">{% if row.duration_ms is not none %}{{ (row.duration_ms // 1000) // 60 }}:{{ "%02d"|format((row.duration_ms // 1000) % 60) }}{% endif %}</td>{% endif %}
+        {% if "time" in board.columns %}<td class="extra" data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>{% endif %}
+        {% if "duration" in board.columns %}<td class="extra" data-label="{{ _('Duration') }}">{% if row.duration_ms is not none %}{{ (row.duration_ms // 1000) // 60 }}:{{ "%02d"|format((row.duration_ms // 1000) % 60) }}{% endif %}</td>{% endif %}
         {% endif %}
       </tr>
       {% endfor %}

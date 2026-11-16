@@ -6,7 +6,7 @@ import sys
 import pytest
 
 BASE_ENV = {
-    "KVZ_SECRET_KEY": "test-only-not-a-secret",
+    "KVZ_SECRET_KEY": "test-only-not-a-real-secret-key-0123456789",
     "KVZ_DOMAIN": "quiz.example.org",
     "KVZ_DB_PATH": ":memory:",
 }
@@ -31,6 +31,17 @@ def test_empty_secret_key_aborts():
     result = load_settings(BASE_ENV | {"KVZ_SECRET_KEY": ""})
     assert result.returncode != 0
     assert "KVZ_SECRET_KEY" in result.stderr
+
+
+def test_a_secret_key_shorter_than_32_characters_is_refused():
+    result = load_settings(BASE_ENV | {"KVZ_SECRET_KEY": "x" * 31})
+    assert result.returncode != 0
+    assert "KVZ_SECRET_KEY must have at least 32 characters" in result.stderr
+
+
+def test_a_32_character_key_is_accepted():
+    result = load_settings(BASE_ENV | {"KVZ_SECRET_KEY": "x" * 32})
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize("debug", [None, "0", "true"])

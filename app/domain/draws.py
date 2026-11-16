@@ -16,7 +16,7 @@ from django.db import transaction
 from django.utils.crypto import salted_hmac
 
 from app.contracts import DrawingPlugin, RewardPlugin, ThresholdRule
-from app.domain import data_policy, grading, results, rewards
+from app.domain import authoring, data_policy, grading, results, rewards
 from app.domain.models import Draw, DrawEntry, Participant, QuizRun, RewardRule
 from app.kernel import audit, events, registry
 
@@ -71,7 +71,7 @@ def _drawing() -> DrawingPlugin:
 
 
 def _reward() -> RewardPlugin:
-    return cast(RewardPlugin, registry.get("reward", "threshold"))
+    return cast(RewardPlugin, registry.get("reward", "threshold", include_disabled=True))
 
 
 def pseudonym(participant_id: object) -> str:
@@ -80,6 +80,8 @@ def pseudonym(participant_id: object) -> str:
 
 
 def _ensure_draw_rule(rule: RewardRule) -> QuizRun:
+    if "manual" not in registry.keys("drawing"):
+        raise DrawRefused("plugin_disabled")
     if rule.kind != RewardRule.Kind.DRAW or rule.run_id is None:
         raise DrawRefused("not_a_draw_rule")
     run = QuizRun.all_kinds.get(pk=rule.run_id)
@@ -96,10 +98,10 @@ def _eligible(rule: RewardRule, run: QuizRun) -> Eligible:
         )
     found = []
     for participant in Participant.objects.filter(run=run).select_related("run"):
-        official = results.official_attempt(participant)
-        if official is None:
+        held = results.kept(participant)
+        if held is None:
             continue
-        if minimum is not None and not _reward().reached(minimum, rewards._figures(official)):
+        if minimum is not None and not _reward().reached(minimum, held.figures):
             continue
         found.append(str(participant.id))
     plugin = _drawing()
@@ -132,7 +134,7 @@ def refusal(rule: RewardRule) -> str | None:
 
 def _locked_run(rule: RewardRule) -> QuizRun:
     """Checks the run inside the action's transaction."""
-    _ensure_draw_rule(rule)
+    authoring.ensure_editable(_ensure_draw_rule(rule).quiz)
     run = QuizRun.all_kinds.select_for_update().get(pk=rule.run_id)
     reason = _run_refusal(run)
     if reason is not None:
@@ -433,7 +435,7 @@ def substitute(rule: RewardRule, winner: DrawEntry, reason: str, *, admin_id: st
 
 def set_public(rule: RewardRule, public: bool, *, admin_id: str) -> None:
     """The only change of `winners_public`; the public scoreboard reads it."""
-    _ensure_draw_rule(rule)
+    authoring.ensure_editable(_ensure_draw_rule(rule).quiz)
     with transaction.atomic():
         RewardRule.objects.filter(pk=rule.pk).update(winners_public=bool(public))
         audit.record(

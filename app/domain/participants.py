@@ -5,23 +5,27 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import cast
+from uuid import UUID
 
 from django.db import IntegrityError, transaction
+from django.db.models import F, QuerySet
 from django.utils.crypto import salted_hmac
 
 from app.contracts import (
+    AFTER_PASS,
     ASK_EMAIL,
     ASK_NAME,
     DUPLICATE_NAMES,
+    MAX_ATTEMPTS,
     PARTICIPANT_KEYS,
     REPEAT_ATTEMPTS,
     OpenAttempt,
     ParticipantPolicyPlugin,
     StartDecision,
 )
-from app.domain import settings
+from app.domain import authoring, results, settings
 from app.domain.models import Attempt, Participant, Quiz, QuizRun
-from app.kernel import registry
+from app.kernel import audit, registry
 
 __all__ = [
     "AttemptRow",
@@ -31,7 +35,10 @@ __all__ = [
     "Begin",
     "Identity",
     "Missing",
+    "NAME_LENGTH",
+    "NameRefused",
     "attempt_rows",
+    "attempts_left",
     "begin",
     "claim_name",
     "cookie_name",
@@ -43,11 +50,14 @@ __all__ = [
     "needs_identity",
     "needs_participant",
     "read_identity",
+    "rename",
     "rules_for_quiz",
     "rules_of",
     "snapshot",
+    "start_decision",
 ]
 
+NAME_LENGTH = 40  # the length of `Participant.display_name`
 COOKIE_PREFIX = "kvz_p_"
 COOKIE_MAX_AGE = 30 * 24 * 3600
 
@@ -65,7 +75,12 @@ def snapshot(quiz: Quiz, rules: Mapping[str, str] | None) -> dict[str, str]:
 def rules_of(run: QuizRun) -> dict[str, str]:
     """A test run has no plan, so it follows the quiz as it is now, and may repeat."""
     if run.kind == QuizRun.Kind.TEST:
-        return rules_for_quiz(run.quiz) | {REPEAT_ATTEMPTS: "allow"}
+        # A test link has no browser to count: it repeats, with no limit and no stop.
+        return rules_for_quiz(run.quiz) | {
+            REPEAT_ATTEMPTS: "allow",
+            MAX_ATTEMPTS: "0",
+            AFTER_PASS: "more",
+        }
     stored = run.participant_rules_json or {}
     return {
         key: stored[key] if key in stored else settings.CATALOGUE[key].default
@@ -73,9 +88,18 @@ def rules_of(run: QuizRun) -> dict[str, str]:
     }
 
 
+def limit_of(rules: Mapping[str, str]) -> int:
+    """The most attempts a browser may start under "allow"; 0 for no limit."""
+    if rules.get(REPEAT_ATTEMPTS) == "forbid":
+        return 0
+    return int(rules.get(MAX_ATTEMPTS, "0") or "0")
+
+
 def needs_identity(rules: Mapping[str, str]) -> bool:
     return (
         rules.get(REPEAT_ATTEMPTS) == "forbid"
+        or limit_of(rules) > 0
+        or rules.get(AFTER_PASS, "more") == "stop"
         or rules.get(ASK_NAME, "off") != "off"
         or rules.get(ASK_EMAIL, "off") != "off"
     )
@@ -104,6 +128,16 @@ def find(run: QuizRun, key: str) -> Participant | None:
     return Participant.objects.filter(run=run, anonymous_key_hash=key_hash(run, key)).first()
 
 
+def _next_number(run: QuizRun) -> int:
+    """The run's counter plus one. It never goes down, so an erased number never comes back.
+
+    Call inside the transaction that creates the row: IMMEDIATE holds the write lock, so no two
+    browsers get one number. A refused or rolled-back creation gives its number back with it.
+    """
+    QuizRun.all_kinds.filter(pk=run.pk).update(participant_seq=F("participant_seq") + 1)
+    return QuizRun.all_kinds.values_list("participant_seq", flat=True).get(pk=run.pk)
+
+
 def find_or_create(run: QuizRun, key: str) -> Participant:
     hashed = key_hash(run, key)
     found = Participant.objects.filter(run=run, anonymous_key_hash=hashed).first()
@@ -111,7 +145,9 @@ def find_or_create(run: QuizRun, key: str) -> Participant:
         return found
     try:
         with transaction.atomic():
-            return Participant.objects.create(run=run, anonymous_key_hash=hashed)
+            return Participant.objects.create(
+                run=run, anonymous_key_hash=hashed, number=_next_number(run)
+            )
     except IntegrityError:  # another tab of the same browser created it first
         return Participant.objects.get(run=run, anonymous_key_hash=hashed)
 
@@ -153,8 +189,37 @@ def begin(run: QuizRun, participant: Participant | None) -> Begin:
     if open_attempt is not None:
         state = "expired" if attempts.time_left(open_attempt) == 0 else "running"
     finished = Attempt.objects.filter(participant=participant, status__in=Attempt.FINISHED).exists()
-    decision = policy.on_start(rules_of(run), finished=finished, open_attempt=state)
+    rules = rules_of(run)
+    used = _started(participant)
+    if open_attempt is not None:
+        used = used.exclude(pk=open_attempt.pk)
+    passed = False
+    if rules.get(AFTER_PASS, "more") == "stop":
+        passed = results.kept_passed(results.kept(participant), run) is True
+    decision = policy.on_start(
+        rules, finished=finished, used=used.count(), passed=passed, open_attempt=state
+    )
     return Begin(decision, open_attempt if decision in ("resume", "replace") else None)
+
+
+def _started(participant: Participant) -> QuerySet[Attempt]:
+    """Every attempt the participant began; a switched one only hands over to its successor."""
+    return Attempt.objects.filter(participant=participant).exclude(status=Attempt.Status.SWITCHED)
+
+
+def attempts_left(run: QuizRun, participant: Participant | None) -> int | None:
+    """None without a limit; an attempt still open counts as begun."""
+    limit = limit_of(rules_of(run))
+    if limit == 0:
+        return None
+    if participant is None:
+        return limit
+    return max(0, limit - _started(participant).count())
+
+
+def start_decision(run: QuizRun, participant: Participant | None) -> StartDecision:
+    """What a start by this participant would be, without acting on it."""
+    return begin(run, participant).decision
 
 
 def can_resume(run: QuizRun, participant: Participant | None) -> bool:
@@ -226,6 +291,11 @@ def name_is_taken(run: QuizRun, name: str, *, exclude: Participant | None = None
     return others.exists()
 
 
+def email_key_of(email: str | None) -> str | None:
+    """What an address is searched by: stripped and casefolded, None for none."""
+    return (email or "").strip().casefold() or None
+
+
 def claim_name(participant: Participant, identity: Identity, *, automatic: bool) -> None:
     """Call inside the transaction that stores the submission, so two cannot both win."""
     from app.domain.attempts import AttemptError  # attempts imports this module
@@ -242,7 +312,50 @@ def claim_name(participant: Participant, identity: Identity, *, automatic: bool)
     participant.name_dropped = dropped and not participant.display_name
     if identity.email:
         participant.email = identity.email
-    participant.save(update_fields=["display_name", "name_key", "email", "name_dropped"])
+        participant.email_key = email_key_of(identity.email)
+    participant.save(
+        update_fields=["display_name", "name_key", "email", "email_key", "name_dropped"]
+    )
+
+
+class NameRefused(Exception):
+    """`code` is `empty`, `too_long` or `taken`."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+def rename(participant: Participant, name: str, *, admin_id: str) -> None:
+    """An admin changes a nickname, for one that should not be on a scoreboard.
+
+    The rules of the run hold as they do for the participant: a name another participant with a
+    finished attempt holds is refused where the run forbids equal names. An empty name is
+    refused, not an erasure, and `name_dropped` is left as it was. The audit entry has no name.
+    """
+    authoring.ensure_editable(participant.run.quiz)
+    policy = _policy()
+    try:
+        clean = policy.clean_name(name)
+    except ValueError:
+        raise NameRefused("too_long") from None
+    if not clean:
+        raise NameRefused("empty")
+    with transaction.atomic():
+        if name_is_taken(participant.run, clean, exclude=participant):
+            raise NameRefused("taken")
+        participant.display_name = clean
+        participant.name_key = policy.name_key(clean)
+        participant.save(update_fields=["display_name", "name_key"])
+        audit.record(
+            actor_type="admin",
+            actor_id=admin_id,
+            action="participant.renamed",
+            entity_type="participant",
+            entity_id=str(participant.pk),
+            details={},
+        )
+    results.clear_board_cache(participant.run_id)
 
 
 def missing(participant: Participant | None) -> Missing:
@@ -265,6 +378,8 @@ class AttemptRow:
     max_score: Decimal | None
     submitted_at: datetime
     duration_ms: int | None = None
+    participant_id: UUID | None = None
+    passed: bool | None = None  # this attempt against the run's pass mark; None while unjudged
 
 
 ROW_SORTS = ("name", "score", "submitted", "duration")
@@ -281,6 +396,7 @@ def attempt_rows(
     )
     rows = []
     for attempt in found:
+        attempt.run = run  # one run object, not one query per attempt
         who = attempt.participant
         rows.append(
             AttemptRow(
@@ -290,6 +406,8 @@ def attempt_rows(
                 attempt.max_score,
                 attempt.submitted_at,  # type: ignore[arg-type]
                 attempt.duration_ms,
+                who.pk if who else None,
+                results.attempt_passed(attempt),
             )
         )
     if sort not in ROW_SORTS:

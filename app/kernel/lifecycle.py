@@ -1,12 +1,16 @@
 """Enabling and disabling plugins, and verification before the application serves requests."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Literal
 
 from django.conf import settings
 from django.db import DatabaseError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.urls import get_resolver
+from django.utils import translation
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext as _
 
 from app.contracts import AuthenticationProvider
 from app.kernel import audit, registry
@@ -36,11 +40,24 @@ class DependencyDisabled(LifecycleError):
     pass
 
 
-_usage_checks: list[Callable[[str], list[str]]] = []
+class ModuleLocked(LifecycleError):
+    pass
+
+
+@dataclass(frozen=True)
+class Blocker:
+    """One reason a module cannot change state. `target` means nothing to the kernel."""
+
+    kind: Literal["provider", "locked", "in_use", "dependency"]
+    text: str
+    target: tuple[str, str] | None = None
+
+
+_usage_checks: list[Callable[[str], list[Blocker]]] = []
 _startup_checks: list[Callable[[], list[str]]] = []
 
 
-def register_usage_check(check: Callable[[str], list[str]]) -> None:
+def register_usage_check(check: Callable[[str], list[Blocker]]) -> None:
     """check(module_id) returns the reasons why the module cannot be disabled now."""
     _usage_checks.append(check)
 
@@ -50,16 +67,25 @@ def register_startup_check(check: Callable[[], list[str]]) -> None:
     _startup_checks.append(check)
 
 
-def set_enabled(module_id: str, enabled: bool, *, actor_type: str, actor_id: str | None) -> None:
+def blockers(module_id: str, enabled: bool) -> list[Blocker]:
+    """Why the module cannot move to `enabled` now, in the active language; empty when it can."""
     module = _module(module_id)
     if module.kind != "plugin":
-        raise NotToggleable(f"Provider {module_id} cannot be toggled, it changes on restart")
+        text = _("Provider %(module)s cannot be toggled, it changes on restart")
+        return [Blocker("provider", text % {"module": module_id})]
+    if registry.is_enabled(module_id) == enabled:
+        return []
+    return _enable_blockers(module) if enabled else _disable_blockers(module)
+
+
+def set_enabled(module_id: str, enabled: bool, *, actor_type: str, actor_id: str | None) -> None:
+    module = _module(module_id)
+    with translation.override("en"):  # the exception ends in a log or on the command line
+        found = blockers(module_id, enabled)
+    if found:
+        raise _refusal(module_id, found)
     if registry.is_enabled(module_id) == enabled:
         return
-    if enabled:
-        _check_can_enable(module)
-    else:
-        _check_can_disable(module)
     with transaction.atomic():
         PluginInstallation.objects.update_or_create(
             pk=module_id, defaults=_row(module) | {"enabled": enabled}
@@ -108,27 +134,47 @@ def _enabled_providers(capability: str, excluding: str | None = None) -> list[st
     ]
 
 
-def _check_can_enable(module: Manifest) -> None:
+def _enable_blockers(module: Manifest) -> list[Blocker]:
+    found = []
     for capability in module.requires:
         if not _enabled_providers(capability):
             providers = [m.id for m in settings.KVZ_MODULES if capability in m.provides]
-            raise DependencyDisabled(
-                f"Module {module.id} requires {capability}; enable one of: {', '.join(providers)}"
-            )
+            text = _("Module %(module)s requires %(capability)s; enable one of: %(providers)s")
+            values = {
+                "module": module.id,
+                "capability": capability,
+                "providers": ", ".join(providers),
+            }
+            found.append(Blocker("dependency", text % values))
+    return found
 
 
-def _check_can_disable(module: Manifest) -> None:
-    reasons = [reason for check in _usage_checks for reason in check(module.id)]
-    if reasons:
-        raise ModuleInUse(f"Module {module.id} is in use: " + "; ".join(reasons))
+def _disable_blockers(module: Manifest) -> list[Blocker]:
+    found = [reason for check in _usage_checks for reason in check(module.id)]
+    if module.always_on:
+        text = _("The application cannot work without module %(module)s")
+        found.append(Blocker("locked", text % {"module": module.id}))
     for other in settings.KVZ_MODULES:
         if other.id == module.id or not registry.is_enabled(other.id):
             continue
-        for capability in set(other.requires) & set(module.provides):
+        for capability in sorted(set(other.requires) & set(module.provides)):
             if not _enabled_providers(capability, excluding=module.id):
-                raise DependencyDisabled(
-                    f"Module {module.id} provides {capability} required by {other.id}"
-                )
+                text = _("Module %(module)s provides %(capability)s required by %(other)s")
+                values = {"module": module.id, "capability": capability, "other": other.id}
+                found.append(Blocker("dependency", text % values))
+    return found
+
+
+def _refusal(module_id: str, found: list[Blocker]) -> LifecycleError:
+    in_use = [blocker.text for blocker in found if blocker.kind == "in_use"]
+    if in_use:
+        return ModuleInUse(f"Module {module_id} is in use: " + "; ".join(in_use))
+    errors = {
+        "provider": NotToggleable,
+        "locked": ModuleLocked,
+        "dependency": DependencyDisabled,
+    }
+    return errors[found[0].kind](found[0].text)
 
 
 def _dependency_problems() -> list[str]:

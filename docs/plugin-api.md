@@ -56,7 +56,8 @@ Field meaning:
 - `persistence` (`module:Class`) is required for a provider of `persistence`. The module and class are
   loaded while settings load, so they **MUST NOT** import Django at module level.
 - `auth_backend` (dotted class path) is required for a provider of `auth`.
-- `settings` lists settings the module owns. They are inherited global → quiz → question unless `scopes` is narrower, which needs `scope_reason`. Whoever adds a setting decides where it fits ([ADR-0042](_architecture/adr/0042-settings-inherited-and-declared.md)). `group` (`playing`, `answers`, `participants`, `scoreboard`, `data`, `look`, `technical`) and `level` (`basic`, `advanced`) only place it on the admin pages ([ADR-0052](_architecture/adr/0052-setting-groups-levels-and-step-default.md)).
+- `settings` lists settings the module owns. They are inherited global → quiz → question unless `scopes` is narrower, which needs `scope_reason`. Whoever adds a setting decides where it fits ([ADR-0042](_architecture/adr/0042-settings-inherited-and-declared.md)). `group` (`playing`, `answers`, `participants`, `scoreboard`, `rewards`, `data`, `look`, `technical`) and `level` (`basic`, `advanced`) only place it on the admin pages ([ADR-0052](_architecture/adr/0052-setting-groups-levels-and-step-default.md)).
+- `name` and `description` are optional texts in the module's catalogue, shown on the Modules page; without a name the page shows the id. `always_on: true` marks a module the application asks for by name, which can then never be disabled.
 - `settings_requirements` lists settings the module needs: per key, the values it refuses, the value `Use` applies, not among those refused, and a reason. Declarative values only; an unknown key or value stops the start. Modules whose requirements contradict each other block a quiz using both.
 - `api_compatibility` (contract version) and `config_schema_version` (plugin's own data version) are
   different things.
@@ -130,6 +131,7 @@ class MediaStorageProvider(Protocol):
     def store_image(self, data: bytes) -> str: ...  # raises ImageRefused; returns the asset id
     def exists(self, asset_id: str) -> bool: ...
     def load(self, asset_id: str) -> StoredImage | None: ...  # StoredImage(path, mime_type)
+    def private_assets_older_than(self, cutoff: datetime) -> Sequence[str]: ...  # participants' photos
 
 class AuthenticationProvider(Protocol):
     # A Django authentication backend, named by `auth_backend` in the manifest.
@@ -143,11 +145,27 @@ class PersistenceProvider(Protocol):
     def database_settings(self) -> JSON: ...      # one Django DATABASES entry
     def healthcheck(self) -> bool: ...
 
+@dataclass(frozen=True)
+class BrandColours:
+    main: str    # "#rrggbb"
+    accent: str
+
+@dataclass(frozen=True)
+class DerivedPalette:
+    light: Mapping[str, str]  # every name in PALETTE_TOKENS -> "#rrggbb"
+    dark: Mapping[str, str]
+    adjusted: bool            # main or accent changed to reach WCAG AA
+    main: str                 # the colours actually used
+    accent: str
+
 class ThemePlugin(Protocol):
     id: str
     version: str
     def layout_template(self) -> str: ...
     def stylesheet_urls(self) -> Sequence[str]: ...
+    def palettes(self) -> Sequence[str]: ...          # preset ids, without CUSTOM_PALETTE
+    def branding_fields(self) -> frozenset[str]: ...  # a subset of BRANDING_FIELDS
+    def derive_palette(self, colours: BrandColours) -> DerivedPalette: ...
 
 class RewardPlugin(Protocol):
     id: str
@@ -186,8 +204,8 @@ Translations: put `locale/<lang>/LC_MESSAGES/django.{po,mo}` in the module and u
 Add the module to `ROOTS` in `tools/messages.py` to include it in `make messages`.
 
 The remaining contracts (`QuizFlowPlugin`, `ParticipantPolicyPlugin`, `ResultViewPlugin` (below),
-`ImporterProvider`/`ExporterProvider`, `MediaStorageProvider`,
-`RetentionProvider`) are defined in Stage A–D as they are implemented.
+`ImporterProvider`/`ExporterProvider`, `MediaStorageProvider`) are defined in Stage A–D as they are
+implemented. `RetentionProvider` is under [Retention](#retention).
 
 ## Invariants every module must respect
 
@@ -215,6 +233,22 @@ def client_options(self, mode: str, moment: str) -> JSON: ...  # {"step", "back"
 
 The page enforces the result; it is not a security boundary (ADR-0035). Without such a module every quiz is one page, which works without JavaScript.
 
+## Quiz types
+
+`QuizTypePlugin` (port `quiz_type`) is a named bundle of quiz settings ([ADR-0062](_architecture/adr/0062-quiz-type-port.md)). It holds only the definition; applying it to a quiz is the domain's.
+
+```python
+id: str
+version: str
+order: int          # position in lists, ascending
+resets_all: bool    # True only for a type that removes every quiz override
+def label(self) -> str: ...
+def description(self) -> str: ...
+def values(self) -> Mapping[str, str]: ...  # setting key -> value; {} when resets_all
+```
+
+Every key must be a setting a quiz may override and every value one of its choices; the values must pass the clash rules of the settings forms (`app/domain/setting_rules.py`), such as navigation against reveal and the data profile against the answers visibility. The shared suite `tests/contracts/quiz_type.py` checks it. The module `quiz_types.basic` registers seven types and declares no settings ([plugins/quiz-types.md](_architecture/plugins/quiz-types.md)).
+
 ## Participant policy
 
 `ParticipantPolicyPlugin` (port `participant_policy`) holds the pure rules about a participant. It reads nothing from the request or the database; the API hands it the facts.
@@ -223,10 +257,10 @@ The page enforces the result; it is not a security boundary (ADR-0035). Without 
 def clean_name(self, raw: str) -> str: ...  # spaces collapsed; "" when empty; ValueError over 40
 def name_key(self, clean: str) -> str: ...  # case-folded, for comparing nicknames
 def valid_email(self, raw: str) -> bool: ...
-def on_start(self, rules: Mapping[str, str], *, finished: bool, open_attempt: OpenAttempt) -> StartDecision: ...
+def on_start(self, rules: Mapping[str, str], *, finished: bool, used: int, passed: bool, open_attempt: OpenAttempt) -> StartDecision: ...
 ```
 
-`rules` holds the resolved `repeat_attempts` and `unfinished_attempt`. `open_attempt` is `none`, `running` or `expired`. The result is `new`, `resume`, `replace` (close the open attempt, then start a new one), `played` or `time_up`.
+`rules` holds the resolved `repeat_attempts`, `unfinished_attempt`, `max_attempts` and `after_pass`. `used` is the participant's started attempts other than the open one (submitted, waiting for grading, abandoned, or in progress; a switched one never counts), `passed` says the kept score reached the pass mark (contract 1.1: `used` and `passed` are new). The domain always passes both, so a participant policy written for 1.0 must add them to its `on_start` signature before it runs on 1.1, although its `api_compatibility` (`>=1.0,<2.0`) still accepts the kernel. `open_attempt` is `none`, `running` or `expired`. The result is `new`, `resume`, `replace` (close the open attempt, then start a new one), `played` or `time_up`.
 
 | repeat | unfinished | finished | open | result |
 |---|---|---|---|---|
@@ -238,14 +272,29 @@ def on_start(self, rules: Mapping[str, str], *, finished: bool, open_attempt: Op
 | forbid | submitted | no | running or expired | replace |
 | forbid | any | no | none | new |
 
-The module also declares the settings `repeat_attempts`, `unfinished_attempt`, `ask_name`, `ask_email`, `ask_when` and `duplicate_names` (global and quiz).
+Under `allow` with `max_attempts` N (0 is no limit), checked in this order. "after pass" is `after_pass=stop` with `passed`; it ends the test whatever N is.
+
+| after pass | open | unfinished | used vs N | result |
+|---|---|---|---|---|
+| yes | any | any | any | played |
+| no | none | - | N = 0 or used < N | new |
+| no | none | - | used >= N | played |
+| no | running | continue | - | resume |
+| no | running | used or submitted | used + 1 < N | replace |
+| no | running | used or submitted | used + 1 >= N | played |
+| no | expired | any | used + 1 < N | replace |
+| no | expired | any | used + 1 >= N | played |
+
+Under a limit an expired attempt counts as used and never locks the participant out with `time_up`; `time_up` stays only for `forbid`.
+
+With N = 0 and no pass that ends the test, `allow` is `new` as before. The module also declares the settings `repeat_attempts`, `unfinished_attempt`, `max_attempts`, `after_pass`, `ask_name`, `ask_email`, `ask_when` and `duplicate_names` (global and quiz).
 
 ## Result view
 
 `ResultViewPlugin` (port `result_view`) holds the pure rules of a scoreboard and of score summaries ([ADR-0026](_architecture/adr/0026-scoreboard-tie-break-rule.md), [ADR-0051](_architecture/adr/0051-scoreboard-participants-and-official-attempt.md)). The domain reads attempts, decides visibility and names, and hands it `ScoreEntry` values.
 
 ```python
-def pick_official(self, entries: Sequence[ScoreEntry], rule: str) -> ScoreEntry: ...  # "best" or "first"
+def pick_official(self, entries: Sequence[ScoreEntry], rule: str) -> ScoreEntry: ...  # "best", "first", "last" or "average" (ADR-0063; an unknown rule raises ValueError)
 def rank(self, entries: Sequence[ScoreEntry], rules: Mapping[str, str], seed: str) -> list[RankedRow]: ...
 def summarize(self, scores: Sequence[Decimal], max_score: Decimal) -> ScoreSummary: ...
 ```
@@ -255,3 +304,67 @@ def summarize(self, scores: Sequence[Decimal], max_score: Decimal) -> ScoreSumma
 ## Rewards and draw
 
 `RewardPlugin` (port `reward`) and `DrawingPlugin` (port `drawing`) hold only pure rules ([ADR-0053](_architecture/adr/0053-rewards-tiers-alternates-and-draw-history.md)). The domain hands the reward plugin `ThresholdRule(id, unit, value)` and `AttemptFigures(score, max_score, correct, questions)` of the official attempt; `qualifies` returns the ids of the reached threshold rules, under `highest` only the one with the largest share. The drawing plugin gets participant ids and never sees names. The module `rewards.threshold` also declares `reward_source`, `reward_thresholds` and `winner_contact` (global and quiz); `drawings.manual` declares no settings.
+
+## Results export and table sinks
+
+`ResultsExporterProvider` (port `results_exporter`) keeps background export jobs and their files; `TableSinkProvider` (port `table_sink`) is the Google Sheets contract (FR-44) and has no implementation in v1.0 ([ADR-0055](_architecture/adr/0055-results-export-background-job-and-csv-dialect.md), [providers/csv-io.md](_architecture/providers/csv-io.md)). Both take tables the domain builds:
+
+```python
+@dataclass(frozen=True)
+class ExportTable:
+    name: str
+    columns: Sequence[str]  # keys of each row
+    headers: Sequence[str]  # translated labels, same length
+    rows: Sequence[Mapping[str, str]]
+    numeric: frozenset[str] = frozenset()  # columns whose numbers skip formula protection
+
+class TableSinkProvider(Protocol):
+    id: str
+    def send(self, title: str, tables: Sequence[ExportTable]) -> str: ...  # where it went
+
+class ResultsExporterProvider(Protocol):
+    id: str
+    def create(self, admin_id: str, choices: Mapping[str, Any]) -> str: ...
+    def job(self, job_id: str, admin_id: str) -> ExportJobView: ...  # raises ExportJobGone
+    def jobs(self, admin_id: str) -> Sequence[ExportJobView]: ...  # unexpired, newest first
+    def claim_next(self) -> ExportJobView | None: ...  # the job it set running, with choices
+    def write(self, job_id: str, tables: Sequence[ExportTable],
+              photos: Mapping[str, str], bundle: bool) -> None: ...  # photos: name in ZIP -> path
+    def fail(self, job_id: str, code: str) -> None: ...
+    def restart(self, job_id: str, admin_id: str) -> str: ...  # only interrupted or failed
+    def path(self, job_id: str, admin_id: str, name: str) -> str: ...  # raises ExportJobGone
+    def delete_for_runs(self, quiz_id: str, run_ids: Sequence[str]) -> None: ...
+```
+
+`delete_for_runs` covers a job naming one of the runs and a job of all runs of that quiz. A queued or running job ends as failed with error `run_data_deleted`, so a file cannot appear after the deletion; any other job goes with its files. It is safe to repeat: a job already stopped this way stays, so its admin can restart it. It raises when files cannot be removed and keeps that job's row, so the caller can try again.
+
+A sink must not change the tables it gets. The shared suite is `tests/contracts/table_sink.py` (`TableSinkSuite(sink).run()`).
+
+## Retention
+
+`RetentionProvider` (port `retention`, [providers/retention.md](_architecture/providers/retention.md)) keeps the trail of deletions. What is due and what is deleted is the domain's concern.
+
+```python
+@dataclass(frozen=True)
+class RetentionRecord:
+    id: str
+    run_id: str
+    trigger: str  # "automatic" | "manual" | "erasure"
+    admin_id: str | None  # None when automatic
+    policy: str
+    cutoff_at: datetime | None
+    executed_at: datetime
+    counts: Mapping[str, int]  # rows and files deleted, by kind
+    has_fingerprint: bool  # the fingerprint itself is never handed out
+
+class RetentionProvider(Protocol):
+    id: str
+    def record(self, run_id: str, *, trigger: str, admin_id: str | None, policy: str,
+               cutoff_at: datetime | None, counts: Mapping[str, int],
+               fingerprint: str | None = None) -> str: ...
+    def history(self, limit: int = 200, offset: int = 0) -> Sequence[RetentionRecord]: ...  # newest first
+    def for_run(self, run_id: str) -> Sequence[RetentionRecord]: ...  # newest first
+    def erased(self, fingerprint: str) -> Sequence[RetentionRecord]: ...  # newest first
+```
+
+A record holds no personal value. The shared suite is `tests/contracts/retention.py` (`RetentionSuite(provider).run()`).

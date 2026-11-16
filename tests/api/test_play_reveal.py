@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
 from app.api.rendering import result_sources
 from app.domain import attempts, authoring, settings
-from app.domain.models import Attempt
+from app.domain.models import Attempt, QuizRun
 from tests.api.test_play import Play
 from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B, definition, make_quiz
 
@@ -160,3 +163,62 @@ def test_none_option_set_on_one_question_only(client, db):
 def test_points_ignore_question_settings(db):
     run = _two_questions({settings.SHOW_SOURCES: "off"}, {})
     assert authoring.latest_published(run.quiz).max_score == 2
+
+
+def after_close_run(**fields):
+    quiz = make_quiz()
+    authoring.save_question(quiz, None, "choice", definition(("cs",)), **fields)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    for key, value in (
+        (settings.DATA_PROFILE, "answers"),
+        (settings.ANSWERS_VISIBILITY, "participant"),
+        (settings.REVEAL_MOMENT, "after_close"),
+        (settings.REVEAL_LEVEL, "answers"),
+    ):
+        settings.set_override(key, quiz, value, admin_id=None)
+    return authoring.open_run(quiz, admin_id=ADMIN_ID)
+
+
+NOTE = "Správné odpovědi uvidíte na tomto odkazu po uzavření běhu"
+
+
+def test_after_close_shows_no_answers_after_submit_and_says_when(client):
+    """AC-175: the result page shows no answers and says when they come."""
+    run = after_close_run()
+    deadline = timezone.now() + timedelta(hours=2)
+    QuizRun.objects.filter(pk=run.pk).update(deadline_at=deadline)
+    html = result_of(client, run)
+    assert "reveal-state" not in html and "reveal-correct" not in html
+    assert NOTE in html and "(nejdříve od " in html  # the run may still close earlier or later
+    assert "/v/" in html
+
+
+def test_after_close_without_a_deadline_says_it_without_a_time(client):
+    html = result_of(client, after_close_run())
+    assert NOTE in html and "(od " not in html
+
+
+def test_after_close_note_in_the_other_languages(client):
+    quiz = make_quiz(locales=("cs", "en", "uk"))
+    authoring.save_question(quiz, None, "choice", definition(("cs", "en", "uk")))
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    for key, value in (
+        (settings.DATA_PROFILE, "answers"),
+        (settings.ANSWERS_VISIBILITY, "participant"),
+        (settings.REVEAL_MOMENT, "after_close"),
+    ):
+        settings.set_override(key, quiz, value, admin_id=None)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    assert "You will see the correct answers at this link after the run closes." in result_of(
+        client, run, lang="en"
+    )
+
+
+def test_after_close_hides_the_list_while_the_run_is_still_open(client):
+    """AC-175: with a deadline still ahead, the result page lists nothing."""
+    run = after_close_run()
+    play = Play(client, run)
+    QuizRun.objects.filter(pk=run.pk).update(deadline_at=timezone.now() + timedelta(hours=1))
+    response = play.submit()
+    assert response.status_code == 200
+    assert "reveal-state" not in response.content.decode()

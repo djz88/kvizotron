@@ -39,7 +39,7 @@ Chosen option: "A three-level setting with approval per photo, and a share carri
 * Good, because public photos need two decisions, by level and per photo
 * Good, because scoring stays one mechanism
 * Bad, because deleting a photo cannot be undone, by design
-* Bad, because uploads have no rate limit until D5, so the application is not for public deployment until then
+* Good, because since D5 a photo reaches the server only through `submit`, which is limited per address ([ADR-0058](0058-rate-limit-buckets.md)), besides the per-run image limit and the body limit in Caddy
 
 ### Confirmation
 

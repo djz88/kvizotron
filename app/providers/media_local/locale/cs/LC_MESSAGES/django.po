@@ -1,65 +1,73 @@
-#: manifest.py:26
+#: manifest.py
+msgid "Media storage"
+msgstr "Úložiště médií"
+
+#: manifest.py
+msgid "Images and photos stored on this server."
+msgstr "Obrázky a fotky uložené na tomto serveru."
+
+#: manifest.py
 msgid "Images from an address"
 msgstr "Obrázky z adresy"
 
-#: manifest.py:28
+#: manifest.py
 msgid "Show a copy kept here"
 msgstr "Ukazovat kopii uloženou zde"
 
-#: manifest.py:29
+#: manifest.py
 msgid "Load them from their server"
 msgstr "Načítat z jejich serveru"
 
-#: manifest.py:31
+#: manifest.py
 msgid "A server that images load from sees the IP addresses of participants."
 msgstr "Server, ze kterého se obrázky načítají, vidí IP adresy účastníků."
 
-#: manifest.py:39
+#: manifest.py
 msgid "Fetching images from the internal network"
 msgstr "Stahování obrázků z vnitřní sítě"
 
-#: manifest.py:40
+#: manifest.py
 msgid "Refuse"
 msgstr "Odmítnout"
 
-#: manifest.py:40
+#: manifest.py
 msgid "Allow"
 msgstr "Povolit"
 
-#: manifest.py:42
+#: manifest.py
 msgid "Any admin can turn this on, so a stolen admin account could use it to reach the internal network."
 msgstr "Zapnout to může každý správce, takže ukradený účet správce by tudy mohl dosáhnout do vnitřní sítě."
 
-#: provider.py:61
+#: provider.py
 msgid "This file is not a usable image. Use PNG, JPEG, WebP, GIF or SVG."
 msgstr "Tento soubor není použitelný obrázek. Použijte PNG, JPEG, WebP, GIF nebo SVG."
 
-#: provider.py:65
+#: provider.py
 #, python-format
 msgid "This file is too large. The limit is %(mb)s MB."
 msgstr "Soubor je příliš velký. Limit je %(mb)s MB."
 
-#: provider.py:162
+#: provider.py
 msgid "HEIC photos cannot be used. Save the photo as JPEG on the phone and upload it again."
 msgstr "Fotky HEIC nejde použít. Uložte fotku v telefonu jako JPEG a nahrajte ji znovu."
 
-#: provider.py:180
+#: provider.py
 msgid "This file is not a usable photo. Use PNG, JPEG or WebP."
 msgstr "Tento soubor není použitelná fotka. Použijte PNG, JPEG nebo WebP."
 
-#: provider.py:223
+#: provider.py
 msgid "This run cannot take any more photos."
 msgstr "Tento běh už další fotky nepojme."
 
-#: provider.py:258
+#: provider.py
 msgid "Enter a whole address starting with https://, with no login in it."
 msgstr "Zadejte celou adresu začínající https://, bez přihlašovacích údajů."
 
-#: provider.py:273
+#: provider.py
 msgid "This address is in an internal network, which the settings do not allow."
 msgstr "Tato adresa je ve vnitřní síti, a to nastavení nedovoluje."
 
-#: provider.py:276
+#: provider.py
 msgid "The image could not be fetched from this address."
 msgstr "Obrázek se z této adresy nepodařilo stáhnout."
 

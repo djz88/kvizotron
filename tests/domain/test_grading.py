@@ -3,9 +3,10 @@
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from app.domain import attempts, authoring, grading, reveal, run_links
-from app.domain.models import Attempt, AttemptAnswer
+from app.domain.models import Attempt, AttemptAnswer, Quiz
 from app.kernel.models import AuditEvent
 from tests.domain.helpers import ADMIN_ID, add_question, make_quiz
 from tests.support.graded import add_graded
@@ -42,6 +43,7 @@ def refreshed(started):
 
 
 def test_needs_grading_gives_pending_and_automatic_score(graded_type):
+    """AC-16: 2 automatic and 0-8 manual points give 2 of 10 and a pending attempt."""
     started, result = submitted(running())
     assert result.pending is True
     assert (result.earned_points, result.max_points) == (2, 10)
@@ -215,3 +217,20 @@ def test_reveal_says_it_waits_and_earned_shows_the_automatic_part(graded_type):
     assert revealed.earned == 2 and revealed.maximum == 10
     empty = reveal.of_question(question, {}, "answers", "cs")
     assert empty.state == reveal.State.UNANSWERED
+
+
+def test_grading_refuses_an_archived_quiz(graded_type):
+    """An archived quiz is read-only: no points, photo removal or approval."""
+    run = running(manual_max=8)
+    submitted(run)
+    row = AttemptAnswer.objects.get()
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    Quiz.objects.filter(pk=run.quiz_id).update(archived_at=timezone.now())
+    with pytest.raises(authoring.QuizArchived):
+        grading.save_manual(row, Decimal(5), admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        grading.remove_photo(row, admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        grading.set_approved(row, True, admin_id=ADMIN_ID)
+    row.refresh_from_db()
+    assert (row.manual_points, row.removed, row.approved) == (None, False, False)

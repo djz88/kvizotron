@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import QuerySet, Sum
 from django.utils import timezone
 
-from app.domain import rewards
+from app.domain import authoring, rewards
 from app.domain.models import Attempt, AttemptAnswer, Participant, Quiz, QuizRun
 from app.kernel import audit
 
@@ -81,6 +81,7 @@ def _too_exact(points: Decimal) -> bool:
 
 
 def save_manual(answer: AttemptAnswer, points: Decimal, *, admin_id: str) -> None:
+    authoring.ensure_editable(answer.attempt.run.quiz)
     with transaction.atomic():
         current = AttemptAnswer.objects.select_related("attempt").get(pk=answer.pk)
         if (
@@ -102,6 +103,7 @@ def save_manual(answer: AttemptAnswer, points: Decimal, *, admin_id: str) -> Non
 
 def remove_photo(answer: AttemptAnswer, *, admin_id: str) -> str | None:
     """Returns the asset to delete once this has been committed. Automatic points stay."""
+    authoring.ensure_editable(answer.attempt.run.quiz)
     with transaction.atomic():
         current = AttemptAnswer.objects.select_related("attempt").get(pk=answer.pk)
         if current.removed:
@@ -124,6 +126,7 @@ def remove_photo(answer: AttemptAnswer, *, admin_id: str) -> str | None:
 
 def set_approved(answer: AttemptAnswer, approved: bool, *, admin_id: str) -> None:
     """Whether this photo may appear in a public walkthrough, when its level allows that."""
+    authoring.ensure_editable(answer.attempt.run.quiz)
     with transaction.atomic():
         current = AttemptAnswer.objects.get(pk=answer.pk)
         if current.removed:

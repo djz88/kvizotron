@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from app.contracts import COLOR_PALETTE
 from app.domain import authoring, settings
 from app.domain.models import AppSetting, QuizRevision, QuizRun
 from tests.domain.helpers import ADMIN_ID, add_question, make_quiz, published_quiz
@@ -375,9 +376,9 @@ def test_language_dropdown_shows_the_active_flag(logged_in):
 
 
 def test_administration_uses_the_global_palette(logged_in):
-    settings.set_global(settings.COLOR_PALETTE, "red_plum", admin_id=None)
+    settings.set_global(COLOR_PALETTE, "red_plum", admin_id=None)
     quiz = make_quiz()
-    settings.set_override(settings.COLOR_PALETTE, quiz, "indigo_pink", admin_id=None)
+    settings.set_override(COLOR_PALETTE, quiz, "indigo_pink", admin_id=None)
     assert 'data-palette="red_plum"' in text(logged_in.get(f"{base(quiz)}/edit"))
 
 
@@ -388,7 +389,7 @@ def test_global_settings_page_offers_the_palette(logged_in):
 
 def test_saving_palette_globally(logged_in):
     logged_in.post("/admin/settings", {"color_palette": "green_blue"})
-    assert settings.resolve(settings.COLOR_PALETTE) == "green_blue"
+    assert settings.resolve(COLOR_PALETTE) == "green_blue"
 
 
 def test_quiz_list_shows_the_same_tags(logged_in):
@@ -399,18 +400,22 @@ def test_quiz_list_shows_the_same_tags(logged_in):
 
 
 def test_no_template_carries_an_inline_style_or_script():
+    # The one exception is the colours block of the layout, which the CSP allows by its nonce.
     found = [
         str(path)
         for path in APP.rglob("*.html")
-        if re.search(r"\sstyle=|<style|<script(?![^>]*\ssrc=)", path.read_text(encoding="utf-8"))
+        if re.search(
+            r"\sstyle=|<style(?![^>]*\snonce=)|<script(?![^>]*\ssrc=)",
+            path.read_text(encoding="utf-8"),
+        )
     ]
     assert found == []
 
 
 def test_settings_tab_survives_a_stored_palette_no_longer_offered(logged_in):
     quiz = make_quiz()
-    AppSetting.objects.create(key=settings.COLOR_PALETTE, quiz=None, value_json="retired")
-    AppSetting.objects.create(key=settings.COLOR_PALETTE, quiz=quiz, value_json="retired")
+    AppSetting.objects.create(key=COLOR_PALETTE, quiz=None, value_json="retired")
+    AppSetting.objects.create(key=COLOR_PALETTE, quiz=quiz, value_json="retired")
     response = logged_in.get(f"{base(quiz)}/settings")
     assert response.status_code == 200
     assert 'data-palette="blue_teal"' in text(response)
@@ -468,3 +473,42 @@ def test_run_page_all_shows_everything(showing_all):
     html = text(showing_all.get(f"/admin/runs/{run.id}?lang=en"))
     assert f"/admin/runs/{run.id}/period" in html
     assert f"/admin/runs/{run.id}/code" in html
+
+
+def test_more_tab_arrow_points_right_when_open():
+    """The list opens to the right of "More", so the open arrow points there, not down."""
+    css = (
+        Path(__file__).resolve().parents[2] / "app/plugins/theme_default/assets/theme.css"
+    ).read_text()
+    rule = re.search(r"\.tab-more\[open\] > summary::after \{([^}]*)\}", css)
+    assert rule and "rotate(-90deg)" in rule.group(1)
+
+
+def test_more_tab_arrow_points_down_while_closed_and_stays_on_its_line():
+    """Closed, "More" points down to say it opens; open, it points right at the list."""
+    css = (
+        Path(__file__).resolve().parents[2] / "app/plugins/theme_default/assets/theme.css"
+    ).read_text()
+    closed = re.search(r"\.tab-more:not\(\[open\]\) > summary::after \{([^}]*)\}", css)
+    assert closed and "rotate(0" in closed.group(1)
+    summary = re.search(r"\.tab-more > summary \{([^}]*)\}", css)
+    assert summary and "white-space: nowrap" in summary.group(1)
+
+
+def test_quiz_settings_put_copy_and_archive_first_and_every_section_as_wide(logged_in):
+    """AC-168: copy and archive is a bar on top, not a section; the sections share one width."""
+    quiz = make_quiz()
+    html = text(logged_in.get(f"{base(quiz)}/settings?lang=en"))
+    main = html[html.index('class="panel-main"') :]
+    bar = re.search(r'<div class="actions quiz-copy" id="copy">.*?</div>', main, re.S)
+    assert bar and "/duplicate" in bar.group(0) and "/archive" in main
+    assert main.index('id="copy"') < main.index('id="title"')
+    sections = re.findall(r'<section class="(form-section[^"]*)"', main)
+    assert sections and all("settings-form" in classes for classes in sections), sections
+    panel = html[html.index('class="section-panel"') : html.index("</aside>")]
+    assert 'href="#copy"' not in panel
+    assert (
+        panel.index('href="#title"')
+        < panel.index('href="#group-')
+        < panel.index('href="#branding"')
+    )

@@ -12,14 +12,23 @@ from PIL import Image
 
 from app.api import admin_import
 from app.contracts import ALLOW_INTERNAL_IMAGE_ADDRESSES, EXTERNAL_IMAGE_MODE
-from app.domain import authoring, settings
+from app.domain import authoring, bank_folders, settings
 from app.domain.models import BankQuestion, Quiz, QuizRevision
 from app.kernel.models import AdminUser
 from app.providers.csv_io import provider as provider_module
 from app.providers.csv_io.models import ImportJobRecord
 from app.providers.media_local import remote
 from app.providers.media_local.models import MediaAsset
-from tests.domain.helpers import ADMIN_ID, make_bank, make_quiz, open_quiz_run, published_quiz
+from tests.domain.helpers import (
+    ADMIN_ID,
+    add_bank_question,
+    add_row,
+    bank_with,
+    make_bank,
+    make_quiz,
+    open_quiz_run,
+    published_quiz,
+)
 from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
@@ -450,3 +459,236 @@ def test_report_while_the_first_request_runs_says_wait(uploader):
     page = text(uploader.get(job_url("report") + "?lang=en"))
     assert "still running" in page
     assert not Quiz.objects.exists()
+
+
+TWO_LANGUAGES = 'quiz,Kvíz,Popis,"cs,en",,,,,'
+
+
+def many_warnings(uploader, questions):
+    """Each question lacks its English text, so each gives a warning."""
+    return upload(uploader, csv_of(TWO_LANGUAGES, *[GOOD] * questions))
+
+
+def rows_in(html):
+    return html.count("<tr>") - 1  # without the header row
+
+
+def test_many_warnings_scroll_in_their_own_table_and_can_be_shown_all(uploader):
+    """AC-158: more than 15 warnings sit in a scrollable region, and a link shows all of them."""
+    many_warnings(uploader, 20)
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert 'class="issues-scroll"' in html and 'tabindex="0"' in html
+    assert rows_in(html) >= 20
+    assert 'href="?lang=en&amp;all=1"' in html
+    full = text(uploader.get(job_url("check") + "?lang=en&all=1"))
+    assert "issues-scroll" not in full
+    assert rows_in(full) == rows_in(html)
+    assert 'href="?lang=en"' in full
+
+
+def test_few_warnings_show_without_a_region_or_a_link(uploader):
+    many_warnings(uploader, 5)
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "issues-scroll" not in html and "all=1" not in html
+    assert rows_in(html) >= 5
+
+
+def test_the_report_scrolls_its_warnings_too(uploader):
+    many_warnings(uploader, 20)
+    uploader.post(job_url("confirm"))
+    html = text(uploader.get(job_url("report") + "?lang=en"))
+    assert 'class="issues-scroll"' in html and 'href="?lang=en&amp;all=1"' in html
+    assert "issues-scroll" not in text(uploader.get(job_url("report") + "?lang=en&all=1"))
+
+
+def test_the_bank_page_offers_replacing_only_with_questions(logged_in):
+    full = bank_with(1)
+    empty = make_bank("Prázdná")
+    assert f"target=bank_replace:{full.id}" in text(logged_in.get(f"/admin/banks/{full.id}"))
+    assert "bank_replace" not in text(logged_in.get(f"/admin/banks/{empty.id}"))
+
+
+def test_replace_check_page_shows_the_effect_and_the_quizzes(uploader):
+    bank = bank_with(2)
+    add_row(make_quiz(slug="pouziva-banku"), bank)
+    assert upload(uploader, csv_of(GOOD, GOOD), target=f"bank_replace:{bank.id}").status_code == 302
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "pouziva-banku" in html
+    assert "Replace the questions" in html
+    assert "Questions of the bank that will be deleted: 2" in html
+    assert BankQuestion.objects.filter(bank=bank).count() == 2
+
+
+def test_replace_check_page_without_quizzes_says_so(uploader):
+    bank = bank_with(1)
+    upload(uploader, csv_of(GOOD), target=f"bank_replace:{bank.id}")
+    assert "No quiz draws from this bank." in text(uploader.get(job_url("check") + "?lang=en"))
+
+
+def test_confirming_a_replace_swaps_the_questions_and_the_report_counts(uploader):
+    """AC-165: the bank holds the file's questions, the draw row follows, the report counts."""
+    bank = bank_with(2)
+    quiz = make_quiz(slug="pouziva-banku")
+    add_row(quiz, bank)
+    imported(uploader, csv_of(GOOD, GOOD, GOOD), target=f"bank_replace:{bank.id}")
+    assert BankQuestion.objects.filter(bank=bank).count() == 3
+    html = text(uploader.get(job_url("report") + "?lang=en"))
+    assert "Questions added: 3" in html
+    assert "Questions removed: 2" in html
+    assert authoring.editable_draws(quiz)[0]["bank_id"] == str(bank.id)
+
+
+def test_a_file_with_an_error_row_is_refused_on_the_check_page(uploader):
+    bank = bank_with(2)
+    upload(uploader, csv_of(GOOD, BAD), target=f"bank_replace:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "Replacing needs every row to be usable" in html
+    assert "/confirm" not in html
+    uploader.post(job_url("confirm"))
+    assert BankQuestion.objects.filter(bank=bank).count() == 2
+
+
+def test_a_failed_save_reports_that_nothing_was_replaced(uploader):
+    bank = bank_with(2)
+    incomplete = "question,,,,choice,Bez možností,,,"
+    imported(uploader, csv_of(GOOD, incomplete), target=f"bank_replace:{bank.id}")
+    html = text(uploader.get(job_url("report") + "?lang=en"))
+    assert "nothing was replaced" in html
+    assert BankQuestion.objects.filter(bank=bank).count() == 2
+
+
+def test_upload_again_keeps_the_replace_mode(uploader):
+    bank = bank_with(1)
+    upload(uploader, csv_of(GOOD), target=f"bank_replace:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert f"target=bank_replace:{bank.id}" in html
+
+
+def test_a_published_revision_keeps_its_copies_after_a_replace(uploader):
+    bank = bank_with(2)
+    quiz = make_quiz(slug="pouziva-banku", locales=("cs",))
+    add_row(quiz, bank, count=1)
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    before = authoring.latest_published(quiz).snapshot_json
+    imported(uploader, csv_of(GOOD, GOOD), target=f"bank_replace:{bank.id}")
+    assert authoring.latest_published(quiz).snapshot_json == before
+    assert authoring.banks_changed(quiz) is True
+
+
+def test_replace_target_of_a_missing_bank_is_404(logged_in):
+    assert logged_in.get(f"/admin/import/new?target=bank_replace:{ADMIN_ID}").status_code == 404
+
+
+def test_a_broken_image_found_at_confirm_stops_the_replace(uploader):
+    """AC-165: the file passes the check, the image fails at confirm, nothing is replaced."""
+    bank = bank_with(2)
+    head = QUIZ_HEAD + ",image,image_alt_cs"
+    data = csv_of(
+        f"{GOOD},good.png,Popis",
+        "question,,,,choice,Vadný obrázek,A,B,A,bad.png,Popis",
+        head=head,
+    )
+    body = zip_of({"q.csv": data, "good.png": png(), "bad.png": b"this is no image"})
+    imported(uploader, body, target=f"bank_replace:{bank.id}", name="q.zip")
+    html = text(uploader.get(job_url("report") + "?lang=en"))
+    assert "nothing was replaced" in html
+    assert BankQuestion.objects.filter(bank=bank).count() == 2
+
+
+FOLDER_HEAD = QUIZ_HEAD + ",folder"
+
+
+def with_folders(*paths):
+    return csv_of(*(f"{GOOD},{path}" for path in paths), head=FOLDER_HEAD)
+
+
+def add_bank_question_to(bank, folder):
+    add_bank_question(bank, locales=("cs",), folder=folder)
+
+
+def folder_of(bank, path):
+    return bank_folders.ensure_path(bank, path, admin_id=ADMIN_ID)
+
+
+def test_the_check_page_of_a_bank_import_shows_the_folder_tree(uploader):
+    bank = make_bank()
+    upload(uploader, with_folders("EU/geopolitika"), target=f"bank:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "Where the questions go" in html
+    assert "geopolitika" in html
+    assert "new folder" in html
+    assert "Apply the structure" in html
+    ImportJobRecord.objects.all().delete()
+    upload(uploader, csv_of(QUIZ_ROW, GOOD))
+    assert "Apply the structure" not in text(uploader.get(job_url("check") + "?lang=en"))
+
+
+def test_applying_the_structure_and_confirming_uses_it(uploader):
+    """AC-166: the admin removes the file's top folder and the replace fills the bank's own."""
+    bank = make_bank()
+    old = folder_of(bank, "geopolitika")
+    add_bank_question_to(bank, old)
+    quiz = make_quiz(slug="evropa")
+    add_row(quiz, bank, count=2, folder_id=str(old.pk))
+    upload(
+        uploader, with_folders("EU/geopolitika", "EU/geopolitika"), target=f"bank_replace:{bank.id}"
+    )
+    html = text(uploader.get(job_url("check") + "?lang=en&drop_0=1"))
+    assert "existing folder" in html
+    assert 'name="drop_0"' in html
+    uploader.post(job_url("confirm"), {"drop_0": "1"})
+    assert BankQuestion.objects.filter(bank=bank, folder=old).count() == 2
+    assert not bank.folders.filter(name="EU").exists()
+
+
+def test_a_tampered_structure_imports_nothing(uploader):
+    bank = bank_with(1)
+    foreign = folder_of(make_bank("Cizí"), "cizí")
+    upload(uploader, with_folders("EU/a"), target=f"bank:{bank.id}")
+    uploader.post(job_url("confirm"), {"under": str(foreign.pk)})
+    assert "no longer valid" in text(uploader.get(job_url("report") + "?lang=en"))
+    assert BankQuestion.objects.filter(bank=bank).count() == 1
+
+
+def test_a_bad_name_on_the_check_page_hides_the_confirm(uploader):
+    bank = make_bank()
+    upload(uploader, with_folders("EU/a"), target=f"bank:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en&name_0=a/b"))
+    assert "no slash" in html
+    assert "/confirm" not in html
+
+
+def test_the_replace_check_lists_short_draw_rows(uploader):
+    bank = bank_with(3)
+    obchod = folder_of(bank, "obchod")
+    BankQuestion.objects.filter(bank=bank).update(folder=obchod)
+    add_row(make_quiz(slug="evropa"), bank, count=3, folder_id=str(obchod.pk))
+    upload(uploader, with_folders("EU/obchod"), target=f"bank_replace:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "evropa · obchod · 0 of 3" in html
+    html = text(uploader.get(job_url("check") + "?lang=en&drop_0=1"))
+    assert "evropa · obchod · 1 of 3" in html
+
+
+def test_a_refused_replace_still_shows_the_structure(uploader):
+    bank = bank_with(1)
+    data = csv_of(f"{GOOD},EU", f"{BAD},EU", head=FOLDER_HEAD)
+    upload(uploader, data, target=f"bank_replace:{bank.id}")
+    html = text(uploader.get(job_url("check") + "?lang=en"))
+    assert "Replacing needs every row to be usable" in html
+    assert "Apply the structure" in html
+
+
+def test_a_structure_that_makes_every_row_too_deep_keeps_the_form(uploader):
+    bank = make_bank()
+    deep = folder_of(bank, "a/b/c")
+    upload(uploader, with_folders("x/y"), target=f"bank:{bank.id}")
+    html = text(uploader.get(job_url("check") + f"?lang=en&under={deep.pk}"))
+    assert "deeper than 4 levels" in html
+    assert "Apply the structure" in html
+
+
+def test_the_name_field_of_a_top_folder_says_folder_name(uploader):
+    bank = make_bank()
+    upload(uploader, with_folders("EU/a"), target=f"bank:{bank.id}")
+    assert "Folder name" in text(uploader.get(job_url("check") + "?lang=en"))

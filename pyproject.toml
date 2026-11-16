@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "kvizotron"
-version = "0.1.0"
+version = "1.0.0"
 description = "Self-hosted multilingual quiz and competition platform"
 requires-python = ">=3.15,<3.16"
 license = "GPL-3.0-or-later"
@@ -22,12 +22,14 @@ dependencies = [
 [project.entry-points."kvizotron.modules"]
 "auth.local" = "app.providers.auth_local.manifest:MANIFEST"
 "flow.basic" = "app.plugins.quiz_flow.manifest:MANIFEST"
+"quiz_types.basic" = "app.plugins.quiz_types.manifest:MANIFEST"
 "participants.basic" = "app.plugins.participants.manifest:MANIFEST"
 "results.local" = "app.plugins.results.manifest:MANIFEST"
 "rewards.threshold" = "app.plugins.rewards.manifest:MANIFEST"
 "drawings.manual" = "app.plugins.drawings.manifest:MANIFEST"
 "media.local" = "app.providers.media_local.manifest:MANIFEST"
 "csv.io" = "app.providers.csv_io.manifest:MANIFEST"
+"retention.local" = "app.providers.retention.manifest:MANIFEST"
 "persistence.sqlite" = "app.providers.persistence_sqlite.manifest:MANIFEST"
 "question.choice" = "app.plugins.questions.choice.manifest:MANIFEST"
 "question.image_answer" = "app.plugins.questions.image_answer.manifest:MANIFEST"
@@ -47,7 +49,7 @@ dev = [
 ]
 
 [tool.uv]
-required-version = ">=0.13"
+required-version = ">=0.13.7"
 
 [tool.uv.build-backend]
 module-name = "app"

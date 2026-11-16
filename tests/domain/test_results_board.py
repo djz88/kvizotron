@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 from django.core.cache import cache
+from django.db import IntegrityError, transaction
 
 from app.contracts import (
     ARCHIVED_RESULTS,
@@ -14,8 +15,17 @@ from app.contracts import (
     SCOREBOARD_UNNAMED,
     SCOREBOARD_VISIBILITY,
     TIE_BREAK_POLICY,
+    AttemptFigures,
 )
-from app.domain import authoring, results, run_links, run_schedule
+from app.domain import (
+    attempts,
+    authoring,
+    participants,
+    results,
+    retention,
+    run_links,
+    run_schedule,
+)
 from app.domain.models import Attempt, Participant
 from app.kernel.models import AuditEvent
 from tests.domain.helpers import ADMIN_ID, OPTION_B, add_question, published_quiz
@@ -149,6 +159,7 @@ def test_unnamed_anonymous_or_unlisted_with_gap():
 
 
 def test_pending_grading_hides_public_board_not_admin():
+    """AC-16: the public board is hidden until grading finishes; the admin still sees it."""
     run = a_run()
     played(run, person(run, "Ema"), 1)
     played(run, person(run, "Jan", 1), 0, status=Attempt.Status.PENDING_GRADING)
@@ -190,7 +201,7 @@ def switch_revision(run, questions_more=0):
 
 
 def test_separate_tables_newest_first_with_own_max():
-    run = a_run()
+    run = a_run(**{REVISION_MODE: "separate"})
     old = run.current_revision
     who = person(run, "Ema")
     played(run, who, 1, 0, revision=old)
@@ -211,33 +222,99 @@ def test_latest_only_current_revision():
     assert len(board.tables) == 1 and labels(board) == ["Jan"]
 
 
-def test_merge_refused_with_different_max_and_with_one_revision():
+def test_percent_is_the_default_for_a_new_run():
+    """AC-06: one table by percent unless the admin chose otherwise."""
     run = a_run()
-    with pytest.raises(results.MergeRefused) as error:
-        results.merge(run, admin_id=ADMIN_ID)
-    assert error.value.code == "one_revision"
-    switch_revision(run, questions_more=1)
-    with pytest.raises(results.MergeRefused) as error:
-        results.merge(run, admin_id=ADMIN_ID)
-    assert error.value.code == "max_differs"
-    assert results.revision_mode(run) == "separate"
+    assert results.of(run)[REVISION_MODE] == "percent"
+    assert results.revision_mode(run) == "percent"
 
 
-def test_merge_and_unmerge_audited():
-    run = a_run()
-    who = person(run, "Ema")
-    played(run, who, 0, 0)
-    new = switch_revision(run)
-    played(run, who, 1, 5, revision=new)
-    results.merge(run, admin_id=ADMIN_ID)
-    board = public(run)
-    assert len(board.tables) == 1 and board.tables[0].rows[0].score == Decimal(1)
-    results.unmerge(run, admin_id=ADMIN_ID)
-    assert len(public(run).tables) == 2
-    assert [e.action for e in AuditEvent.objects.filter(action__startswith="run.revisions_")] == [
-        "run.revisions_merged",
-        "run.revisions_unmerged",
+def two_maxima_run(**chosen):
+    """Revision A of 10 points with Ema 8/10, revision B of 12 points with Jan 9/12."""
+    run = a_run(published_quiz(questions=10), **chosen)
+    old = run.current_revision
+    played(run, person(run, "Jan", 0), 9, 6, revision=switch_revision(run, questions_more=2))
+    played(run, person(run, "Ema", 1), 8, 7, revision=old)
+    return run
+
+
+def test_percent_table_ranks_by_share_of_own_maximum():
+    """AC-06: revisions with different maxima share one table ranked by percent."""
+    run = two_maxima_run()
+    board = results.board(run, audience="admin", locale="cs")
+    assert len(board.tables) == 1
+    table = board.tables[0]
+    assert table.revision_no is None and table.max_score is None
+    assert [(r.label, r.rank, r.score, r.max_score, r.percent) for r in table.rows] == [
+        ("Ema", 1, Decimal(8), Decimal(10), 80),
+        ("Jan", 2, Decimal(9), Decimal(12), 75),
     ]
+    jan = Attempt.objects.get(participant__display_name="Jan")
+    assert results.place_of(jan) == (2, 2)
+
+
+def test_percent_table_counts_the_best_share_not_the_most_points():
+    run = a_run(published_quiz(questions=10))
+    who = person(run, "Ema")
+    old = run.current_revision
+    played(run, who, 9, 5, revision=switch_revision(run, questions_more=2))
+    played(run, who, 8, 6, revision=old)
+    rows = public(run).tables[0].rows
+    assert [(r.score, r.max_score, r.percent) for r in rows] == [(Decimal(8), Decimal(10), 80)]
+
+
+def test_percent_ties_follow_the_run_tie_rules():
+    """Equal percent of different maxima: the second sort, then the shared place (ADR-0026)."""
+    run = a_run(published_quiz(questions=4))
+    old = run.current_revision
+    new = switch_revision(run, questions_more=4)
+    played(run, person(run, "Jan", 0), 4, 6, revision=new)  # 4 / 8
+    played(run, person(run, "Ema", 1), 2, 7, revision=old)  # 2 / 4, submitted later
+    played(run, person(run, "Petr", 2), 1, 6, revision=old)  # 1 / 4
+    rows = public(run).tables[0].rows
+    assert [(r.label, r.rank, r.percent) for r in rows] == [
+        ("Jan", 1, 50),
+        ("Ema", 2, 50),
+        ("Petr", 3, 25),
+    ]
+    same = a_run(published_quiz("stejne", questions=4))
+    old = same.current_revision
+    new = switch_revision(same, questions_more=4)
+    played(same, person(same, "Jan", 0), 4, 6, revision=new)
+    played(same, person(same, "Ema", 1), 2, 6, revision=old)
+    assert [(r.label, r.rank) for r in public(same).tables[0].rows] == [("Jan", 1), ("Ema", 1)]
+
+
+def test_percent_average_ranks_by_the_average_share():
+    run = a_run(published_quiz(questions=10), **{OFFICIAL_ATTEMPT: "average"})
+    who = person(run, "Ema")
+    old = run.current_revision
+    played(run, who, 10, 5, revision=old)
+    played(run, who, 6, 6, revision=switch_revision(run, questions_more=2))
+    row = public(run).tables[0].rows[0]
+    assert row.percent == 75  # (100 % + 50 %) / 2, not 16 of 22 points
+
+
+def test_admin_switches_a_run_between_the_three_modes_audited():
+    """AC-06: the revision mode is a display setting of the run."""
+    run = two_maxima_run()
+    results.set_display(run, {REVISION_MODE: "separate"}, admin_id=ADMIN_ID)
+    board = public(run)
+    assert [table.max_score for table in board.tables] == [Decimal(12), Decimal(10)]
+    results.set_display(run, {REVISION_MODE: "latest"}, admin_id=ADMIN_ID)
+    assert labels(public(run)) == ["Jan"]
+    results.set_display(run, {REVISION_MODE: "percent"}, admin_id=ADMIN_ID)
+    assert labels(public(run)) == ["Ema", "Jan"]
+    changes = AuditEvent.objects.filter(action="run.scoreboard_changed")
+    assert [event.details_json for event in changes.order_by("created_at", "pk")] == [
+        {REVISION_MODE: "separate"},
+        {REVISION_MODE: "latest"},
+        {REVISION_MODE: "percent"},
+    ]
+
+
+def test_merge_is_gone():
+    assert not hasattr(results, "merge") and not hasattr(results, "MergeRefused")
 
 
 def test_archived_needs_switch():
@@ -305,17 +382,19 @@ def test_public_board_cached_for_seconds():
     assert labels(results.board(run, audience="public", locale="cs")) == ["Ema", "Jan"]
 
 
-def test_merged_board_separates_again_when_a_later_revision_has_another_max():
+def test_percent_board_stays_one_table_over_three_revisions():
     run = a_run()
     who = person(run, "Ema")
     played(run, who, 1, 0)
     switch_revision(run)
-    results.merge(run, admin_id=ADMIN_ID)
     bigger = switch_revision(run, questions_more=1)
     played(run, person(run, "Jan", 1), 2, 5, revision=bigger)
     board = public(run)
-    assert len(board.tables) == 3
-    assert board.tables[0].max_score == Decimal(2)
+    assert len(board.tables) == 1
+    assert [(r.max_score, r.percent) for r in board.tables[0].rows] == [
+        (Decimal(1), 100),
+        (Decimal(2), 100),
+    ]
 
 
 def test_closed_hidden_board_keeps_polling_so_turning_it_on_shows():
@@ -333,3 +412,232 @@ def test_hiding_the_board_drops_the_cached_rows_at_once():
     assert labels(results.board(run, audience="public", locale="cs")) == ["Ema"]
     results.set_display(run, {SCOREBOARD_VISIBILITY: "hidden"}, admin_id=ADMIN_ID)
     assert results.board(run, audience="public", locale="cs").hidden == "hidden"
+
+
+# Kept score (ADR-0063) ---------------------------------------------------------------------
+
+
+def kept_run(rule):
+    return a_run(published_quiz(slug=f"k-{rule}"), **{OFFICIAL_ATTEMPT: rule})
+
+
+def with_counts(attempt, correct, max_score=None):
+    update = {"correct_count": correct}
+    if max_score is not None:
+        update["max_score"] = Decimal(max_score)
+    Attempt.objects.filter(pk=attempt.pk).update(**update)
+    attempt.refresh_from_db()
+    return attempt
+
+
+def test_kept_average_figures():
+    """AC-174: the average is the component means of the submitted attempts."""
+    run = kept_run("average")
+    who = person(run, "Ema")
+    first = with_counts(played(run, who, 10, 1), 3, 20)
+    last = with_counts(played(run, who, 6, 2), 4, 10)
+    kept = results.kept(who)
+    assert kept.figures == AttemptFigures(
+        score=Decimal(8), max_score=Decimal(15), correct=3, questions=len(attempts.items_of(last))
+    )
+    assert (kept.attempt, kept.count, kept.rule, kept.waiting) == (last, 2, "average", False)
+    assert first.pk != last.pk
+
+
+def test_kept_correct_is_floor_of_the_mean():
+    """AC-174: correct is the floor of the mean."""
+    run = kept_run("average")
+    who = person(run)
+    with_counts(played(run, who, 1, 1), 7)
+    with_counts(played(run, who, 1, 2), 8)
+    assert results.kept(who).figures.correct == 7
+
+
+def test_kept_questions_is_the_mean_rounded_half_up():
+    run = kept_run("average")
+    who = person(run)
+    one = played(run, who, 1, 1)
+    two = played(run, who, 1, 2)
+    selected = {
+        one.pk: {"items": [{"id": str(n)} for n in range(3)]},
+        two.pk: {"items": [{"id": str(n)} for n in range(4)]},
+    }
+    for pk, value in selected.items():
+        Attempt.objects.filter(pk=pk).update(selection_json=value)
+    assert results.kept(who).figures.questions == 4  # 3.5 rounds up
+
+
+def test_kept_waits_for_grading():
+    run = kept_run("average")
+    who = person(run)
+    played(run, who, 5, 1)
+    played(run, who, 5, 2, status=Attempt.Status.PENDING_GRADING)
+    kept = results.kept(who)
+    assert kept.waiting is True
+    assert kept.count == 1  # the waiting one counts for nothing
+    assert results.official_attempt(who) == kept.attempt
+
+
+@pytest.mark.parametrize(
+    ("rule", "pending_minute", "waiting"),
+    [
+        ("first", 1, True),
+        ("first", 2, False),
+        ("last", 2, True),
+        ("last", 1, False),
+        ("best", 1, True),
+        ("best", 2, True),
+    ],
+)
+def test_kept_waiting_by_rule(rule, pending_minute, waiting):
+    run = kept_run(rule)
+    who = person(run)
+    for minute in (1, 2):
+        status = Attempt.Status.PENDING_GRADING if minute == pending_minute else None
+        played(run, who, 5, minute, status=status or Attempt.Status.SUBMITTED)
+    assert results.kept(who).waiting is waiting
+
+
+def test_kept_is_none_without_attempts():
+    run = kept_run("average")
+    assert results.kept(person(run)) is None
+
+
+def test_board_ranks_by_average_with_the_time_of_the_last_attempt():
+    """AC-174: the board ranks by the average."""
+    run = kept_run("average")
+    ema, jan = person(run, "Ema"), person(run, "Jan")
+    played(run, ema, 10, 1)
+    played(run, ema, 2, 5)
+    played(run, jan, 5, 3)
+    rows = public(run).tables[0].rows
+    by_label = {row.label: row for row in rows}
+    assert by_label["Ema"].score == Decimal(6)
+    assert by_label["Ema"].submitted_at == T0 + timedelta(minutes=5)
+    assert by_label["Ema"].rank == 1 and by_label["Jan"].rank == 2
+
+
+def test_last_rule_counts_the_latest_attempt():
+    """AC-174: last counts the latest submitted attempt."""
+    run = kept_run("last")
+    ema = person(run, "Ema")
+    played(run, ema, 10, 1)
+    played(run, ema, 2, 5)
+    assert public(run).tables[0].rows[0].score == Decimal(2)
+
+
+def test_first_and_best_keep_the_old_official_attempt():
+    for rule in ("first", "best"):
+        run = kept_run(rule)
+        who = person(run)
+        played(run, who, 4, 1)
+        played(run, who, 9, 2)
+        kept = results.kept(who)
+        assert kept.attempt == results.official_attempt(who)
+        assert kept.attempt.score == (Decimal(4) if rule == "first" else Decimal(9))
+
+
+def test_kept_is_none_with_only_a_waiting_attempt():
+    run = kept_run("best")
+    who = person(run)
+    played(run, who, 5, 1, status=Attempt.Status.PENDING_GRADING)
+    assert results.kept(who) is None
+    assert results.official_attempt(who) is None
+
+
+def test_best_ignores_a_waiting_attempt_but_flags_it():
+    run = kept_run("best")
+    who = person(run)
+    submitted = played(run, who, 6, 1)
+    played(run, who, 9, 2, status=Attempt.Status.PENDING_GRADING)
+    found = results.kept(who)
+    assert (found.attempt, found.waiting) == (submitted, True)
+    assert results.official_attempt(who) == submitted
+
+
+def test_kept_last_with_the_same_time_takes_the_greater_id():
+    run = kept_run("last")
+    who = person(run)
+    one = played(run, who, 3, 1)
+    two = played(run, who, 4, 1)
+    assert one.submitted_at == two.submitted_at  # the tie this test is about
+    assert results.kept(who).attempt == max(one, two, key=lambda a: str(a.id))
+
+
+def test_kept_average_of_a_mean_that_does_not_end():
+    run = kept_run("average")
+    who = person(run)
+    for minute, score in ((1, 1), (2, 1), (3, 2)):
+        played(run, who, score, minute)
+    assert results.kept(who).figures.score == Decimal("1.3333")
+
+
+def test_separate_revisions_rank_the_average_of_each_table():
+    run = a_run(published_quiz("sep"), **{OFFICIAL_ATTEMPT: "average", REVISION_MODE: "separate"})
+    who = person(run, "Ema")
+    played(run, who, 10, 1)
+    other = switch_revision(run, questions_more=1)
+    played(run, who, 2, 2, revision=other)
+    played(run, who, 4, 3, revision=other)
+    board = public(run)
+    scores = sorted(row.score for table in board.tables for row in table.rows)
+    assert scores == [Decimal(3), Decimal(10)]  # per table; kept spans both revisions
+    assert results.kept(who).figures.score == Decimal("5.3333")
+
+
+def joined(run, key, minute):
+    """Through the path a browser takes, so the participant gets the number a start gives."""
+    found = participants.find_or_create(run, key)
+    Participant.objects.filter(pk=found.pk).update(created_at=T0 + timedelta(minutes=minute))
+    found.refresh_from_db()
+    return found
+
+
+def test_a_label_number_survives_the_erasure_of_an_earlier_participant():
+    run = a_run()
+    first, second, third = (joined(run, key, minute) for minute, key in enumerate("abc"))
+    for minute, who in enumerate((first, second, third)):
+        played(run, who, 3 - minute, minute)
+    assert labels(public(run)) == ["Hráč 1", "Hráč 2", "Hráč 3"]
+
+    retention.erase([str(first.pk)], admin_id=ADMIN_ID)
+
+    assert labels(public(run)) == ["Hráč 2", "Hráč 3"]
+    assert results.participant_numbers(run) == {str(second.pk): 2, str(third.pk): 3}
+
+
+def test_a_new_participant_takes_the_next_number_after_an_erasure():
+    run = a_run()
+    first, second = joined(run, "a", 0), joined(run, "b", 1)
+    retention.erase([str(first.pk)], admin_id=ADMIN_ID)
+    later = joined(run, "c", 2)
+    assert (second.number, later.number) == (2, 3)
+
+
+def test_erasing_the_highest_number_never_gives_it_again():
+    run = a_run()
+    joined(run, "a", 0)
+    highest = joined(run, "b", 1)
+    retention.erase([str(highest.pk)], admin_id=ADMIN_ID)
+    assert joined(run, "c", 2).number == 3
+    run.refresh_from_db()
+    assert run.participant_seq == 3
+
+
+def test_loose_attempts_follow_the_last_participant_number():
+    run = a_run()
+    loose = played(run, None, 1, 0)
+    who = joined(run, "a", 5)
+    played(run, who, 2, 5)
+    numbers = results.participant_numbers(run)
+    assert numbers[str(who.pk)] == 1
+    assert numbers[f"a:{loose.pk}"] == 2
+
+
+def test_two_browsers_in_one_run_never_hold_the_same_number():
+    run = a_run()
+    joined(run, "a", 0)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Participant.objects.create(run=run, anonymous_key_hash="other", number=1)
+    other = a_run(published_quiz("jiny"))
+    assert joined(other, "a", 0).number == 1  # numbers count per run

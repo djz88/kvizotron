@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.http import HttpRequest
 from django.urls import reverse
@@ -26,6 +27,11 @@ def number(value: Decimal | float | int) -> str:
     return formats.number_format(Decimal(text), use_l10n=True)
 
 
+def mailto(address: str) -> str:
+    """A `mailto:` link target; the address is quoted so a quoted local part adds no header."""
+    return "mailto:" + quote(address, safe="@")
+
+
 def _admin_basic(request: HttpRequest) -> bool:
     from app.api.admin_view import is_basic  # noqa: PLC0415  # views load after the templates
 
@@ -40,5 +46,6 @@ def environment(**options: object) -> Environment:
     env.globals["server_clock"] = clock.server_clock
     env.globals["admin_basic"] = _admin_basic
     env.filters["number"] = number
+    env.filters["mailto"] = mailto
     env.filters["when"] = clock.shown
     return env

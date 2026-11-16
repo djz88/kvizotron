@@ -1,18 +1,25 @@
-{# `groups` from admin_view.group_fields; `collapse` turns each group into <details> (the run plan). #}
-<nav class="group-links" aria-label="{{ _('Setting groups') }}">
-  <ul>
-    {% for group in groups %}<li><a href="#group-{{ group.key }}">{{ group.label }}</a></li>{% endfor %}
-  </ul>
-</nav>
+{# `groups` from admin_view.group_fields; `collapse` turns each group into <details> (the run plan);
+   `type_marks` (quiz settings) names the quiz type's value beside each field that deviates from it. #}
+{% set marks = type_marks|default({}) %}
+{% from "admin/_setting_row.html" import setting_row %}
 {% for group in groups %}
 {% if collapse|default(false) %}
-<details class="setting-group" id="group-{{ group.key }}"{% if group.open %} open{% endif %}>
+<details class="setting-group" id="group-{{ group.key }}"{% if group.open %} open{% endif %}{% if not group.matched %} hidden{% endif %}>
   <summary>{{ group.label }}</summary>
 {% else %}
-<section class="setting-group" id="group-{{ group.key }}">
+<section class="setting-group" id="group-{{ group.key }}"{% if not group.matched %} hidden{% endif %}>
   <h2>{{ group.label }}</h2>
 {% endif %}
-  {% for field in group.fields %}{{ field.as_field_group() }}{% endfor %}
+  {% for field in group.fields %}
+  {% if field.name in group.columns %}
+    {% if loop.first or loop.previtem.name not in group.columns %}
+  <fieldset class="setting-columns"{% if group.columns.keys()|reject("in", group.unmatched)|list|length == 0 %} hidden{% endif %}>
+    <legend>{{ _("Scoreboard columns") }}</legend>
+    {% for column in group.fields if column.name in group.columns %}{{ setting_row(column, false, group.columns[column.name], column.name in group.unmatched, marks.get(column.name)) }}{% endfor %}
+  </fieldset>
+    {% endif %}
+  {% else %}{{ setting_row(field, field.name in group.children, hide=field.name in group.unmatched, mark=marks.get(field.name)) }}{% endif %}
+  {% endfor %}
   {% if group.hidden %}<p class="group-hidden">{{ _("More settings in All: %(count)s", count=group.hidden) }}</p>{% endif %}
 {% if collapse|default(false) %}</details>{% else %}</section>{% endif %}
 {% endfor %}

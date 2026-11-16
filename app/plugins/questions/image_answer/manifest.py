@@ -5,6 +5,8 @@ def _(text: str) -> str:
 
 MANIFEST = {
     "id": "question.image_answer",
+    "name": _("Photo"),
+    "description": _("Participants answer by uploading a photo that an admin grades."),
     "kind": "plugin",
     "version": "1.0.0",
     "app": "app.plugins.questions.image_answer.apps.ImageAnswerConfig",

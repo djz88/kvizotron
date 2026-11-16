@@ -1,8 +1,10 @@
 from app.contracts import (
     ARCHIVED_RESULTS,
     OFFICIAL_ATTEMPT,
+    PASS_MARK,
     REVISION_MODE,
     SCOREBOARD_LIVE_NAMES,
+    SCOREBOARD_RUNS,
     SCOREBOARD_SECOND_SORT,
     SCOREBOARD_SHOW_DURATION,
     SCOREBOARD_SHOW_PERCENT,
@@ -25,6 +27,9 @@ _SHOW = {"on": _("Show"), "off": _("Hide")}
 _NEEDS_TIMES = _("Needs the data profile that keeps times.")
 
 
+GROUPS = {REVISION_MODE: "technical", PASS_MARK: "playing"}
+
+
 def _setting(key, choices, default, label, value_labels, help_text=""):
     return {
         "key": key,
@@ -35,13 +40,16 @@ def _setting(key, choices, default, label, value_labels, help_text=""):
         "label": label,
         "value_labels": value_labels,
         "help": help_text,
-        "group": "scoreboard",
-        "level": "basic" if key == SCOREBOARD_VISIBILITY else "advanced",
+        "group": GROUPS.get(key, "scoreboard"),
+        "level": "basic" if key in (SCOREBOARD_VISIBILITY, PASS_MARK) else "advanced",
     }
 
 
 MANIFEST = {
     "id": "results.local",
+    "name": _("Results"),
+    "description": _("Scoreboard, statistics and the comparison of runs."),
+    "always_on": True,
     "kind": "plugin",
     "version": "1.0.0",
     "app": "app.plugins.results.apps.ResultsConfig",
@@ -82,11 +90,24 @@ MANIFEST = {
         ),
         _setting(
             OFFICIAL_ATTEMPT,
-            ["best", "first"],
+            ["best", "first", "last", "average"],
             "best",
             _("Attempt that counts"),
-            {"best": _("Best valid attempt"), "first": _("First valid attempt")},
+            {
+                "best": _("Best valid attempt"),
+                "first": _("First valid attempt"),
+                "last": _("The last attempt"),
+                "average": _("The average of the attempts"),
+            },
             _("Of equal scores of one participant the earlier counts."),
+        ),
+        _setting(
+            PASS_MARK,
+            [str(percent) for percent in range(101)],
+            "0",
+            _("Pass mark (%)"),
+            {"0": _("No pass mark"), **{str(percent): str(percent) for percent in range(1, 101)}},
+            _("Percent of the maximum score an attempt needs to pass."),
         ),
         _setting(SCOREBOARD_SHOW_SCORE, ["on", "off"], "on", _("Column: score"), _SHOW),
         _setting(SCOREBOARD_SHOW_PERCENT, ["on", "off"], "on", _("Column: percent"), _SHOW),
@@ -120,12 +141,25 @@ MANIFEST = {
         ),
         _setting(
             REVISION_MODE,
-            ["separate", "latest"],
-            "separate",
+            ["percent", "separate", "latest"],
+            "percent",
             _("Runs with more revisions"),
-            {"separate": _("One table per revision"), "latest": _("Only the latest revision")},
-            _("Revisions with equal maximum points can be merged on the run page."),
+            {
+                "percent": _("One table by percent"),
+                "separate": _("One table per revision"),
+                "latest": _("Only the latest revision"),
+            },
+            _("One table ranks each attempt by the percent of its own revision's maximum."),
         ),
+        _setting(
+            SCOREBOARD_RUNS,
+            ["current", "all"],
+            "current",
+            _("Scoreboards on the quiz page"),
+            {"current": _("Only the current run"), "all": _("All runs")},
+            _("Each run shows its board only while its own visibility allows it."),
+        )
+        | {"scope_reason": _("Applies to the quiz page, not to one question.")},
         _setting(
             ARCHIVED_RESULTS,
             ["off", "on"],

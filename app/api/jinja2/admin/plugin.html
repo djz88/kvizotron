@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<p><a href="{{ url('admin_plugins') }}">{{ _("Modules") }}</a></p>
+<h1>{{ name }}</h1>
+{% if description %}<p>{{ description }}</p>{% endif %}
+<p>{{ manifest.id }} · {{ manifest.version }} · {% if enabled %}{{ _("Enabled") }}{% else %}{{ _("Disabled") }}{% endif %}</p>
+{% if reasons %}
+<div class="notice" role="status">
+  <p>{{ _("It cannot be changed now:") }}</p>
+  <ul>
+    {% for reason in reasons %}<li>{% if reason.href %}<a href="{{ reason.href }}">{{ reason.text }}</a>{% else %}{{ reason.text }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% elif switchable %}
+<form method="post" action="{{ url('admin_plugin_state', args=[manifest.id]) }}">
+  {{ csrf_input }}
+  <input type="hidden" name="enabled" value="{{ 'off' if enabled else 'on' }}">
+  <button type="submit" class="secondary">{% if enabled %}{{ _("Disable") }}{% else %}{{ _("Enable") }}{% endif %}</button>
+</form>
+{% endif %}
+{% if required %}
+<h2>{{ _("It needs") }}</h2>
+<ul>{% for id, label in required %}<li><a href="{{ url('admin_plugin', args=[id]) }}">{{ label }}</a></li>{% endfor %}</ul>
+{% endif %}
+{% if dependents %}
+<h2>{{ _("Other modules that need it") }}</h2>
+<ul>{% for id, label in dependents %}<li><a href="{{ url('admin_plugin', args=[id]) }}">{{ label }}</a></li>{% endfor %}</ul>
+{% endif %}
+<h2>{{ _("Settings it adds") }}</h2>
+{% if settings %}
+{% for row in settings %}
+<h3>{{ row.label }}</h3>
+<p>{{ _("Global value") }}: {{ row.global_value }} · <a href="{{ url('admin_settings') }}">{{ _("Change") }}</a></p>
+{% if row.narrower %}
+<h4>{{ _("Different elsewhere") }}</h4>
+{% if row.differences %}
+<ul>
+  {% for item in row.differences %}<li><a href="{{ item.href }}">{{ item.where }}</a>: {{ item.value }}</li>
+  {% endfor %}
+</ul>
+{% if row.cut %}<p>{{ _("Showing the first %(shown)s of %(total)s.", shown=row.differences|length, total=row.total) }}</p>{% endif %}
+{% else %}
+<p>{{ _("No quiz or question differs from the global value.") }}</p>
+{% endif %}
+{% endif %}
+{% endfor %}
+{% else %}
+<p>{{ _("This module adds no settings.") }}</p>
+{% endif %}
+{% endblock %}

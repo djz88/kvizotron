@@ -1,10 +1,26 @@
 {% extends "admin/base.html" %}
 {% block content %}
+<div class="with-panel">
+{% if not quiz.archived_at %}
+{% set panel_before = ([("quiz-type", _("Quiz type"))] if quiz_type.id or quiz_type.offered else []) + [("title", _("Title and languages"))] %}
+{% set panel_after = [("branding", _("Name, logo and texts"))] %}
+{% include "admin/_section_panel.html" %}
+{% endif %}
+<div class="panel-main">
 {% include "admin/_quiz_header.html" %}
 {% if quiz.archived_at %}
 <p>{{ _("This quiz is archived. Restore it to change it.") }}</p>
 {% else %}
-<section class="form-section">
+{% include "admin/_quiz_type_bar.html" %}
+<div class="actions quiz-copy" id="copy">
+  <a href="{{ url('admin_quiz_duplicate', args=[quiz.id]) }}" role="button" class="secondary outline">{{ _("Duplicate") }}</a>
+  <form method="post" action="{{ url('admin_quiz_archive', args=[quiz.id]) }}">
+    {{ csrf_input }}
+    <button type="submit" class="secondary outline">{{ _("Archive this quiz") }}</button>
+  </form>
+  <small>{{ _("An archived quiz disappears from the public pages. A running run must end first.") }}</small>
+</div>
+<section class="form-section settings-form" id="title">
   <h2>{{ _("Title and languages") }}</h2>
   <p>{{ _("Participants see these changes after you publish.") }}</p>
   <form method="post" class="watch-changes" action="{{ url('admin_quiz_edit', args=[quiz.id]) }}">
@@ -13,12 +29,16 @@
     <button type="submit">{{ _("Save") }}</button>
   </form>
 </section>
-<section class="form-section">
+<section class="form-section settings-form">
   <h2>{{ _("Address and behaviour") }}</h2>
   <p>{{ _("These changes apply immediately, without publishing.") }}</p>
+  {% if type_gone %}<p class="notice" role="status">{{ _("The chosen quiz type is no longer available. The quiz has no type.") }}</p>{% endif %}
   {% if flow_conflict %}<p class="notice" role="status">{{ _("Answers after each question need a one-by-one mode, and this quiz shows all questions at once. Participants see the answers at the end.") }}</p>{% endif %}
   {% if visibility_conflict %}<p class="notice" role="status">{{ _("Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only.") }}</p>{% endif %}
-  <form method="post" class="watch-changes" action="{{ url('admin_quiz_settings', args=[quiz.id]) }}">
+  {% include "admin/_colour_notice.html" %}
+  {% set search_page = url("admin_quiz_settings", args=[quiz.id]) %}
+  {% include "admin/_settings_search.html" %}
+  <form method="post" class="watch-changes" action="{{ url('admin_quiz_settings', args=[quiz.id]) }}{% if query %}?q={{ query|urlencode }}{% endif %}">
     {{ csrf_input }}
     {{ behaviour_form.non_field_errors() }}
     {% for field in ungrouped %}{{ field.as_field_group() }}{% endfor %}
@@ -26,16 +46,9 @@
     <button type="submit">{{ _("Save") }}</button>
   </form>
 </section>
-<section class="form-section">
-  <h2>{{ _("Copy and archive") }}</h2>
-  <p>{{ _("An archived quiz disappears from the public pages. A running run must end first.") }}</p>
-  <div class="actions">
-    <a href="{{ url('admin_quiz_duplicate', args=[quiz.id]) }}" role="button" class="secondary outline">{{ _("Duplicate") }}</a>
-    <form method="post" action="{{ url('admin_quiz_archive', args=[quiz.id]) }}">
-      {{ csrf_input }}
-      <button type="submit" class="secondary outline">{{ _("Archive this quiz") }}</button>
-    </form>
-  </div>
-</section>
+{% set branding_action = url("admin_quiz_branding", args=[quiz.id]) %}
+{% include "admin/_branding_fields.html" %}
 {% endif %}
+</div>
+</div>
 {% endblock %}

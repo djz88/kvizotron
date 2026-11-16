@@ -1,0 +1,38 @@
+{# The quiz type above the settings (ADR-0062), from admin_workspace.type_bar. Choosing, Apply again
+   and Change type only show the overview (GET); Remove is the one change made here. #}
+{% set overview = url("admin_quiz_type", args=[quiz.id]) %}
+{% if quiz_type.id %}
+<section class="quiz-type-bar" id="quiz-type" aria-label="{{ _('Quiz type') }}">
+  <p class="quiz-type-name"><strong>{{ _("Type: %(name)s", name=quiz_type.label) }}</strong>{% if quiz_type.active %} · {{ _("Deviations: %(count)s", count=quiz_type.count) }}{% endif %}</p>
+  <div class="quiz-type-actions">
+    {% if quiz_type.active %}
+    <a href="{{ overview }}?type={{ quiz_type.id|urlencode }}" role="button" class="secondary outline">{{ _("Apply again") }}</a>
+    {% if quiz_type.others %}
+    <form method="get" action="{{ overview }}" class="quiz-type-pick">
+      <select name="type" aria-label="{{ _('Another type') }}">
+        {% for id, label in quiz_type.others %}<option value="{{ id }}">{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="secondary outline">{{ _("Change type") }}</button>
+    </form>
+    {% endif %}
+    {% endif %}
+    <form method="post" action="{{ url('admin_quiz_type_remove', args=[quiz.id]) }}">
+      {{ csrf_input }}
+      <button type="submit" class="secondary outline">{{ _("Remove type") }}</button>
+    </form>
+  </div>
+  {% if quiz_type.active and quiz_type.count %}<small>{{ _("▲ marks a setting that differs from the type.") }}</small>{% endif %}
+  {% if not quiz_type.active %}<small>{{ _("This type is not available now. The settings stay as they are.") }}</small>{% endif %}
+</section>
+{% elif quiz_type.offered %}
+<section class="quiz-type-bar" id="quiz-type" aria-label="{{ _('Quiz type') }}">
+  <form method="get" action="{{ overview }}" class="quiz-type-pick">
+    <label for="quiz-type-choice">{{ _("Quiz type") }}</label>
+    <select name="type" id="quiz-type-choice">
+      {% for id, label in quiz_type.offered %}<option value="{{ id }}">{{ label }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="secondary outline">{{ _("Use type") }}</button>
+  </form>
+  <small>{{ _("A type sets several settings at once. You see what changes before it applies.") }}</small>
+</section>
+{% endif %}

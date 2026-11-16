@@ -1,10 +1,11 @@
 {% extends "public/base.html" %}
 {% block title %}{{ _("About") }} · Kvízotron{% endblock %}
 {% block content %}
-<div class="hero"><img class="about-logo" src="/assets/logo.svg" alt="Kvízotron" width="160" height="160"><h1>{{ _("About") }}</h1></div>
+<div class="hero">{% if branding.show_hero_logo %}{% with width=240, height=166, alt=branding.name, about=true %}{% include "public/_hero_logo.html" %}{% endwith %}{% endif %}<h1>{{ _("About") }}</h1></div>
 <div class="card prose">
   <p>{{ _("Kvízotron is an application for quizzes and contests in Czech, English and Ukrainian.") }}</p>
   <p>{{ _("Anyone can play without registering. Organisers create the quizzes and start them for their participants.") }}</p>
   <p>{{ _("Organisers run Kvízotron on their own server, so they also look after its data.") }}</p>
+  {% if branding.contact_email %}<p>{{ _("Need help with a quiz or with your data? Write to") }} <a href="{{ branding.contact_email|mailto }}">{{ branding.contact_email }}</a>.</p>{% endif %}
 </div>
 {% endblock %}

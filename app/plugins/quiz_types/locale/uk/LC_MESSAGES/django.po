@@ -1,0 +1,64 @@
+#: manifest.py
+msgid "Quiz types"
+msgstr "Типи вікторин"
+
+#: manifest.py
+msgid "Named bundles of quiz settings, such as a practice quiz or a contest."
+msgstr "Іменовані набори налаштувань вікторини, наприклад тренування або конкурс."
+
+#: plugin.py
+msgid "Practice"
+msgstr "Тренування"
+
+#: plugin.py
+msgid "Learning: answers and explanations after each question, no time limit."
+msgstr "Навчання: відповіді та пояснення після кожного питання, без обмеження часу."
+
+#: plugin.py
+msgid "Final test"
+msgstr "Підсумковий тест"
+
+#: plugin.py
+msgid "One named attempt in 30 minutes; answers are kept and never shown."
+msgstr "Одна спроба з ім'ям за 30 хвилин; відповіді зберігаються й ніколи не показуються."
+
+#: plugin.py
+msgid "Exam with a resit"
+msgstr "Іспит із перескладанням"
+
+#: plugin.py
+msgid "An exam with a pass mark and a second attempt; the better one counts and answers are shown after the run closes."
+msgstr "Іспит із прохідним балом і другою спробою; зараховується краща, а відповіді показуються після закриття запуску."
+
+#: plugin.py
+msgid "Mock test"
+msgstr "Пробний тест"
+
+#: plugin.py
+msgid "A test in 30 minutes that can be repeated, with explanations at the end."
+msgstr "Тест на 30 хвилин, який можна повторювати, з поясненнями наприкінці."
+
+#: plugin.py
+msgid "Contest"
+msgstr "Конкурс із призами"
+
+#: plugin.py
+msgid "One attempt with a name and an e-mail, the scoreboard after the end; add the prize on the Rewards tab."
+msgstr "Одна спроба з ім'ям та e-mail, таблиця результатів після завершення; приз додайте на вкладці Нагороди."
+
+#: plugin.py
+msgid "Pub quiz"
+msgstr "Пабна вікторина"
+
+#: plugin.py
+msgid "One phone per team with the team name as nickname, ten questions per page and a live scoreboard."
+msgstr "Один телефон на команду з назвою команди як псевдонімом, десять питань на сторінці й таблиця результатів під час гри."
+
+#: plugin.py
+msgid "Basic quiz"
+msgstr "Проста вікторина"
+
+#: plugin.py
+msgid "Removes the quiz's own settings, so the global settings apply again."
+msgstr "Прибирає власні налаштування вікторини, тож знову діють глобальні налаштування."
+

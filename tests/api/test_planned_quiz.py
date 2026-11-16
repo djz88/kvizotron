@@ -137,3 +137,13 @@ def test_a_running_quiz_is_still_listed_first(client):
     planned_quiz(slug="chysta")
     html = text(client.get("/?lang=en"))
     assert html.index("/q/bezi") < html.index("/q/chysta")
+
+
+def test_a_planned_tile_shows_the_own_organisation_too(client):
+    """AC-151."""
+    from app.domain import branding
+
+    settings.set_global(settings.ANNOUNCE_PLANNED, "on", admin_id=None)
+    quiz = planned_quiz()
+    branding.set_texts(quiz, "name", {"cs": "Škola"}, admin_id=ADMIN_ID)
+    assert 'class="quiz-org"' in text(client.get("/?lang=cs"))

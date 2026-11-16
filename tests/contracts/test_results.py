@@ -16,10 +16,12 @@ def test_registered_under_the_port():
 
 
 def test_every_setting_is_run_wide_with_a_reason():
-    from app.contracts import RESULT_KEYS
+    from app.contracts import RESULT_KEYS, SCOREBOARD_RUNS
 
     found = {item["key"]: item for item in MANIFEST["settings"]}
-    assert set(found) == set(RESULT_KEYS)
+    # The run copies all but the boards the quiz page offers, which is read live (AC-176).
+    assert set(found) == {*RESULT_KEYS, SCOREBOARD_RUNS}
+    assert SCOREBOARD_RUNS not in RESULT_KEYS
     for item in found.values():
         assert item["scopes"] == ["global", "quiz"]
         assert item["scope_reason"]

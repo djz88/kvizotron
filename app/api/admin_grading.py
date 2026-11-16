@@ -28,6 +28,8 @@ from django.views.decorators.http import require_GET, require_POST
 from markupsafe import Markup
 
 from app.api.admin_auth import admin_required
+from app.api.admin_common import admin_id, confirm_page, plain
+from app.api.admin_quizzes import archived_message
 from app.api.admin_workspace import workspace
 from app.api.rendering import (
     delete_images,
@@ -37,7 +39,7 @@ from app.api.rendering import (
     with_media_urls,
 )
 from app.contracts import QuestionTypePlugin
-from app.domain import attempts, grading, settings, visibility
+from app.domain import attempts, authoring, grading, settings, visibility
 from app.domain.models import Attempt, AttemptAnswer, Quiz, QuizRun
 from app.kernel import registry
 
@@ -84,10 +86,6 @@ def _numbers(run: QuizRun) -> dict[UUID, int]:
     }
 
 
-def _plain(value: Decimal | None) -> str:
-    return "" if value is None else f"{value.normalize():f}"
-
-
 def _photo_row(
     row: AttemptAnswer,
     number: int | None,
@@ -98,9 +96,9 @@ def _photo_row(
     return {
         "row": row,
         "number": number,
-        "auto": _plain(row.auto_points),
-        "maximum": _plain(row.manual_max),
-        "value": _plain(row.manual_points),
+        "auto": plain(row.auto_points),
+        "maximum": plain(row.manual_max),
+        "value": plain(row.manual_points),
         "waiting": row.manual_points is None and not row.removed,
         "approvable": visibility.may_be_approved(row, quiz, question),
         **shown,
@@ -198,8 +196,8 @@ def _by_attempt(request: HttpRequest, quiz: Quiz, run: QuizRun) -> dict[str, Any
         cards.append(
             {
                 "number": numbers.get(attempt.id),
-                "score": _plain(attempt.score),
-                "maximum": _plain(attempt.max_score),
+                "score": plain(attempt.score),
+                "maximum": plain(attempt.max_score),
                 "pending": attempt.status == Attempt.Status.PENDING_GRADING,
                 "rows": rows,
             }
@@ -293,16 +291,29 @@ def _fragment(
     return HttpResponse(render_to_string("admin/_grading_photo.html", context, request))
 
 
+def _archived(request: HttpRequest, row: AttemptAnswer) -> HttpResponse:
+    """The quiz was archived: grading is read-only. HTMX swaps only 2xx, so a fragment says it."""
+    message = archived_message()
+    if _is_htmx(request):
+        return _fragment(request, row, error=message)
+    errors = {str(row.id): {"message": message, "value": ""}}
+    return _grading_page(request, row.attempt.run.quiz, errors, status=409)
+
+
 @admin_required
 @require_POST
 def answer_points(request: HttpRequest, answer_id: UUID) -> HttpResponse:
     row = _answer(answer_id)
     typed = request.POST.get("points", "")
     try:
-        grading.save_manual(row, Decimal(typed.strip().replace(",", ".")), admin_id=_admin(request))
+        grading.save_manual(
+            row, Decimal(typed.strip().replace(",", ".")), admin_id=admin_id(request)
+        )
+    except authoring.QuizArchived:
+        return _archived(request, row)
     except InvalidOperation, grading.InvalidPoints:
         message = _("Points must be a number from 0 to %(maximum)s.") % {
-            "maximum": _plain(row.manual_max)
+            "maximum": plain(row.manual_max)
         }
         if _is_htmx(request):
             return _fragment(request, row, error=message, value=typed)
@@ -313,28 +324,27 @@ def answer_points(request: HttpRequest, answer_id: UUID) -> HttpResponse:
     return redirect(_back(request, row))
 
 
-def _admin(request: HttpRequest) -> str:
-    return str(request.user.pk)
-
-
 @admin_required
 def answer_delete(request: HttpRequest, answer_id: UUID) -> HttpResponse:
     row = _answer(answer_id)
     if request.method == "POST":
-        asset = grading.remove_photo(row, admin_id=_admin(request))
+        try:
+            asset = grading.remove_photo(row, admin_id=admin_id(request))
+        except authoring.QuizArchived:
+            return _archived(request, row)
         delete_images([asset] if asset else [])
         return redirect(_back(request, row))
     query = request.META.get("QUERY_STRING", "")
     action = reverse("admin_answer_delete", args=[row.id])
-    context = {
-        "quiz": row.attempt.run.quiz,
-        "message": _(
+    return confirm_page(
+        request,
+        quiz=row.attempt.run.quiz,
+        message=_(
             "Delete this photo? It is gone for good, and its points given by an admin become 0."
         ),
-        "action": f"{action}?{query}" if query else action,
-        "cancel": _back(request, row),
-    }
-    return page(request, "admin/confirm.html", context, request.locale)  # type: ignore[attr-defined]
+        action=f"{action}?{query}" if query else action,
+        cancel=_back(request, row),
+    )
 
 
 @admin_required
@@ -344,7 +354,10 @@ def answer_approve(request: HttpRequest, answer_id: UUID) -> HttpResponse:
     row = _answer(answer_id)
     if not visibility.may_be_approved(row, row.attempt.run.quiz, _question_of(row)):
         return HttpResponseBadRequest()
-    grading.set_approved(row, bool(request.POST.get("approved")), admin_id=_admin(request))
+    try:
+        grading.set_approved(row, bool(request.POST.get("approved")), admin_id=admin_id(request))
+    except authoring.QuizArchived:
+        return _archived(request, row)
     if _is_htmx(request):
         return _fragment(request, row)
     return redirect(_back(request, row))

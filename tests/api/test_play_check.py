@@ -7,7 +7,7 @@ from django.test.utils import CaptureQueriesContext
 from app.domain import authoring, settings
 from app.domain.models import Attempt
 from tests.api.test_play import Play
-from tests.api.test_play_reveal import make_run
+from tests.api.test_play_reveal import after_close_run, make_run
 from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B
 
 pytestmark = pytest.mark.django_db
@@ -33,6 +33,7 @@ def play(client):
 
 
 def test_check_returns_the_reveal(client, play):
+    """AC-18: in a run with no scoreboard or rewards the participant sees the solution."""
     html = check(client, play).content.decode()
     assert "Správně" in html
     assert "reveal-correct" in html
@@ -59,6 +60,13 @@ def test_check_refuses_when_moment_does_not_allow_it(client, moment):
     response = check(client, play)
     assert response.status_code == 403
     assert "Protože" not in response.content.decode()
+    assert "reveal-correct" not in response.content.decode()
+
+
+def test_check_refuses_after_close(client):
+    play = Play(client, after_close_run())
+    response = check(client, play)
+    assert response.status_code == 403
     assert "reveal-correct" not in response.content.decode()
 
 

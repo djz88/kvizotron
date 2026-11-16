@@ -11,15 +11,8 @@
       <li><a href="{{ url('admin_banks') }}"{% if section == "banks" %} aria-current="page"{% endif %}>{{ _("Banks") }}</a></li>
       <li><a href="{{ url('admin_settings') }}"{% if section == "settings" %} aria-current="page"{% endif %}>{{ _("Settings") }}</a></li>
       <li><a href="{{ url('admin_users') }}"{% if section == "users" %} aria-current="page"{% endif %}>{{ _("Admins") }}</a></li>
-      {% set basic = admin_basic(request) %}
-      <li>
-        <form method="post" action="{{ url('admin_view') }}" class="view-switch" aria-label="{{ _('How much to show') }}">
-          {{ csrf_input }}
-          <input type="hidden" name="next" value="{{ request.get_full_path() if request.method == 'GET' else '' }}">
-          <button type="submit" name="mode" value="basic" class="{{ 'secondary' if basic else 'outline' }}" aria-pressed="{{ 'true' if basic else 'false' }}">{{ _("Basic") }}</button>
-          <button type="submit" name="mode" value="all" class="{{ 'outline' if basic else 'secondary' }}" aria-pressed="{{ 'false' if basic else 'true' }}">{{ _("All") }}</button>
-        </form>
-      </li>
+      <li><a href="{{ url('admin_plugins') }}"{% if section.startswith("plugins") %} aria-current="page"{% endif %}>{{ _("Modules") }}</a></li>
+      <li><a href="{{ url('retention_history') }}"{% if section.startswith("retention") %} aria-current="page"{% endif %}>{{ _("Deletion history") }}</a></li>
       <li>{{ language_menu([{"code": "cs", "name": "Čeština", "href": with_lang(request, "cs")}, {"code": "en", "name": "English", "href": with_lang(request, "en")}], locale) }}</li>
       <li>
         <form method="post" action="{{ url('admin_logout') }}">
@@ -31,3 +24,4 @@
   </nav>
 </details>
 {% endblock %}
+{% block footer %}{% include "_footer.html" %}{% endblock %}

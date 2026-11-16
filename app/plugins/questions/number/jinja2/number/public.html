@@ -6,4 +6,5 @@
     <input type="text" inputmode="text" autocomplete="off" pattern="-?[0-9]+([.,][0-9]+)?" maxlength="32" name="{{ q.id }}:value" value="{{ value }}">
     <small>{{ _("Write digits only, with a comma or dot for decimals.") }}</small>
   </label>
+  <p class="number-note" data-number-note role="status" data-text="{{ _('“{value}” is read as {read}: a comma or a dot is a decimal sign. Type a large number without a separator.') }}"></p>
 </fieldset>

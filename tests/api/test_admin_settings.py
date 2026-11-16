@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from app.domain import settings
@@ -17,7 +19,7 @@ def test_global_setting_is_saved_and_shown(logged_in):
     assert response.status_code == 302
     assert settings.resolve(KEY) == "let_finish"
     page = logged_in.get("/admin/settings").content.decode()
-    assert 'value="let_finish" selected' in page
+    assert re.search(rf'<input type="radio" name="{KEY}" value="let_finish"[^>]*checked', page)
 
 
 def test_invalid_posted_value_shows_form_error_and_stores_nothing(logged_in):
@@ -154,3 +156,54 @@ def test_the_server_time_carries_what_the_browser_needs_to_show_it_in_its_own_fo
     panel = html[html.index('id="clock"') :]
     assert "<strong data-server-time>" in panel
     assert 'data-server-zone="' in html
+
+
+def test_number_fields_on_the_quiz_form(showing_all):
+    quiz = make_quiz()
+    url = f"/admin/quizzes/{quiz.id}/settings"
+    page = showing_all.get(url).content.decode()
+    tag = re.search(r'<input[^>]*name="pass_mark"[^>]*>', page)
+    assert tag is not None
+    for attribute in ('type="number"', 'min="0"', 'max="100"'):
+        assert attribute in tag.group(0), attribute
+    assert showing_all.post(url, {"slug": quiz.slug, "pass_mark": "75", "max_attempts": "3"})
+    assert settings.quiz_override("pass_mark", quiz) == "75"
+    assert settings.quiz_override("max_attempts", quiz) == "3"
+    assert showing_all.post(url, {"slug": quiz.slug, "pass_mark": "101"}).status_code == 200
+    assert settings.quiz_override("pass_mark", quiz) == "75"
+    assert showing_all.post(url, {"slug": quiz.slug, "pass_mark": ""}).status_code == 302
+    assert settings.quiz_override("pass_mark", quiz) is None
+
+
+def test_after_pass_is_saved_and_cleared_on_the_quiz_form(showing_all):
+    quiz = make_quiz()
+    url = f"/admin/quizzes/{quiz.id}/settings"
+    assert showing_all.post(url, {"slug": quiz.slug, "after_pass": "stop"}).status_code == 302
+    assert settings.quiz_override("after_pass", quiz) == "stop"
+    assert showing_all.post(url, {"slug": quiz.slug, "after_pass": ""}).status_code == 302
+    assert settings.quiz_override("after_pass", quiz) is None
+
+
+def test_inherited_pass_mark_is_named_with_its_unit(showing_all):
+    settings.set_global("pass_mark", "70", admin_id=None)
+    page = showing_all.get(f"/admin/quizzes/{make_quiz().id}/settings?lang=en").content.decode()
+    assert "Use global setting (now: 70 %)" in page
+
+
+def test_number_fields_on_the_global_form(showing_all):
+    assert showing_all.post("/admin/settings", {"pass_mark": "80"}).status_code == 302
+    assert settings.resolve("pass_mark") == "80"
+    assert showing_all.post("/admin/settings", {"max_attempts": "21"}).status_code == 200
+    assert settings.resolve("max_attempts") == "0"
+
+
+def test_a_failed_colour_save_leaves_no_setting_changed(logged_in):
+    from unittest import mock
+
+    from app.api.admin_forms import GlobalSettingsForm
+
+    with mock.patch.object(GlobalSettingsForm, "save_colours", side_effect=RuntimeError("boom")):
+        with pytest.raises(RuntimeError):
+            logged_in.post("/admin/settings", {KEY: "let_finish"})
+    assert settings.resolve(KEY) == settings.CATALOGUE[KEY].default
+    assert not AppSetting.objects.exists()

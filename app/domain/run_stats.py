@@ -11,11 +11,20 @@ from typing import Any, cast
 from uuid import UUID
 
 from app.contracts import ResultViewPlugin, ScoreSummary, ScoringStrategyPlugin
-from app.domain import data_policy, run_schedule, selection
-from app.domain.models import Attempt, AttemptAnswer, Quiz, QuizRun, RunRevision
+from app.domain import data_policy, results, run_schedule, selection
+from app.domain.models import Attempt, AttemptAnswer, Participant, Quiz, QuizRun, RunRevision
 from app.kernel import registry
 
-__all__ = ["QuestionStat", "RunStats", "RunSummary", "comparison", "of_run"]
+__all__ = [
+    "QuestionStat",
+    "RunStats",
+    "RunSummary",
+    "comparison",
+    "freeze",
+    "of_run",
+    "of_revision",
+    "question_max",
+]
 
 _CENT = Decimal("0.01")
 _HUNDRED = Decimal(100)
@@ -40,6 +49,8 @@ class RunStats:
     questions: list[QuestionStat] | None
     questions_reason: str | None  # "profile" when the run does not keep every answer
     by_revision: list[tuple[int, ScoreSummary]]
+    passed: int | None = None  # people who passed under the run's rule; None without a pass mark
+    judged: int = 0  # people with a verdict: the kept figures are final and the maximum is not 0
 
 
 @dataclass(frozen=True)
@@ -77,9 +88,12 @@ def _max_of(run: QuizRun) -> Decimal:
     return row.max_score if row else run.current_revision.max_score
 
 
-def _question_max(question: Mapping[str, Any]) -> Decimal:
+def question_max(question: Mapping[str, Any]) -> Decimal:
     """As publication counts the revision's maximum."""
-    strategy = cast(ScoringStrategyPlugin, registry.get("scoring_strategy", question["scoring"]))
+    strategy = cast(
+        ScoringStrategyPlugin,
+        registry.get("scoring_strategy", question["scoring"], include_disabled=True),
+    )
     return strategy.max_score(question["settings"])
 
 
@@ -96,7 +110,7 @@ def _questions(run: QuizRun, found: Sequence[Attempt]) -> list[QuestionStat]:
         given = points.get(question_id)
         if not given:
             continue
-        top = _question_max(question)
+        top = question_max(question)
         full = sum(1 for value in given if top > 0 and value >= top)
         stats.append(
             QuestionStat(
@@ -110,11 +124,134 @@ def _questions(run: QuizRun, found: Sequence[Attempt]) -> list[QuestionStat]:
     return stats
 
 
+def of_revision(run: QuizRun, revision_id: object) -> tuple[int, dict[str, QuestionStat]]:
+    """Submitted attempts on one revision of the run and, by question id, what they answered.
+
+    The statistics hold only what the run keeps, so under `score` most questions have none.
+    """
+    found = [a for a in _submitted(run) if a.revision_id == revision_id]
+    stats = _questions(run, found) if found else []
+    return len(found), {stat.question_id: stat for stat in stats}
+
+
 def _scores(found: Sequence[Attempt]) -> list[Decimal]:
     return [a.score for a in found if a.score is not None]
 
 
+def _decimal_text(value: Decimal | None) -> str | None:
+    return None if value is None else str(value)
+
+
+def _decimal(value: str | None) -> Decimal | None:
+    return None if value is None else Decimal(value)
+
+
+def _freeze_summary(summary: ScoreSummary) -> dict[str, Any]:
+    return {
+        "count": summary.count,
+        "average": _decimal_text(summary.average),
+        "median": _decimal_text(summary.median),
+        "lowest": _decimal_text(summary.lowest),
+        "highest": _decimal_text(summary.highest),
+        "bands": list(summary.bands),
+    }
+
+
+def _thaw_summary(frozen: Mapping[str, Any]) -> ScoreSummary:
+    return ScoreSummary(
+        count=frozen["count"],
+        average=_decimal(frozen["average"]),
+        median=_decimal(frozen["median"]),
+        lowest=_decimal(frozen["lowest"]),
+        highest=_decimal(frozen["highest"]),
+        bands=tuple(frozen["bands"]),
+    )
+
+
+def freeze(stats: RunStats) -> dict[str, Any]:
+    """What survives a run's data: numbers only, a question is named by its id."""
+    return {
+        "participants": stats.participants,
+        "started": stats.started,
+        "submitted": stats.submitted,
+        "unsent": stats.unsent,
+        "summary": None if stats.summary is None else _freeze_summary(stats.summary),
+        "questions": None
+        if stats.questions is None
+        else [
+            {
+                "question_id": stat.question_id,
+                "answered": stat.answered,
+                "average": str(stat.average),
+                "full_share": stat.full_share,
+            }
+            for stat in stats.questions
+        ],
+        "questions_reason": stats.questions_reason,
+        "by_revision": [[no, _freeze_summary(summary)] for no, summary in stats.by_revision],
+        "passed": stats.passed,
+        "judged": stats.judged,
+    }
+
+
+def _questions_of_run(run: QuizRun) -> dict[str, Mapping[str, Any]]:
+    rows = RunRevision.objects.filter(run=run).select_related("revision").order_by("active_from")
+    known: dict[str, Mapping[str, Any]] = {}
+    for revision in [*(row.revision for row in rows), run.current_revision]:
+        for offered in selection.all_questions(revision.snapshot_json):
+            known.setdefault(offered["id"], offered)
+    return known
+
+
+def _thawed(run: QuizRun) -> RunStats:
+    frozen = run.retention_summary_json
+    questions: list[QuestionStat] | None = None
+    if frozen["questions"] is not None:
+        known = _questions_of_run(run)
+        questions = [
+            QuestionStat(
+                question_id=row["question_id"],
+                question=known[row["question_id"]],
+                answered=row["answered"],
+                average=Decimal(row["average"]),
+                full_share=row["full_share"],
+            )
+            for row in frozen["questions"]
+            if row["question_id"] in known
+        ]
+    return RunStats(
+        participants=frozen["participants"],
+        started=frozen["started"],
+        submitted=frozen["submitted"],
+        unsent=frozen["unsent"],
+        summary=None if frozen["summary"] is None else _thaw_summary(frozen["summary"]),
+        questions=questions,
+        questions_reason=frozen["questions_reason"],
+        by_revision=[(no, _thaw_summary(summary)) for no, summary in frozen["by_revision"]],
+        passed=frozen.get("passed"),
+        judged=frozen.get("judged", 0),
+    )
+
+
+def _verdicts(run: QuizRun, found: Sequence[Attempt]) -> tuple[int | None, int]:
+    """(passed, judged) over people: the kept figures of a browser, an attempt on its own."""
+    if results.pass_mark(run) is None:
+        return None, 0
+    verdicts: list[bool | None] = []
+    people = {a.participant_id for a in found if a.participant_id}  # ids only: no query each
+    for who in Participant.objects.filter(pk__in=people).select_related("run"):
+        verdicts.append(results.kept_passed(results.kept(who), run))
+    for attempt in found:
+        if not attempt.participant_id:
+            attempt.run = run
+            verdicts.append(results.attempt_passed(attempt))
+    judged = [v for v in verdicts if v is not None]
+    return sum(1 for v in judged if v), len(judged)
+
+
 def of_run(run: QuizRun) -> RunStats:
+    if run.retention_summary_json:  # its rows are going or gone; the profile now says "none"
+        return _thawed(run)
     profile = data_policy.of(run)[data_policy.PROFILE]
     unsent = run_schedule.unsent(run)
     if data_policy.is_stateless(profile):
@@ -137,6 +274,7 @@ def of_run(run: QuizRun) -> RunStats:
             no = cast(int, row.revision.revision_no)
             by_revision.append((no, view.summarize(_scores(mine), row.max_score)))
     keeps = data_policy.keeps_all_answers(profile)
+    passed, judged = _verdicts(run, found)
     return RunStats(
         participants=_participants(found),
         started=started,
@@ -146,6 +284,29 @@ def of_run(run: QuizRun) -> RunStats:
         questions=_questions(run, found) if keeps else None,
         questions_reason=None if keeps else "profile",
         by_revision=by_revision,
+        passed=passed,
+        judged=judged,
+    )
+
+
+def _percent(average: Decimal | None, top: Decimal) -> int | None:
+    if average is None or top <= 0:
+        return None
+    return int((average / top * _HUNDRED).quantize(1, ROUND_HALF_UP))
+
+
+def _frozen_row(run: QuizRun) -> RunSummary:
+    frozen = run.retention_summary_json
+    average = _decimal(frozen["summary"]["average"]) if frozen["summary"] else None
+    return RunSummary(
+        cast(int, run.run_no),
+        run.opened_at,
+        run.closed_at,
+        frozen["participants"],
+        frozen["submitted"],
+        average,
+        _percent(average, _max_of(run)),
+        run.id,
     )
 
 
@@ -153,6 +314,9 @@ def comparison(quiz: Quiz) -> list[RunSummary]:
     """Normal runs only (`quiz.runs` never holds a test run), newest first."""
     rows = []
     for run in quiz.runs.exclude(status=QuizRun.Status.SCHEDULED).order_by("-run_no"):
+        if run.retention_summary_json:
+            rows.append(_frozen_row(run))
+            continue
         if data_policy.is_stateless(data_policy.of(run)[data_policy.PROFILE]):
             rows.append(
                 RunSummary(
@@ -174,12 +338,7 @@ def comparison(quiz: Quiz) -> list[RunSummary]:
             if scores
             else None
         )
-        top = _max_of(run)
-        percent = (
-            int((average / top * _HUNDRED).quantize(1, ROUND_HALF_UP))
-            if average is not None and top > 0
-            else None
-        )
+        percent = _percent(average, _max_of(run))
         rows.append(
             RunSummary(
                 cast(int, run.run_no),

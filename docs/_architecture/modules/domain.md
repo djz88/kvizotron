@@ -43,13 +43,15 @@ Key decision: [ADR-0006](../adr/0006-separate-quiz-revision-run-attempt-immutabl
 
 ## Scoreboard modes on revision change (per run, chosen by admin)
 
-See [ADR-0008](../adr/0008-scoreboard-revision-modes-default-separate.md).
+See [ADR-0065](../adr/0065-scoreboard-by-percent-and-shared-boards.md). The mode (`scoreboard_revision_mode`, global → quiz) is copied to the run with the other display settings and can be switched on the run page, also after the run ended; rewards and draws do not read it.
 
 | Mode | Behaviour |
 |---|---|
-| `SEPARATE_BY_REVISION` (`separate`) | Separate scoreboards per revision, newest first, the official attempt chosen in each. **Default.** |
-| `MERGE_COMPATIBLE` (`merged`) | Common scoreboard allowed only with equal max points. The admin sees the differences between revisions, is warned that equal max points do not guarantee equal difficulty, and decides. Not a preset: an audited action on the run page that can be undone (`results_json["merged"]`). |
-| `LATEST_ONLY` (`latest`) | Only attempts on the run's current revision. |
+| `percent` | One table for all revisions, ranked by the percentage of the maximum of each attempt's own revision; each row shows its own score and maximum. **Default.** |
+| `separate` | Separate scoreboards per revision, newest first, the official attempt chosen in each. |
+| `latest` | Only attempts on the run's current revision. |
+
+Shared board: runs of one quiz linked to a main run (`QuizRun.board_main`) show one public table on the main run, ranked by percent, each run filtered by its own mode and official-attempt rule; nothing moves between runs ([ADR-0065](../adr/0065-scoreboard-by-percent-and-shared-boards.md)).
 
 Who is a row, the official attempt, anonymised live names and the anonymous label: [ADR-0051](../adr/0051-scoreboard-participants-and-official-attempt.md). Statistics: `app/domain/run_stats.py`, over every submitted attempt of a normal run.
 
@@ -108,8 +110,23 @@ personal data still apply. See [ADR-0007](../adr/0007-restart-creates-new-run-ke
   revision. A quiz that was never published has nothing to return to, so its draft cannot be discarded.
 
 An archived quiz has no public pages and is read-only in the admin until it is restored. It can be duplicated.
+Read-only covers its runs too: grading, rewards (grant, hand over, cancel), draw actions, the scoreboard display,
+nicknames and the access code of a run refuse with `QuizArchived` (the admin answers 409); pages that only show stay open.
 A quiz with an open round cannot be archived. Archiving moves the `PUBLISHED` revision to `ARCHIVED`, and restoring
 moves the highest `ARCHIVED` revision back; revisions have no archive action of their own.
+Duplicating a quiz copies its quiz type and every quiz setting override, not its branding.
+
+### Quiz types
+
+A quiz type is a named bundle of quiz settings from the port `quiz_type` ([ADR-0062](../adr/0062-quiz-type-port.md); the types and their values are in [plugins/quiz-types.md](../plugins/quiz-types.md)). Applying one is the domain's (`app/domain/quiz_types.py`):
+
+- A type writes its values as ordinary quiz overrides in one transaction, and the quiz remembers its id (`Quiz.quiz_type`). Basic quiz removes every override instead. Remove type forgets the id and keeps every value.
+- Changing the type returns to the global value each key the old type sets, read from its current definition, that the new one does not set.
+- A key of a disabled module is skipped. Deviations are counted against the type's current definition: a key the type sets whose resolved value (override or global) differs. A later change of a definition reaches no quiz until it applies the type again.
+- The clash rules between quiz settings and with the quiz's runs are one set, `app/domain/setting_rules.py`, which the settings forms use too. A clash with another quiz setting is resolved by setting that one to a value that goes with the type; a clash with a planned or open run refuses the type and writes nothing. Content that does not go with the type (a photo question with answers after each question) only warns; planning a run still refuses it.
+- Runs: what a run copies when it is planned or opened (time limit, participant rules, data profile, scoreboard, rewards) stays on a planned or open run; what an attempt reads from the quiz at its start (navigation, page size, reveal, shuffling) or a page reads when drawn (sources) follows the type at once (TD-101).
+- A type may be adjusted again after an adjustment until nothing changes (`_plan` repeats), so a chain of clashes such as after-close reveal, data profile and visibility ends in one consistent set.
+- The audit has `quiz.type_applied` and `quiz.type_removed` with the type id only, besides the entry of each changed setting ([AC-171](../acceptance-criteria.md)).
 
 ### Run lifecycle
 
@@ -147,6 +164,11 @@ Status changes that time makes due are applied on the first request after them, 
   [AC-04](../acceptance-criteria.md)). Switching creates a new attempt; it never changes an existing one's revision.
 - A new run never inherits attempts, results, entitlements or draws. It may copy reward rules from the quiz's template or the previous run when it is planned or opened (`reward_source`).
 - A run's participant rules and access code are its own: the rules are copied from the quiz when it is planned or opened and fixed once it opens, the code is never inherited ([ADR-0049](../adr/0049-participants-and-access-code.md)).
-- A run's data profile and retention period are copied from the quiz when it is planned or opened. The profile is fixed once the run opens, the period stays editable. Under `none` a submitted attempt is deleted and counted ([ADR-0050](../adr/0050-data-profile-and-local-resume.md)); the period is a value that D3 will act on.
+- A run's data profile and retention period are copied from the quiz when it is planned or opened. The profile is fixed once the run opens, the period stays editable. Under `none` a submitted attempt is deleted and counted ([ADR-0050](../adr/0050-data-profile-and-local-resume.md)); when the period has passed, the hourly pass deletes the run's data.
+- A **deleted run** (`data_deleted_at` set) lost what it collected and keeps the rest: profile rewritten to `none`, status `ARCHIVED`, `stateless_submitted` holding the submitted count, and `retention_summary_json`, which statistics and the comparison of runs read instead of the deleted rows. It can be restored from the archive without its data, its period no longer changes, and no deletion runs on it again ([ADR-0056](../adr/0056-retention-job-summary-held-runs.md)).
+- A **held run** (`retention_held_at` set) was already past its period, or past its deadline and unsettled, when the migration of D3 ran. The pass does not delete it. Confirming the list on the Deletion history page releases all of them, extending a run's period past now clears its hold, and with neither it stays for ever.
+- The `jobs` pass and the `app` service leave small files beside the database file (`app/domain/heartbeat.py`, [ADR-0061](../adr/0061-heartbeat-and-restore-marker.md)): a heartbeat per service, which a restore reads, and the record of the last pass, which the `jobs` healthcheck and the Deletion history page read. They are files, not rows, so a restore that replaces the database does not touch them.
+- `Participant.email_key` is the address stripped and casefolded; the erasure search filters on it and `erase` clears the board cache of each run it touched.
+- Backup and restore (`app/domain/backup.py`, [ADR-0059](../adr/0059-backup-and-restore.md)) are services next to the `jobs` pass. They add no state, status or table: a backup is files, and a restore replaces the database and media wholesale, which also brings back any state the backup held, so deletions made after its date must be repeated ([privacy.md](../../privacy.md#backups)).
 - Attempt statuses: `IN_PROGRESS`, `SUBMITTED`, `PENDING_GRADING`, `SWITCHED` (replaced by a new revision) and `ABANDONED` (replaced by a new start under "counts only when submitted"). An `ABANDONED` attempt can never be submitted, switched or checked, and holds no name.
 - Test attempts live in runs of kind `test`, which `QuizRun.objects` and `quiz.runs` hide ([ADR-0044](../adr/0044-preview-and-test-links.md)). A query on `Attempt` across runs must filter on the run's kind itself.

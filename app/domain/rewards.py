@@ -27,7 +27,7 @@ from app.contracts import (
     RewardPlugin,
     ThresholdRule,
 )
-from app.domain import attempts, authoring, data_policy, participants, results, settings
+from app.domain import authoring, data_policy, participants, results, settings
 from app.domain.models import Attempt, Participant, Quiz, QuizRun, RewardEntitlement, RewardRule
 from app.kernel import audit, registry
 
@@ -44,6 +44,7 @@ __all__ = [
     "contact_warning",
     "copy_rules",
     "NO_LONGER_REACHED",
+    "NotGrantable",
     "cancel",
     "delete_rule",
     "ensure_allowed",
@@ -78,6 +79,7 @@ _MESSAGES = {
 }
 TEXT_FIELDS = ("name", "description", "claim")
 _TEXT_LIMITS = {"name": 80, "description": 500, "claim": 500}
+NAME_LENGTH = _TEXT_LIMITS["name"]
 MAX_ALTERNATES = 20
 MAX_WINNERS = 1000
 DEFAULT_ALTERNATES = 2
@@ -100,6 +102,10 @@ class RewardConflict(Exception):
 
 class RuleLocked(Exception):
     """The run is no longer planned, so the rule's structure stays as it opened."""
+
+
+class NotGrantable(Exception):
+    """The participant has no submitted attempt, so a manual reward cannot go to them."""
 
 
 class RuleInvalid(Exception):
@@ -190,7 +196,9 @@ def copy_rules(run: QuizRun) -> None:
                 texts_json=copy.deepcopy(rule.texts_json),
                 winners_public=False,
             )
-            for number, rule in enumerate(_source_rules(run), start=1)
+            for number, rule in enumerate(
+                (rule for rule in _source_rules(run) if not _plugin_missing(rule)), start=1
+            )
         ]
     )
 
@@ -361,11 +369,28 @@ def _run_now(run_id: object) -> QuizRun:
     return current
 
 
+def _plugin_missing(rule: RuleData | RewardRule) -> bool:
+    """Whether a rule would need a plugin that is disabled now."""
+    needs_threshold = rule.kind == RewardRule.Kind.THRESHOLD or (
+        rule.kind == RewardRule.Kind.DRAW and bool(rule.min_unit)
+    )
+    if needs_threshold and "threshold" not in registry.keys("reward"):
+        return True
+    return rule.kind == RewardRule.Kind.DRAW and "manual" not in registry.keys("drawing")
+
+
 def save_rule(
     owner: Quiz | QuizRun, data: RuleData, *, rule: RewardRule | None, admin_id: str
 ) -> RewardRule:
     """A new rule, or a changed one. On an open run only the texts may differ."""
     wanted = _structure(data)
+    same_needs = (
+        rule is not None
+        and rule.kind == wanted["kind"]
+        and bool(rule.min_unit) == bool(wanted["min_unit"])
+    )
+    if _plugin_missing(data) and not same_needs:  # the texts of a rule it has can still change
+        raise RuleInvalid("plugin_disabled")
     texts = _texts(data.texts)
     if isinstance(owner, Quiz):
         quiz, run = owner, None
@@ -428,19 +453,10 @@ _SOURCE = RewardEntitlement.Source
 
 
 def _reward() -> RewardPlugin:
-    return cast(RewardPlugin, registry.get("reward", "threshold"))
+    return cast(RewardPlugin, registry.get("reward", "threshold", include_disabled=True))
 
 
-def _figures(attempt: Attempt) -> AttemptFigures:
-    return AttemptFigures(
-        score=attempt.score if attempt.score is not None else Decimal(0),
-        max_score=attempt.max_score if attempt.max_score is not None else Decimal(0),
-        correct=attempt.correct_count or 0,
-        questions=len(attempts.items_of(attempt)),
-    )
-
-
-def _reached(run: QuizRun, rules: list[RewardRule], attempt: Attempt) -> set[str]:
+def _reached(run: QuizRun, rules: list[RewardRule], figures: AttemptFigures) -> set[str]:
     thresholds = [
         ThresholdRule(
             id=str(rule.id),
@@ -452,7 +468,7 @@ def _reached(run: QuizRun, rules: list[RewardRule], attempt: Attempt) -> set[str
     ]
     if not thresholds:
         return set()
-    return set(_reward().qualifies(thresholds, _figures(attempt), of(run)[REWARD_THRESHOLDS]))
+    return set(_reward().qualifies(thresholds, figures, of(run)[REWARD_THRESHOLDS]))
 
 
 def refresh(participant: Participant) -> None:
@@ -471,8 +487,9 @@ def refresh(participant: Participant) -> None:
     )
     if not rules:
         return
-    official = results.official_attempt(participant)
-    reached = _reached(run, rules, official) if official is not None else set()
+    found = results.kept(participant)
+    official = found.attempt if found is not None else None
+    reached = _reached(run, rules, found.figures) if found is not None else set()
     held: dict[object, RewardEntitlement] = {}
     refused: set[object] = set()  # an admin cancelled it: never granted back automatically
     for row in RewardEntitlement.objects.filter(participant=participant):
@@ -633,6 +650,9 @@ def _entitlement_audit(action: str, row: RewardEntitlement, admin_id: str) -> No
 
 def grant_manual(rule: RewardRule, participant: Participant, *, admin_id: str) -> RewardEntitlement:
     """A manual reward, granted at once. One the participant already holds is returned as is."""
+    authoring.ensure_editable(participant.run.quiz)
+    if participant not in grantable(participant.run):
+        raise NotGrantable
     if rule.kind != _KINDS.MANUAL:
         raise RuleInvalid("kind")
     if rule.run_id is None or rule.run_id != participant.run_id:
@@ -680,6 +700,7 @@ def _change(
 
 def hand_over(entitlement: RewardEntitlement, *, admin_id: str) -> None:
     """Only a granted one; after that no recomputation takes it back."""
+    authoring.ensure_editable(entitlement.run.quiz)
     _change(
         entitlement,
         (_STATUS.GRANTED,),
@@ -691,6 +712,7 @@ def hand_over(entitlement: RewardEntitlement, *, admin_id: str) -> None:
 
 def cancel(entitlement: RewardEntitlement, reason: str, *, admin_id: str) -> None:
     """The admin may cancel a granted or a handed-over one, always with a reason."""
+    authoring.ensure_editable(entitlement.run.quiz)
     cleaned = (reason or "").strip()
     if not cleaned or len(cleaned) > _REASON_LIMIT:
         raise RuleInvalid("reason")

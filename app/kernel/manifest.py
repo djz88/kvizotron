@@ -63,6 +63,9 @@ class Manifest(BaseModel):
 
     id: str
     kind: Literal["plugin", "provider"]
+    name: str | None = None  # msgid in the module's own catalogue; without it the id is shown
+    description: str | None = None  # msgid, one line on what the module does
+    always_on: bool = False  # the application asks for it by name, so it cannot be disabled
     version: str
     app: str
     api_compatibility: str

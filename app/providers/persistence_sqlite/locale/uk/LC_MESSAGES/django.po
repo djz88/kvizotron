@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Database"
+msgstr "База даних"
+
+#: manifest.py
+msgid "Stores everything in SQLite."
+msgstr "Зберігає все в SQLite."
+

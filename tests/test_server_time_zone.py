@@ -11,7 +11,7 @@ def _server_zone(tz: str | None, db: str) -> str:
         "KVZ_DB_PATH": db,
         "PATH": "/usr/bin:/bin",
         "DJANGO_SETTINGS_MODULE": "app.settings",
-        "KVZ_SECRET_KEY": "test-only-not-secret",
+        "KVZ_SECRET_KEY": "test-only-not-a-real-secret-key-0123456789",
         "KVZ_DOMAIN": "localhost",
     }
     if tz:

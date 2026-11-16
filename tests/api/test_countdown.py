@@ -358,3 +358,17 @@ def add_photo_en(quiz):
         points=10,
         scoring="partial",
     )
+
+
+def test_a_timed_attempt_never_asks_before_submitting_unanswered(client):
+    """window.confirm blocks timers, so a timed form must not carry the confirm text (ADR-0060)."""
+    assert "data-unanswered-confirm" not in start(client, a_run(limit=600))
+
+
+def test_a_deadline_only_attempt_never_asks_either(client):
+    html = start(client, a_run(deadline=NOW + timedelta(minutes=5)))
+    assert "data-unanswered-confirm" not in html
+
+
+def test_an_untimed_attempt_still_asks_before_submitting_unanswered(client):
+    assert "data-unanswered-confirm=" in start(client, a_run())

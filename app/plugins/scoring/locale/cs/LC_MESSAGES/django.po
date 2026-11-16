@@ -1,8 +1,16 @@
-#: strategies.py:27
+#: manifest.py
+msgid "Scoring"
+msgstr "Bodování"
+
+#: manifest.py
+msgid "Counts points for an answer."
+msgstr "Počítá body za odpověď."
+
+#: strategies.py
 msgid "All or nothing"
 msgstr "Všechno, nebo nic"
 
-#: strategies.py:48
+#: strategies.py
 msgid "Part by part"
 msgstr "Část za část"
 

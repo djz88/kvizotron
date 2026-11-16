@@ -50,6 +50,7 @@
             <input type="hidden" name="entry" value="{{ person.id }}">
             <label>{{ _("Reason") }}
               <input type="text" name="reason" maxlength="200" required>
+              <small>{{ _("Do not name people here: the reason stays in the draw history after the data are deleted.") }}</small>
             </label>
             <button type="submit" name="action" value="move_up" class="secondary">{{ _("Move up an alternate") }}</button>
             <button type="submit" name="action" value="substitute" class="secondary outline">{{ _("Draw a substitute") }}</button>
@@ -71,6 +72,7 @@
     {{ csrf_input }}
     <label>{{ _("Reason for a redraw") }}
       <input type="text" name="reason" maxlength="200" required>
+      <small>{{ _("Do not name people here: the reason stays in the draw history after the data are deleted.") }}</small>
     </label>
     <button type="submit" name="action" value="redraw" class="secondary outline">{{ _("Redraw everything") }}</button>
   </form>

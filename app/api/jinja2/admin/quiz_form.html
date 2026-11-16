@@ -3,7 +3,22 @@
 <h1>{{ _("New quiz") }}</h1>
 <form method="post">
   {{ csrf_input }}
-  {{ form.as_div() }}
+  {{ form.non_field_errors() }}
+  {% for field in form if field.name != "quiz_type" %}<div{% if field.css_classes() %} class="{{ field.css_classes() }}"{% endif %}>{{ field.as_field_group() }}</div>{% endfor %}
+  {% if "quiz_type" in form.fields %}
+  <details class="quiz-type-choice" open>
+    <summary>{{ _("Quiz type") }}</summary>
+    <fieldset aria-label="{{ _('Quiz type') }}">
+      <small>{{ _("Sets the quiz settings in one step. You can change it later in the settings.") }}</small>
+      {{ form["quiz_type"].errors }}
+      {% for radio in form["quiz_type"] %}
+      <label class="quiz-type-option">{{ radio.tag() }} <strong>{{ radio.choice_label }}</strong>
+        <small>{{ form.type_descriptions.get(radio.data.value, _("The quiz is created without a type: the global settings apply.")) }}</small>
+      </label>
+      {% endfor %}
+    </fieldset>
+  </details>
+  {% endif %}
   <button type="submit">{{ _("Create") }}</button>
 </form>
 {% endblock %}

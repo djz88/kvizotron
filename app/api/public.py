@@ -17,8 +17,8 @@ from django.views.decorators.csp import csp_override
 from django.views.decorators.http import require_POST
 from markupsafe import Markup
 
-from app.api import i18n, scoreboard
-from app.api.play import MESSAGES, needs_code, rewards_shown
+from app.api import i18n, pass_mark, scoreboard
+from app.api.play import MESSAGES, needs_code, rewards_shown, start_refusal
 from app.api.rendering import (
     identity_context,
     identity_form,
@@ -33,6 +33,7 @@ from app.api.rendering import (
 from app.contracts import ASK_WHEN, REPEAT_ATTEMPTS, UNFINISHED_ATTEMPT, QuestionTypePlugin
 from app.domain import (
     attempts,
+    branding,
     clock,
     data_policy,
     participants,
@@ -55,16 +56,22 @@ SERVED_ASSETS = {
     "flow.js": "text/javascript",
     "resume.js": "text/javascript",
     "nav.js": "text/javascript",
+    "sections.js": "text/javascript",
     "sortable.js": "text/javascript",
     "editor.js": "text/javascript",
     "clock.js": "text/javascript",
-    "scoreboard.js": "text/javascript",
     "countdown.js": "text/javascript",
     "planned.js": "text/javascript",
+    "number.js": "text/javascript",
+    "inline-edit.js": "text/javascript",
     "flag-cs.svg": "image/svg+xml",
     "flag-en.svg": "image/svg+xml",
     "flag-uk.svg": "image/svg+xml",
-    "logo.svg": "image/svg+xml",
+    **{
+        f"logo-{family}-{kind}.svg": "image/svg+xml"
+        for family in ("aurora", "mint", "amber")
+        for kind in ("bar", "hero-light", "hero-dark", "about-light", "about-dark")
+    },
     "favicon-32.png": "image/png",
     "apple-touch-icon.png": "image/png",
 }
@@ -85,14 +92,17 @@ def landing(request: HttpRequest) -> HttpResponse:
     runs = QuizRun.objects.filter(status=QuizRun.Status.OPEN).select_related(
         "quiz", "current_revision"
     )
+    ordered = list(runs.order_by("-quiz__featured", "-opened_at"))
+    marks = branding.quiz_marks([run.quiz for run in ordered], locale)
     quizzes = [
         {
             "slug": run.quiz.slug,
             "title": _title(run.current_revision.snapshot_json, locale),
             "description": _description(run.current_revision.snapshot_json, locale),
             "featured": run.quiz.featured,
+            "mark": marks.get(run.quiz_id),
         }
-        for run in runs.order_by("-quiz__featured", "-opened_at")
+        for run in ordered
     ]
     context = {
         "quizzes": quizzes,
@@ -107,15 +117,21 @@ def _coming_up(locale: str) -> list[dict[str, Any]]:
     planned = QuizRun.objects.filter(
         status=QuizRun.Status.SCHEDULED, starts_at__gt=timezone.now()
     ).select_related("quiz", "current_revision")
+    shown = [
+        run
+        for run in planned.order_by("starts_at")
+        if quiz_settings.resolve(quiz_settings.ANNOUNCE_PLANNED, run.quiz)
+        == quiz_settings.Switch.ON
+    ]
+    marks = branding.quiz_marks([run.quiz for run in shown], locale)
     return [
         {
             "slug": run.quiz.slug,
             "title": _title(run.current_revision.snapshot_json, locale),
             "starts": clock.shown(run.starts_at),
+            "mark": marks.get(run.quiz_id),
         }
-        for run in planned.order_by("starts_at")
-        if quiz_settings.resolve(quiz_settings.ANNOUNCE_PLANNED, run.quiz)
-        == quiz_settings.Switch.ON
+        for run in shown
     ]
 
 
@@ -135,17 +151,27 @@ def _languages(codes: Any) -> list[dict[str, str]]:
 
 
 def _unavailable(
-    request: HttpRequest, message: str, slug: str | None = None, last_run: QuizRun | None = None
+    request: HttpRequest,
+    message: str,
+    found: Quiz | None = None,
+    last_run: QuizRun | None = None,
 ) -> HttpResponse:
-    """`slug` of a quiz that exists, so a returning participant still finds their result."""
+    """`found` is a quiz that exists: it brands the page and its result stays findable.
+
+    A quiz that exists answers 200 even when it is not running, so shared links and
+    monitoring do not see it as missing; only an unknown or archived quiz answers 404.
+    """
     locale = request.locale  # type: ignore[attr-defined]
     context = {
+        "branding_quiz": found,
         "message": message,
-        "result_slot": slug,
+        "result_slot": found.slug if found else None,
         "walkthrough_url": _walkthrough_url(last_run),
         "scoreboard_url": scoreboard.url_of(last_run),
+        "other_boards": scoreboard.other_boards(found, last_run) if found else [],
     }
-    return page(request, "public/unavailable.html", context, locale, status=404)
+    status = 404 if found is None else 200
+    return page(request, "public/unavailable.html", context, locale, status=status)
 
 
 def quiz(request: HttpRequest, slug: str) -> HttpResponse:
@@ -158,7 +184,7 @@ def quiz(request: HttpRequest, slug: str) -> HttpResponse:
         ended = found.runs.exclude(status=QuizRun.Status.SCHEDULED)
         last_run = ended.select_related("quiz", "current_revision").order_by("-run_no").first()
         message = _("This quiz is not running right now.")
-        return _unavailable(request, message, found.slug, last_run)
+        return _unavailable(request, message, found, last_run)
     return quiz_page(request, run)
 
 
@@ -224,22 +250,38 @@ def _planned_notice(run: QuizRun) -> dict[str, Any]:
     }
 
 
+def _may_restart(rules: Mapping[str, str], left: int | None) -> bool:
+    """A limit leaves a restart only while attempts remain and an open one is not simply resumed."""
+    if rules.get(REPEAT_ATTEMPTS) != "allow":
+        return rules.get(UNFINISHED_ATTEMPT) == "submitted"
+    if left is None:
+        return True
+    return left > 0 and rules.get(UNFINISHED_ATTEMPT) != "continue"
+
+
 def quiz_page(
     request: HttpRequest, run: QuizRun, *, code_error: str | None = None, status: int = 200
 ) -> HttpResponse:
     snapshot = run.current_revision.snapshot_json
     locale = i18n.negotiate(request, snapshot["locales"], snapshot["default_locale"])
     rules = participants.rules_of(run)
+    key = request.COOKIES.get(participants.cookie_name(run), "")
+    participant = participants.find(run, key)
+    left = participants.attempts_left(run, participant)
+    refusal = start_refusal(run, participant, locale) if run.status == QuizRun.Status.OPEN else None
+    if refusal is not None:
+        left = None  # next to a refusal "attempts left" only confuses
     context = {
         "title": _title(snapshot, locale),
         "description": _description(snapshot, locale),
-        "palette_quiz": run.quiz,
+        "branding_quiz": run.quiz,
         "mode_bar": mode_bar_of(run),
         "run": run,
         "is_open": run.status == QuizRun.Status.OPEN,
         "code_needed": needs_code(request, run),
-        "may_restart": rules.get(REPEAT_ATTEMPTS) == "allow"
-        or rules.get(UNFINISHED_ATTEMPT) == "submitted",
+        "refusal": refusal,
+        "may_restart": _may_restart(rules, left),
+        "attempts_left": left,
         "code_error": code_error,
         "identity": identity_context(rules) if rules.get(ASK_WHEN, "end") == "start" else None,
         **_time_notice(run),
@@ -249,6 +291,9 @@ def quiz_page(
         "result_slot": run.quiz.slug if run.kind == QuizRun.Kind.NORMAL else None,
         "walkthrough_url": _walkthrough_url(run),
         "scoreboard_url": scoreboard.url_of(run),
+        "other_boards": scoreboard.other_boards(run.quiz, run)
+        if run.kind == QuizRun.Kind.NORMAL
+        else [],
         "stateless": data_policy.is_stateless(attempts.effective_profile(run)),
         "offered": rewards.offered(run, locale),
     }
@@ -300,7 +345,7 @@ def _own_answer(
     summary = plugin.summarize(question["definition"], [row.answer_json], locale)
     shown["labels"] = [item.label for item in summary]
     flow = attempts.flow_of(attempt)
-    if flow["moment"] != quiz_settings.RevealMoment.NEVER:
+    if reveal.shows_answers(attempt, timezone.now()):
         with translation.override(locale):
             revealed = reveal.of_question(question, row.answer_json, flow["level"], locale)
             quiz = attempt.run.quiz
@@ -400,7 +445,7 @@ def walkthrough_page(request: HttpRequest, slug: str, run_id: UUID) -> HttpRespo
     answers = walkthrough.shows_answers(run)
     context = {
         "title": _title(snapshot, locale),
-        "palette_quiz": run.quiz,
+        "branding_quiz": run.quiz,
         "run": run,
         "is_admin": is_admin,
         "items": [
@@ -436,6 +481,13 @@ def _no_such_result(request: HttpRequest) -> HttpResponse:
     return _private(page(request, "public/unavailable.html", context, locale))
 
 
+def _after_close_note(attempt: Attempt, locale: str) -> str:
+    """Only while answers still wait, and only where the page can show them once they do."""
+    if reveal.is_shown(attempt, timezone.now()) or not visibility.participant_sees_answers(attempt):
+        return ""
+    return reveal.after_close_note(attempt, locale)
+
+
 def _result_page(
     request: HttpRequest, attempt: Attempt, token: str, error: str | None = None, status: int = 200
 ) -> HttpResponse:
@@ -451,7 +503,7 @@ def _result_page(
     score = attempt.score or Decimal(0)
     context = {
         "title": _title(snapshot, locale),
-        "palette_quiz": attempt.run.quiz,
+        "branding_quiz": attempt.run.quiz,
         "mode_bar": mode_bar_of(attempt.run),
         "earned": score,
         "maximum": maximum,
@@ -461,7 +513,15 @@ def _result_page(
         "identity_form": form,
         "identity_error": error,
         "rewards": rewards_shown(attempt, locale),
+        "after_close_note": _after_close_note(attempt, locale),
         **scoreboard.place_context(attempt),
+        **pass_mark.context(
+            attempt,
+            locale,
+            score=score,
+            maximum=maximum,
+            pending=attempt.status == Attempt.Status.PENDING_GRADING,
+        ),
     }
     return _private(page(request, "public/result.html", context, locale, status=status))
 
@@ -504,10 +564,18 @@ def _write_identity(request: HttpRequest, attempt: Attempt) -> None:
         Participant.objects.filter(pk=participant.pk).update(name_dropped=False)
 
 
-def result_photo(request: HttpRequest, token: str, answer_id: UUID) -> HttpResponse:
-    """A refusal is 204, because a 4xx would log the path, and the token is in it."""
+def result_photo(request: HttpRequest, token: str, answer_id: str = "") -> HttpResponse:
+    """A refusal is 204, because a 4xx would log the path, and the token is in it.
+
+    The rest of the path is taken as a string for the same reason: a route that does not
+    match is a 404, so the routes match everything after photo/, even nothing or a slash.
+    """
+    try:
+        photo_id = UUID(answer_id)
+    except ValueError:
+        return _private(HttpResponse(status=204))
     attempt = _attempt_of_token(token)
-    row = attempt.answers.filter(pk=answer_id).first() if attempt else None
+    row = attempt.answers.filter(pk=photo_id).first() if attempt else None
     question = None
     if attempt is not None and row is not None:
         question = next(
@@ -531,7 +599,8 @@ def _private_file(asset_id: str | None) -> HttpResponse:
     return FileResponse(Path(stored.path).open("rb"), content_type=stored.mime_type)
 
 
-@csp_override({"default-src": [CSP.NONE], "sandbox": True})
+# frame-ancestors does not fall back to default-src, so the override has to name it.
+@csp_override({"default-src": [CSP.NONE], "sandbox": True, "frame-ancestors": [CSP.NONE]})
 def media(request: HttpRequest, asset_id: UUID) -> FileResponse:
     """The policy applies when a file is opened directly: an SVG shown that way runs nothing."""
     storage = media_storage()

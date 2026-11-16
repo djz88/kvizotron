@@ -71,12 +71,16 @@ def bank_with(count, name="Dějepis", locales=("cs",), tags=()):
     return bank
 
 
-def add_row(quiz, bank, count=1, points=1, tag="", position=None) -> str:
+def add_row(
+    quiz, bank, count=1, points=1, tag="", position=None, folder_id="", difficulty=""
+) -> str:
     return authoring.save_draw(
         quiz,
         None,
         bank_id=str(bank.id),
         tag=tag,
+        folder_id=folder_id,
+        difficulty=difficulty,
         count=count,
         points=points,
         position=len(authoring.editable_questions(quiz)) if position is None else position,

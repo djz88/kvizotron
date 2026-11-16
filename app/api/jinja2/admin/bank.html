@@ -1,19 +1,99 @@
 {% extends "admin/base.html" %}
+{% from "admin/_move_options.html" import options as move_options %}
+{% from "admin/_inline_name.html" import inline_name with context %}
+{% from "admin/_list_bar.html" import list_bar %}
+{% macro folder_choice(name, selected="", top=_("Top level")) %}
+<select name="{{ name }}">
+  <option value="">{{ top }}</option>
+  {% for id, path in folder_choices %}<option value="{{ id }}"{% if id == selected %} selected{% endif %}>{{ path }}</option>{% endfor %}
+</select>
+{% endmacro %}
 {% block content %}
 <p class="crumb"><a href="{{ url('admin_banks') }}">{{ _("Back to the banks") }}</a></p>
-<h1>{{ bank.name }}</h1>
+{{ inline_name(name_field) }}
+{% if language_chips %}
+<ul class="chips" aria-label="{{ _('Languages of the questions') }}">
+  {% for chip in language_chips %}<li><a class="chip" href="{{ chip.href }}"{% if chip.current %} aria-current="true"{% endif %} aria-label="{{ _('%(code)s: %(count)s questions', code=chip.code, count=chip.count) }}">{{ chip.code }} {{ chip.count }}</a></li>{% endfor %}
+</ul>
+{% endif %}
 {% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
-<p class="row-actions">
-  {% if can_import %}<a href="{{ url('admin_import_new') }}?target=bank:{{ bank.id }}">{{ _("Import questions") }}</a>{% endif %}
-  <a href="{{ url('admin_bank_export', args=[bank.id]) }}">{{ _("Download as CSV") }}</a>
-</p>
+{% call list_bar(_("Questions"), question_total) %}
+  {% if can_import %}<a href="{{ url('admin_import_new') }}?target=bank:{{ bank.id }}" role="button" class="secondary outline">{{ _("Import questions") }}</a>{% endif %}
+  {% if can_import and question_total %}<a href="{{ url('admin_import_new') }}?target=bank_replace:{{ bank.id }}" role="button" class="secondary outline">{{ _("Replace questions") }}</a>{% endif %}
+  <a href="{{ url('admin_bank_export', args=[bank.id]) }}" role="button" class="secondary outline">{{ _("Download as CSV") }}</a>
+{% endcall %}
+<form method="get" class="bank-search" role="search">
+  <input type="search" name="q" value="{{ query }}" aria-label="{{ _('Search the bank') }}" placeholder="{{ _('Search the bank') }}">
+  <button type="submit">{{ _("Search") }}</button>
+</form>
+{% if query %}
+<h2>{{ _("Search results") }}</h2>
+{% else %}
+<nav class="folder-crumbs" aria-label="{{ _('Folder') }}">
+  <a href="{{ url('admin_bank', args=[bank.id]) }}">{{ _("Folders") }}</a>
+  {% for folder in crumbs %} / <a href="{{ url('admin_bank', args=[bank.id]) }}?folder={{ folder.id }}" id="crumb-{{ folder.id }}">{{ folder.name }}</a>{% endfor %}
+</nav>
+{% if folders %}
+<ul class="rows">
+  {% for node in folders %}
+  <li>
+    <div class="row-main">
+      {{ inline_name(folder_fields[node.folder.id|string]) }}
+      <small>{{ _("Questions: %(count)s", count=node.total) }} · {{ _("Subtopics: %(count)s", count=node.subfolders) }}</small>
+    </div>
+    <details class="dropdown more">
+      <summary aria-label="{{ _('More actions') }}">⋮</summary>
+      <ul>
+        <li class="move-inline">
+          <form method="post" action="{{ url('admin_bank_folder_move', args=[bank.id, node.folder.id]) }}">
+            {{ csrf_input }}
+            <select name="parent" aria-label="{{ _('Move it to') }}">
+              {{ move_options(destinations[node.folder.id|string], other_banks, node.folder.name, node.folder.parent_id|string if node.folder.parent_id else "") }}
+            </select>
+            <button type="submit" class="outline">{{ _("Move") }}</button>
+          </form>
+        </li>
+        <li class="move-links"><a href="{{ url('admin_bank_folder_move', args=[bank.id, node.folder.id]) }}">{{ _("Move…") }}</a></li>
+        {% if node.folder.parent_id %}
+        <li class="move-links">
+          <form method="post" action="{{ url('admin_bank_folder_move', args=[bank.id, node.folder.id]) }}">
+            {{ csrf_input }}
+            <input type="hidden" name="parent" value="">
+            <button type="submit" class="outline">{{ _("Move to the top level") }}</button>
+          </form>
+        </li>
+        {% endif %}
+        <li>
+          <form method="post" action="{{ url('admin_bank_folder_delete', args=[bank.id, node.folder.id]) }}">
+            {{ csrf_input }}
+            <input type="hidden" name="next_folder" value="{{ current.id if current else '' }}">
+            <button type="submit" class="outline">{{ _("Delete") }}</button>
+          </form>
+        </li>
+      </ul>
+    </details>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+<form method="post" action="{{ url('admin_bank_folder_create', args=[bank.id]) }}" class="folder-new">
+  {{ csrf_input }}
+  <input type="hidden" name="parent" value="{{ current.id if current else '' }}">
+  <input type="hidden" name="next_folder" value="{{ current.id if current else '' }}">
+  <input type="text" name="name" maxlength="80" required aria-label="{{ _('Folder name') }}" placeholder="{{ _('Folder name') }}">
+  <button type="submit" class="outline">{{ _("New folder") }}</button>
+</form>
+{% if current %}{{ inline_name(current_field) }}{% else %}<h2>{{ _("Unfiled") ~ " (" ~ unfiled ~ ")" }}</h2>{% endif %}
+{% endif %}
 {% if questions %}
 <ul class="rows">
   {% for question in questions %}
   <li>
+    <input type="checkbox" name="question" value="{{ question.id }}" form="bulk-move" aria-label="{{ _('Select') }}">
     <div class="row-main">
       <a href="{{ url('admin_bank_question_edit', args=[bank.id, question.id]) }}">{{ question.label }}</a>
-      <small>{{ question.complete|join(", ") }}{% if question.tags %} · {{ question.tags|join(", ") }}{% endif %}</small>
+      <small>{{ question.complete|join(", ") }}{% if question.tags %} · {{ question.tags|join(", ") }}{% endif %}{% if query and question.path %} · <a href="{{ url('admin_bank', args=[bank.id]) }}?folder={{ question.folder_id }}">{{ question.path }}</a>{% endif %}</small>
+      {% if question.lacks_language %}<span class="chip chip-draft" aria-label="{{ _('Not available in %(code)s, shown in %(shown)s', code=view_lang, shown=question.shown_language) }}">{{ question.shown_language }}</span>{% endif %}
       {% if question.no_copy %}<span class="chip chip-draft">{{ _("No copy of an image") }}</span>{% endif %}
     </div>
     <details class="dropdown more">
@@ -30,6 +110,14 @@
   </li>
   {% endfor %}
 </ul>
+<form method="post" id="bulk-move" action="{{ url('admin_bank_questions_move', args=[bank.id]) }}" class="bulk-move">
+  {{ csrf_input }}
+  <input type="hidden" name="next_folder" value="{{ current.id if current else '' }}">
+  {{ folder_choice("folder", top=_("Unfiled")) }}
+  <button type="submit" class="outline">{{ _("Move selected") }}</button>
+</form>
+{% elif query %}
+<p>{{ _("Nothing found.") }}</p>
 {% else %}
 <p>{{ _("There are no questions yet.") }}</p>
 {% endif %}
@@ -37,17 +125,11 @@
   <summary role="button">{{ _("Add question") }}</summary>
   <ul>
     {% for type in question_types %}
-    <li><a href="{{ url('admin_bank_question_new', args=[bank.id]) }}?{{ type.query }}">{{ type.label }}</a></li>
+    <li><a href="{{ url('admin_bank_question_new', args=[bank.id]) }}?{{ type.query }}{% if current %}&amp;folder={{ current.id }}{% endif %}">{{ type.label }}</a></li>
     {% endfor %}
   </ul>
 </details>
 <section class="form-section">
-  <h2>{{ _("Name and removal") }}</h2>
-  <form method="post" class="watch-changes">
-    {{ csrf_input }}
-    {{ form.as_div() }}
-    <button type="submit">{{ _("Save") }}</button>
-  </form>
   <form method="post" action="{{ url('admin_bank_delete', args=[bank.id]) }}">
     {{ csrf_input }}
     <button type="submit" class="secondary outline">{{ _("Delete the bank") }}</button>

@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from app.api import code_limit
+from app.api import rate_limit
 from app.domain import access_codes, attempts, authoring, run_links, tokens
 from app.domain.models import QuizRun
 from tests.domain.helpers import ADMIN_ID, published_quiz
@@ -16,9 +16,9 @@ CODE = "ABCD2345"
 
 @pytest.fixture(autouse=True)
 def fresh_limiter():
-    code_limit.reset()
+    rate_limit.reset()
     yield
-    code_limit.reset()
+    rate_limit.reset()
 
 
 def text(response):
@@ -101,10 +101,10 @@ def test_eleventh_wrong_code_in_a_minute_is_429(monkeypatch):
 def test_limit_resets_after_a_minute():
     now = 1000.0
     for _ in range(10):
-        code_limit.failed("1.2.3.4", now)
-    assert not code_limit.allow("1.2.3.4", now + 30)
-    assert code_limit.allow("1.2.3.4", now + 61)
-    assert code_limit.allow("5.6.7.8", now)
+        rate_limit.record("code", "1.2.3.4", now)
+    assert not rate_limit.allow("code", "1.2.3.4", now + 30)
+    assert rate_limit.allow("code", "1.2.3.4", now + 61)
+    assert rate_limit.allow("code", "5.6.7.8", now)
 
 
 def test_limit_follows_the_client_ip(monkeypatch):
@@ -123,16 +123,16 @@ def test_limit_follows_the_client_ip(monkeypatch):
 
 def test_client_ip_prefers_forwarded_for(rf):
     request = rf.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2", REMOTE_ADDR="3.3.3.3")
-    assert code_limit.client_ip(request) == "1.1.1.1"
-    assert code_limit.client_ip(rf.get("/", REMOTE_ADDR="3.3.3.3")) == "3.3.3.3"
+    assert rate_limit.client_ip(request) == "1.1.1.1"
+    assert rate_limit.client_ip(rf.get("/", REMOTE_ADDR="3.3.3.3")) == "3.3.3.3"
 
 
 def test_limiter_forgets_idle_addresses():
     for number in range(50):
-        code_limit.failed(f"10.0.0.{number}", 0.0)
-    code_limit.allow("10.1.1.1", 1000.0)
-    code_limit.sweep(1000.0)
-    assert code_limit.tracked() == 0
+        rate_limit.record("code", f"10.0.0.{number}", 0.0)
+    rate_limit.allow("code", "10.1.1.1", 1000.0)
+    rate_limit.sweep(1000.0)
+    assert rate_limit.tracked() == 0
 
 
 def test_qr_and_link_have_no_code(logged_in):
@@ -313,7 +313,7 @@ def test_code_post_on_a_run_without_a_code_redirects_and_counts_nothing():
     for _ in range(12):
         response = enter(FormClient(), run, "WRONG234")
         assert response.status_code == 302
-    assert code_limit.tracked() == 0
+    assert rate_limit.tracked() == 0
 
 
 def test_code_post_on_a_test_run_redirects():
@@ -323,4 +323,4 @@ def test_code_post_on_a_test_run_redirects():
     )
     response = enter(FormClient(), link.run, "WRONG234")
     assert response.status_code == 302 and response["Location"] == f"/t/{link.token}"
-    assert code_limit.tracked() == 0
+    assert rate_limit.tracked() == 0

@@ -259,7 +259,7 @@ def test_plan_form_is_prefilled_from_the_quiz_and_explains_cookie(logged_in):
     settings.set_override("repeat_attempts", quiz, "forbid", admin_id=None)
     html = text(logged_in.get(plan_url(quiz)))
     assert 'name="repeat_attempts"' in html
-    assert '<option value="forbid" selected>' in html
+    assert re.search(r'<input type="radio" name="repeat_attempts" value="forbid"[^>]*checked', html)
     assert "does not guarantee" in html
 
 
@@ -439,3 +439,39 @@ def test_refused_inherited_value_is_shown_in_basic(logged_in):
     assert not quiz.runs.exists()
     assert re.search(r'<details class="setting-group" id="group-participants" open', html)
     assert 'name="ask_email"' in html
+
+
+def test_plan_form_edits_the_test_add_on_settings(showing_all):
+    logged_in = showing_all
+    quiz = published_quiz()
+    html = text(logged_in.get(plan_url(quiz)))
+    assert 'name="pass_mark"' in html
+    assert 'name="max_attempts"' in html
+    assert 'name="after_pass"' in html
+    logged_in.post(
+        plan_url(quiz),
+        {
+            "starts_at": START,
+            "deadline_at": "",
+            "limit_minutes": "",
+            "pass_mark": "60",
+            "max_attempts": "3",
+            "after_pass": "stop",
+            "official_attempt": "average",
+        },
+    )
+    run = quiz.runs.get()
+    assert run.results_json["pass_mark"] == "60"
+    assert run.results_json["official_attempt"] == "average"
+    assert run.participant_rules_json["max_attempts"] == "3"
+    assert run.participant_rules_json["after_pass"] == "stop"
+
+
+def test_plan_form_refuses_a_pass_mark_over_100(logged_in):
+    quiz = published_quiz()
+    response = logged_in.post(
+        plan_url(quiz),
+        {"starts_at": START, "deadline_at": "", "limit_minutes": "", "pass_mark": "101"},
+    )
+    assert response.status_code == 200
+    assert not quiz.runs.exists()

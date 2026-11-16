@@ -54,3 +54,5 @@ AC-06, AC-16, AC-18, AC-70, AC-81 to AC-85.
 ## More Information
 
 Refines [ADR-0049](0049-participants-and-access-code.md). Ending the public view of an archived run when retention expires ([ADR-0031](0031-public-links-to-archived-results.md)) comes with the retention job in D3.
+
+Refined by [ADR-0056](0056-retention-job-summary-held-runs.md): since D3 the public view of a run ends when its data are deleted.

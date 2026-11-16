@@ -1,0 +1,8 @@
+{# `colour_notice` is the derived palette in use when its colours had to be adjusted. Swatches use SVG fills, not styles. #}
+{% if colour_notice %}
+<p class="notice" role="status">{{ _("The chosen colours do not reach WCAG AA contrast, so they were adjusted. These colours are used:") }}
+  {% for colour in [colour_notice.main, colour_notice.accent] %}
+  <svg width="24" height="24" viewBox="0 0 24 24" role="img" aria-label="{{ colour }}"><rect width="24" height="24" rx="4" fill="{{ colour }}" stroke="currentColor"/></svg> <code>{{ colour }}</code>
+  {% endfor %}
+</p>
+{% endif %}

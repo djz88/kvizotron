@@ -1,11 +1,12 @@
-"""AC-06, AC-81: the admin sees every board with names, and merges revisions knowingly."""
+"""AC-06, AC-81: the admin sees every board with names and picks how revisions are shown."""
 
 from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
+from django.urls import NoReverseMatch, reverse
 
-from app.contracts import OFFICIAL_ATTEMPT, SCOREBOARD_VISIBILITY
+from app.contracts import OFFICIAL_ATTEMPT, REVISION_MODE, SCOREBOARD_VISIBILITY
 from app.domain import authoring, results
 from app.domain.models import Attempt, Participant
 from app.kernel.models import AuditEvent
@@ -64,41 +65,39 @@ def test_display_form_saves_and_ignores_fixed_keys(logged_in):
     assert results.of(run)[OFFICIAL_ATTEMPT] == "best"
 
 
-def test_merge_page_shows_differences(logged_in):
+def test_run_page_offers_the_three_revision_modes(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    switch_revision(run)
-    html = text(logged_in.get(f"/admin/runs/{run.id}/merge?lang=en"))
-    assert "Nová otázka" in html
-    assert 'name="confirm"' in html
+    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert f'<select name="{REVISION_MODE}">' in html
+    assert '<option value="percent" selected>One table by percent</option>' in html
+    assert '<option value="separate">One table per revision</option>' in html
+    assert '<option value="latest">Only the latest revision</option>' in html
+    assert "Merge the revisions" not in html
 
 
-def test_merge_refused_with_different_max(logged_in):
+def test_admin_can_switch_an_ended_run_to_separate_tables(logged_in):
+    """AC-06: one table by percent by default, switched on the run page also after the end."""
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    switch_revision(run, more=1)
-    html = text(logged_in.get(f"/admin/runs/{run.id}/merge?lang=en"))
-    assert "different maximum points" in html and 'name="confirm"' not in html
-    response = logged_in.post(f"/admin/runs/{run.id}/merge?lang=en", {"confirm": "1"})
-    assert response.status_code == 409
-    assert results.revision_mode(run) == "separate"
-
-
-def test_merge_and_unmerge_through_routes(logged_in):
-    run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    old = run.current_revision
-    played(run, "Ema", 0, old)
-    new = switch_revision(run)
+    played(run, "Ema", 0, run.current_revision)
+    new = switch_revision(run, more=1)
     played(run, "Jan", 1, new)
-    assert logged_in.post(f"/admin/runs/{run.id}/merge", {"confirm": "1"}).status_code == 302
+    authoring.close_run(run, admin_id=ADMIN_ID)
     run.refresh_from_db()
     assert len(results.board(run, audience="admin", locale="cs").tables) == 1
-    assert logged_in.post(f"/admin/runs/{run.id}/unmerge").status_code == 302
+    response = logged_in.post(f"/admin/runs/{run.id}/scoreboard", {REVISION_MODE: "separate"})
+    assert response.status_code == 302
     run.refresh_from_db()
-    assert len(results.board(run, audience="admin", locale="cs").tables) == 2
-    assert AuditEvent.objects.filter(action__startswith="run.revisions_").count() == 2
+    tables = results.board(run, audience="admin", locale="cs").tables
+    assert [table.max_score for table in tables] == [Decimal(2), Decimal(1)]
+    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert '<option value="separate" selected>' in html
+    assert AuditEvent.objects.filter(action="run.scoreboard_changed").count() == 1
 
 
-def test_merge_needs_login(client):
+def test_merge_routes_are_gone(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    assert client.get(f"/admin/runs/{run.id}/merge").status_code == 302
-    assert client.post(f"/admin/runs/{run.id}/merge", {"confirm": "1"}).status_code == 302
-    assert results.revision_mode(run) == "separate"
+    for name in ("admin_run_merge", "admin_run_unmerge"):
+        with pytest.raises(NoReverseMatch):
+            reverse(name, args=[run.id])
+    assert logged_in.get(f"/admin/runs/{run.id}/merge").status_code == 404
+    assert logged_in.post(f"/admin/runs/{run.id}/unmerge").status_code == 404

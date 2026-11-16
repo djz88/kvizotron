@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "admin/_inline_name.html" import inline_name with context %}
 {% block content %}
 {% include "admin/_quiz_header.html" %}
 {% if not quiz.archived_at %}
@@ -30,7 +31,8 @@
 {% for row in rows %}
 <section class="card">
   <h3>{{ row.version }}</h3>
-  <p>{{ _("Address") }}: <a href="{{ row.address }}" rel="noreferrer">{{ row.address }}</a></p>
+  {# a div, not a p: the pencil's form inside a p would be moved out of it by the browser #}
+  <div class="link-address">{{ _("Address") }}: {% if row.address_field %}{{ inline_name(row.address_field) }}{% else %}<a href="{{ row.address }}" rel="noreferrer">{{ row.address }}</a>{% endif %}</div>
   <ul class="chips">
     <li class="chip">{{ row.state }}</li>
     <li class="chip">{{ _("Created %(when)s", when=row.created) }}</li>

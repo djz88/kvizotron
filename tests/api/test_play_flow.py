@@ -65,7 +65,8 @@ def test_flow_script_is_served_and_included(client, run):
 )
 def test_progress_texts_are_translated(client, lang, text):
     run = open_quiz_run(locales=("cs", "en", "uk"))
-    assert text in start_page(client, run, lang)
+    response = client.post(f"/r/{run.id}/start?lang={lang}", {"lang": lang}, headers=HTMX)
+    assert text in response.content.decode()
 
 
 def test_unavailable_flow_plugin_gives_the_one_page_form(client, run):
@@ -122,3 +123,72 @@ def test_page_size_is_fixed_when_the_attempt_starts(client, run):
 def test_one_question_steps_carry_page_one(client, run):
     settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
     assert 'data-flow-page="1"' in start_page(client, run)
+
+
+def test_flow_script_moves_focus_after_start():
+    """The script is read as text (TD-039); the focus itself is checked in a browser walkthrough."""
+    from pathlib import Path
+
+    code = Path("app/api/assets/flow.js").read_text(encoding="utf-8")
+    assert "function focusFirstStep" in code
+    assert "form[data-start-form], form[data-resume-form]" in code
+    assert "requestConfig" in code
+    # A restored attempt moves to its step in the same swap, so the focus waits for it.
+    assert "setTimeout(focusFirstStep" in code
+
+
+@pytest.mark.parametrize("mode", ["all_at_once", "step_back", "step_no_back"])
+def test_every_question_section_can_take_focus(client, run, mode):
+    settings.set_override(settings.NAVIGATION_MODE, run.quiz, mode, admin_id=None)
+    sections = re.findall(r'<section class="flow-question"[^>]*>', start_page(client, run))
+    assert len(sections) == 3
+    assert all('tabindex="-1"' in section for section in sections)
+
+
+def test_start_and_resume_forms_are_marked_for_the_focus_hook(client, run):
+    html = client.get(f"/q/{run.quiz.slug}?lang=en").content.decode()
+    assert "data-start-form" in html
+    assert "data-resume-form" in html
+
+
+def test_questions_form_carries_the_unanswered_text(client, run):
+    html = start_page(client, run, "cs")
+    assert "data-unanswered-confirm=" in html
+    assert "Otázky bez odpovědi: {count}. Přesto odeslat?" in html
+
+
+@pytest.mark.parametrize(
+    ("lang", "text"),
+    [
+        ("en", "Questions without an answer: {count}. Submit anyway?"),
+        ("uk", "Питання без відповіді"),
+    ],
+)
+def test_unanswered_text_is_translated(client, lang, text):
+    run = open_quiz_run(questions=3, locales=("cs", "en", "uk"))
+    response = client.post(f"/r/{run.id}/start", {"lang": lang}, headers=HTMX)
+    assert text in response.content.decode()
+
+
+def test_flow_script_asks_before_an_incomplete_submission():
+    from pathlib import Path
+
+    code = Path("app/api/assets/flow.js").read_text(encoding="utf-8")
+    assert '"htmx:confirm"' in code
+    assert "unansweredConfirm" in code
+    assert "issueRequest" in code
+    assert "window.confirm" in code
+    # Plain form posts (no script) never meet the dialog; a photo already stored counts as answered.
+    assert "[data-photo-sent]" in code
+
+
+def test_automatic_submission_does_not_ask():
+    """The countdown flags its send with auto_submit; the confirm hook lets that through."""
+    from pathlib import Path
+
+    flow = Path("app/api/assets/flow.js").read_text(encoding="utf-8")
+    countdown = Path("app/api/assets/countdown.js").read_text(encoding="utf-8")
+    assert 'marker.name = "auto_submit"' in countdown
+    assert '[name="auto_submit"]' in flow
+    # The skip comes before the count, so no dialog can open for the automatic send.
+    assert flow.index('[name="auto_submit"]') < flow.index("window.confirm")

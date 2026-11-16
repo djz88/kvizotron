@@ -10,9 +10,11 @@ from decimal import Decimal
 from unittest import mock
 
 import pytest
+from django.db import IntegrityError
 
 from app.contracts import OFFICIAL_ATTEMPT, REWARD_SOURCE, REWARD_THRESHOLDS
 from app.domain import (
+    access_codes,
     attempts,
     authoring,
     grading,
@@ -27,6 +29,7 @@ from app.domain.models import (
     Attempt,
     AttemptAnswer,
     Participant,
+    Quiz,
     QuizRun,
     RewardEntitlement,
     RewardRule,
@@ -121,6 +124,15 @@ def test_threshold_granted_in_submission_transaction():
     assert Attempt.objects.get(pk=started.attempt.id).status == Attempt.Status.IN_PROGRESS
 
 
+def test_four_of_five_is_80_percent_and_earns_no_90_percent_reward():
+    """AC-10: five equal questions, 4 correct: the 80 % reward is granted, the 90 % one is not."""
+    run = a_run(tier(80), tier(90), questions=5, rewards={REWARD_THRESHOLDS: "all"})
+    who = person(run)
+    attempt = play(run, who, 4)
+    assert (attempt.score, attempt.max_score) == (Decimal(4), Decimal(5))
+    assert held(who) == [("Za 80 %", GRANTED)]
+
+
 def test_participation_granted_once():
     run = a_run(kind("participation"))
     who = person(run)
@@ -179,6 +191,7 @@ def send_photo(run, who):
 
 
 def test_pending_photo_grants_nothing_until_graded(graded_type):
+    """AC-16: thresholds are not evaluated while a photo waits for grading."""
     run = photo_run(tier(50), kind("participation"))
     who = person(run)
     attempt = send_photo(run, who)
@@ -264,16 +277,29 @@ def test_manual_grant_hand_over_cancel_audited_without_names():
             assert secret not in text
 
 
+def test_grant_manual_refuses_a_participant_without_a_submitted_attempt():
+    run = a_run(kind("manual"))
+    who = person(run)
+    attempts.start(run, participant=who)
+    manual = rewards.rules_of(run)[0]
+    with pytest.raises(rewards.NotGrantable):
+        rewards.grant_manual(manual, who, admin_id=ADMIN_ID)
+    assert not RewardEntitlement.objects.exists()
+
+
 def test_grant_manual_refuses_other_kinds_and_other_runs():
     run = a_run(tier(70), kind("manual"))
     other = a_run(kind("manual"), slug="jiny")
     threshold, manual = rewards.rules_of(run)
     who = person(run)
+    play(run, who, 1)
     with pytest.raises(rewards.RuleInvalid) as refused:
         rewards.grant_manual(threshold, who, admin_id=ADMIN_ID)
     assert refused.value.code == "kind"
+    stranger = person(other)
+    play(other, stranger, 1, key="key-00000009")
     with pytest.raises(rewards.RuleInvalid) as refused:
-        rewards.grant_manual(manual, person(other), admin_id=ADMIN_ID)
+        rewards.grant_manual(manual, stranger, admin_id=ADMIN_ID)
     assert refused.value.code == "not_this_run"
     assert not RewardEntitlement.objects.exists()
 
@@ -380,3 +406,120 @@ def test_cancelled_top_tier_does_not_grant_the_lower_one_under_highest():
     rewards.cancel(entitlement(who, "Za 90 %"), "Opisoval", admin_id=ADMIN_ID)
     play(run, who, 10, key="key-00000002")
     assert held(who) == [("Za 90 %", CANCELLED)]
+
+
+def test_an_integrity_error_of_the_submission_key_is_submission_key_used():
+    """A key taken by another attempt of a participant is named as what it is."""
+    run = a_run(tier(50), questions=2)
+    play(run, person(run), 2, key="key-00000001")
+    other = attempts.start(run, participant=person(run, "j" * 20))
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.submit(other.attempt.id, other.token, {}, "key-00000001")
+    assert error.value.code == "submission_key_used"
+    assert Attempt.objects.get(pk=other.attempt.id).status == Attempt.Status.IN_PROGRESS
+
+
+def test_an_integrity_error_of_another_constraint_is_not_called_a_used_key():
+    """TD-051: a unique failure raised by the rewards must not pose as a used submission key."""
+    run = a_run(tier(50), questions=2)
+    started = attempts.start(run, participant=person(run))
+    failure = IntegrityError("UNIQUE constraint failed: other.col")
+    with (
+        mock.patch.object(rewards, "refresh", side_effect=failure),
+        pytest.raises(IntegrityError) as error,
+    ):
+        attempts.submit(started.attempt.id, started.token, {}, "key-00000001")
+    assert error.value is failure
+    assert Attempt.objects.get(pk=started.attempt.id).status == Attempt.Status.IN_PROGRESS
+
+
+def test_refresh_costs_a_fixed_number_of_queries_for_one_participant(django_assert_num_queries):
+    run = a_run(tier(50), tier(80), kind("participation"), questions=2)
+    who = person(run)
+    play(run, who, 2)
+    who = Participant.objects.get(pk=who.pk)
+    with django_assert_num_queries(5):
+        rewards.refresh(who)
+
+
+def test_reward_threshold_on_average():
+    """ADR-0063: 70 % and 90 % average 80 %; the entitlement points at the last attempt."""
+    run = a_run(tier(80), results={OFFICIAL_ATTEMPT: "average"})
+    who = person(run)
+    play(run, who, 7)
+    assert held(who) == []  # 70 % alone is below 80 %
+    last = play(run, who, 9, key="key-00000002")
+    assert held(who) == [("Za 80 %", GRANTED)]
+    assert entitlement(who, "Za 80 %").attempt_id == last.id
+
+
+def test_reward_cancelled_when_the_average_falls_below():
+    run = a_run(tier(80), results={OFFICIAL_ATTEMPT: "average"})
+    who = person(run)
+    play(run, who, 10)
+    assert held(who) == [("Za 80 %", GRANTED)]
+    play(run, who, 2, key="key-00000002")
+    assert held(who) == [("Za 80 %", CANCELLED)]
+
+
+def test_waiting_average_changes_no_reward():
+    run = a_run(tier(50), results={OFFICIAL_ATTEMPT: "average"})
+    who = person(run)
+    play(run, who, 10)
+    pending = play(run, who, 0, key="key-00000002")
+    Attempt.objects.filter(pk=pending.pk).update(status=Attempt.Status.PENDING_GRADING)
+    rewards.refresh(who)
+    assert held(who) == [("Za 50 %", GRANTED)]  # the waiting attempt counts for nothing
+
+
+def test_best_grants_from_the_submitted_attempt_while_another_waits():
+    run = a_run(tier(50), results={OFFICIAL_ATTEMPT: "best"})
+    who = person(run)
+    first = play(run, who, 6)
+    pending = play(run, who, 0, key="key-00000002")
+    Attempt.objects.filter(pk=pending.pk).update(status=Attempt.Status.PENDING_GRADING)
+    rewards.refresh(who)
+    assert results.official_attempt(who) == first
+    assert results.kept(who).waiting is True
+    assert entitlement(who, "Za 50 %").attempt_id == first.id
+
+
+def archived(run):
+    """The run closes first: a quiz with a run still open cannot be archived."""
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    Quiz.objects.filter(pk=run.quiz_id).update(archived_at=NOW)
+    run.refresh_from_db()
+    return run
+
+
+def test_rewards_refuse_an_archived_quiz():
+    run = a_run(kind("participation"), kind("manual"))
+    who = person(run)
+    play(run, who, 1)
+    manual = RewardRule.objects.get(run=run, kind="manual")
+    row = RewardEntitlement.objects.get()
+    archived(run)
+    with pytest.raises(authoring.QuizArchived):
+        rewards.grant_manual(manual, who, admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        rewards.hand_over(row, admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        rewards.cancel(row, "Důvod", admin_id=ADMIN_ID)
+    row.refresh_from_db()
+    assert row.status == GRANTED and RewardEntitlement.objects.count() == 1
+
+
+def test_run_changes_refuse_an_archived_quiz():
+    """The scoreboard display, a nickname and the access code are changes too."""
+    run = a_run()
+    who = person(run)
+    play(run, who, 1)
+    archived(run)
+    with pytest.raises(authoring.QuizArchived):
+        results.set_display(run, {}, admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        participants.rename(who, "Nové", admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        access_codes.set_code(run, "ABCDEFGH", admin_id=ADMIN_ID)
+    who.refresh_from_db()
+    assert who.display_name != "Nové"

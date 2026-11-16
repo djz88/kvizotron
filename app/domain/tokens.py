@@ -54,7 +54,7 @@ def verify(token: str) -> AttemptClaims:
 
 
 def issue_result(attempt_id: UUID) -> str:
-    """A reference to a finished attempt. No end date until retention arrives in D3."""
+    """A reference to a finished attempt. It works until the run's data are deleted."""
     return signing.dumps(str(attempt_id), salt=RESULT_SALT)
 
 

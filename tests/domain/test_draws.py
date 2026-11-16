@@ -3,7 +3,15 @@ from decimal import Decimal
 import pytest
 
 from app.contracts import EXTERNAL_IMAGE_MODE
-from app.domain import authoring, banks, quiz_state, revision_diff, selection, settings
+from app.domain import (
+    authoring,
+    bank_folders,
+    banks,
+    quiz_state,
+    revision_diff,
+    selection,
+    settings,
+)
 from app.domain.models import BankQuestion
 from tests.domain.helpers import (
     ADMIN_ID,
@@ -375,3 +383,156 @@ def test_a_bank_question_set_to_external_stays_allowed():
     bank = _bank_with_no_copy(**{EXTERNAL_IMAGE_MODE: "external"})
     authoring.save_draw(quiz, None, bank_id=str(bank.id), tag="", count=1, points=1, position=0)
     assert problems(quiz) == []
+
+
+def folder_bank():
+    """EU(1 own) -> trade(2), geo(1); one question with the tag `old`; one unfiled."""
+    bank = make_bank()
+    eu = bank_folders.create(bank, None, "EU", admin_id=ADMIN_ID)
+    trade = bank_folders.create(bank, eu, "trade", admin_id=ADMIN_ID)
+    geo = bank_folders.create(bank, eu, "geo", admin_id=ADMIN_ID)
+    placed = {}
+    for name, folder, tags in (
+        ("eu", eu, ()),
+        ("trade1", trade, ("old",)),
+        ("trade2", trade, ()),
+        ("geo1", geo, ()),
+        ("loose", None, ()),
+    ):
+        placed[name] = add_bank_question(bank, prompt=name, tags=tags, folder=folder)
+    return bank, {"eu": eu, "trade": trade, "geo": geo}, placed
+
+
+def pool_ids(row, locales=("cs",)):
+    return {question["id"] for question in banks.pool(row, locales)}
+
+
+def test_pool_of_a_folder_includes_subfolders():
+    """AC-154: a draw row by folder draws from the folder and everything below it."""
+    bank, folders, placed = folder_bank()
+    base = {"bank_id": str(bank.id), "tag": "", "points": 1, "count": 1}
+    assert pool_ids(base | {"folder_id": str(folders["eu"].pk)}) == {
+        placed[name] for name in ("eu", "trade1", "trade2", "geo1")
+    }
+    assert pool_ids(base | {"folder_id": str(folders["trade"].pk)}) == {
+        placed["trade1"],
+        placed["trade2"],
+    }
+    assert banks.usable_count(base | {"folder_id": str(folders["trade"].pk)}, ["cs"]) == (2, 2)
+
+
+def test_folder_and_tag_must_both_match():
+    bank, folders, placed = folder_bank()
+    row = {"bank_id": str(bank.id), "points": 1, "count": 1}
+    row |= {"folder_id": str(folders["eu"].pk), "tag": "OLD"}
+    assert pool_ids(row) == {placed["trade1"]}
+    assert pool_ids(row | {"folder_id": str(folders["geo"].pk)}) == set()
+
+
+def test_a_row_with_no_folder_draws_the_whole_bank_unfiled_included():
+    bank, _folders, placed = folder_bank()
+    base = {"bank_id": str(bank.id), "tag": "", "points": 1, "count": 1}
+    assert pool_ids(base) == set(placed.values())
+    assert pool_ids(base | {"folder_id": ""}) == set(placed.values())
+
+
+def test_a_folder_of_another_bank_is_refused_in_a_row():
+
+    bank = make_bank("A")
+    foreign = bank_folders.create(make_bank("B"), None, "x", admin_id=ADMIN_ID)
+    with pytest.raises(bank_folders.WrongBank):
+        add_row(make_quiz(), bank, folder_id=str(foreign.pk))
+
+
+def test_a_row_keeps_the_folder_path_and_label():
+    bank, folders, _placed = folder_bank()
+    quiz = make_quiz()
+    add_row(quiz, bank, tag="old", folder_id=str(folders["trade"].pk))
+    row = authoring.editable_draws(quiz)[0]
+    assert (row["folder_id"], row["folder_path"]) == (str(folders["trade"].pk), "EU/trade")
+    assert authoring._row_label(row) == f"{bank.name} (EU/trade · old)"
+
+
+def test_published_revision_does_not_change_when_a_folder_is_renamed_or_moved():
+    """AC-32: a bank edit leaves the published revision as it is."""
+    bank, folders, placed = folder_bank()
+    quiz = make_quiz()
+    add_row(quiz, bank, folder_id=str(folders["eu"].pk))
+    revision = authoring.publish(quiz, admin_id=ADMIN_ID)
+    before = revision.snapshot_json
+    bank_folders.rename(folders["trade"], "commerce", admin_id=ADMIN_ID)
+    bank_folders.move(folders["geo"], None, admin_id=ADMIN_ID)
+    assert authoring.latest_published(quiz).snapshot_json == before
+    assert authoring.banks_changed(quiz) is True  # geo1 left the folder: the bank pool changed
+    bank_folders.move(folders["geo"], folders["eu"], admin_id=ADMIN_ID)
+    assert authoring.banks_changed(quiz) is False
+    bank_folders.move_questions(bank, [placed["trade1"]], None, admin_id=ADMIN_ID)
+    assert authoring.latest_published(quiz).snapshot_json == before
+    assert authoring.banks_changed(quiz) is True
+
+
+def test_revision_overview_shows_a_changed_folder():
+    bank, folders, _placed = folder_bank()
+    quiz = make_quiz()
+    row = add_row(quiz, bank, folder_id=str(folders["eu"].pk))
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    authoring.save_draw(
+        quiz,
+        row,
+        bank_id=str(bank.id),
+        tag="",
+        folder_id=str(folders["trade"].pk),
+        count=1,
+        points=1,
+        position=0,
+    )
+    (change,) = compare(quiz).draws
+    assert "EU" in change.before and "EU/trade" in change.after
+
+
+def test_save_draw_stores_and_refuses_a_difficulty():
+    bank = make_bank()
+    quiz = make_quiz()
+    add_row(quiz, bank, difficulty="hard")
+    add_row(quiz, bank)
+    assert [row["difficulty"] for row in authoring.editable_draws(quiz)] == ["hard", ""]
+    with pytest.raises(ValueError):
+        add_row(quiz, bank, difficulty="impossible")
+
+
+def test_the_label_and_the_change_overview_show_a_level_only_when_set():
+    bank = bank_with(1)
+    quiz = make_quiz()
+    add_row(quiz, bank, tag="EU", difficulty="easy")
+    assert authoring._row_label(authoring.editable_draws(quiz)[0]) == (
+        f"{bank.name} (EU · {banks.level_label('easy')})"
+    )
+    plain = make_quiz("jiny")
+    add_row(plain, bank, tag="EU")
+    assert authoring._row_label(authoring.editable_draws(plain)[0]) == f"{bank.name} (EU)"
+    assert revision_diff._draw_text(authoring.editable_draws(quiz)[0]).endswith(
+        banks.level_label("easy")
+    )
+    assert banks.level_label("easy") not in revision_diff._draw_text(
+        authoring.editable_draws(plain)[0]
+    )
+
+
+def test_a_row_without_the_key_and_one_saved_with_an_empty_difficulty_are_no_change():
+    bank = bank_with(1)
+    quiz = make_quiz()
+    row = add_row(quiz, bank)
+    stored = authoring.get_draft(quiz)
+    del stored.snapshot_json["draws"][0]["difficulty"]
+    stored.save()
+    authoring.publish(quiz, admin_id=ADMIN_ID)
+    authoring.save_draw(
+        quiz,
+        row,
+        bank_id=str(bank.id),
+        tag="",
+        count=1,
+        points=1,
+        position=authoring.editable_draws(quiz)[0]["position"],
+    )
+    assert compare(quiz).draws == []

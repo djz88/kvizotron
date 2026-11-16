@@ -5,7 +5,7 @@ import pytest
 
 from app.contracts import EXTERNAL_IMAGE_MODE
 from app.domain import authoring, questions, settings
-from app.domain.models import QuizRevision, QuizRun
+from app.domain.models import AppSetting, BrandingConfiguration, Quiz, QuizRevision, QuizRun
 from app.kernel.models import AuditEvent
 from tests.domain.helpers import (
     ADMIN_ID,
@@ -78,6 +78,7 @@ def test_publish_with_missing_title_in_required_locale_is_refused():
 
 
 def test_publish_with_incomplete_translation_names_question_and_locale():
+    """AC-03: an enabled language must be complete in every question before publication."""
     quiz = make_quiz(locales=("cs", "uk"))
     add_question(quiz)
     second = add_question(quiz)
@@ -98,9 +99,22 @@ def test_publish_with_incomplete_translation_names_question_and_locale():
 
 
 def test_cs_uk_quiz_publishes_without_english():
+    """AC-03: English is not required while it is not enabled for the quiz."""
     quiz = make_quiz(locales=("cs", "uk"))
     add_question(quiz)
     assert publish(quiz).snapshot_json["locales"] == ["cs", "uk"]
+
+
+def test_enabling_english_makes_it_required_for_publication():
+    """AC-03: the same cs+uk quiz is refused once English is enabled without its texts."""
+    quiz = make_quiz(locales=("cs", "uk"))
+    add_question(quiz)
+    quiz.supported_locales = ["cs", "uk", "en"]
+    quiz.save()
+    with pytest.raises(authoring.PublicationError) as error:
+        publish(quiz)
+    assert {(None, "en", "title_missing"), (1, "en", "invalid")} <= problems_of(error)
+    assert not QuizRevision.objects.filter(status="PUBLISHED").exists()
 
 
 def test_publish_supersedes_previous_revision():
@@ -282,6 +296,14 @@ def test_use_as_draft_copies_questions_and_quiz_fields():
     ]
 
 
+def test_restore_keeps_an_archive_done_meanwhile():
+    quiz = published_quiz()
+    stale = Quiz.objects.get(pk=quiz.pk)
+    authoring.archive_quiz(Quiz.objects.get(pk=quiz.pk), admin_id=ADMIN_ID)
+    authoring._restore_quiz_fields(stale, quiz.revisions.first().snapshot_json)
+    assert Quiz.objects.get(pk=quiz.pk).archived_at is not None
+
+
 def test_use_as_draft_leaves_old_revision_identical():
     quiz = published_quiz()
     old = quiz.revisions.get()
@@ -457,3 +479,22 @@ def test_a_later_mode_change_leaves_a_published_quiz_alone():
     settings.set_global(EXTERNAL_IMAGE_MODE, "copy", admin_id=ADMIN_ID)
     assert authoring.latest_published(quiz) is not None
     assert not authoring.has_draft(quiz)
+
+
+def test_duplicate_copies_the_type_and_the_quiz_settings_but_not_branding():
+    quiz = make_quiz(quiz_type="contest")
+    settings.set_override(settings.ATTEMPT_LIMIT, quiz, "20", admin_id=ADMIN_ID)
+    settings.set_override(settings.GRADING_VIEW, quiz, "by_attempt", admin_id=ADMIN_ID)
+    palette = settings.CATALOGUE["color_palette"]
+    chosen = next(choice for choice in palette.choices if choice != palette.default)
+    settings.set_override("color_palette", quiz, chosen, admin_id=ADMIN_ID)
+    BrandingConfiguration.objects.create(quiz=quiz, theme_id="default")
+    copy = authoring.duplicate_quiz(quiz, "kopie", admin_id=ADMIN_ID)
+    assert copy.quiz_type == "contest"
+    assert dict(AppSetting.objects.filter(quiz=copy).values_list("key", "value_json")) == {
+        settings.ATTEMPT_LIMIT: "20",
+        settings.GRADING_VIEW: "by_attempt",
+        "color_palette": chosen,
+    }
+    assert not BrandingConfiguration.objects.filter(quiz=copy).exists()
+    assert AppSetting.objects.filter(quiz=quiz).count() == 3

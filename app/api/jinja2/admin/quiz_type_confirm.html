@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{# What applying a quiz type would change (ADR-0062); nothing changes until the admin confirms. #}
+{% block content %}
+{% set back = url("admin_quiz_settings", args=[quiz.id]) %}
+<p class="crumb"><a href="{{ back }}">{{ title }}</a></p>
+<h1>{% if again %}{{ _("Apply the type %(name)s again", name=type_label) }}{% else %}{{ _("Use the type %(name)s", name=type_label) }}{% endif %}</h1>
+{% if refused %}
+<div class="notice" id="refused" role="alert">
+  <p>{{ _("This type cannot be used now:") }}</p>
+  <ul>{% for message in refused %}<li>{{ message }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if changes %}
+<section id="changes">
+  <h2>{{ _("What changes") }}</h2>
+  <ul class="type-changes">
+    {% for change in changes %}<li><strong>{{ change.label }}</strong>: {{ change.current }} → {{ change.new }}</li>{% endfor %}
+  </ul>
+</section>
+{% else %}
+<p id="changes">{{ _("Nothing changes: the quiz already has the values of this type.") }}</p>
+{% endif %}
+{% if adjusted %}
+<section id="adjusted">
+  <h2>{{ _("Also changed, so that the settings go together") }}</h2>
+  <ul class="type-changes">
+    {% for change in adjusted %}<li><strong>{{ change.label }}</strong>: {{ change.current }} → {{ change.new }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% if skipped %}
+<section id="skipped">
+  <h2>{{ _("Left as they are, because their module is off") }}</h2>
+  <ul>{% for name in skipped %}<li>{{ name }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if live_run %}<p class="notice" id="live-run" role="status">{{ _("A planned or running run uses navigation, reveal and shuffle for new attempts at once; the rest applies to new runs.") }}</p>{% endif %}
+{% if content %}<p class="notice" id="content-warning" role="status">{{ _("The questions of this quiz do not go with these values: %(names)s. A run cannot be planned or opened until the questions or the settings change.", names=content|join(", ")) }}</p>{% endif %}
+{% if refused %}
+<p class="actions"><a href="{{ back }}" role="button" class="secondary">{{ _("Back to the settings") }}</a></p>
+{% else %}
+<form method="post" action="{{ url('admin_quiz_type', args=[quiz.id]) }}" class="actions">
+  {{ csrf_input }}
+  <input type="hidden" name="type" value="{{ type_id }}">
+  <input type="hidden" name="confirm" value="1">
+  <button type="submit">{% if again %}{{ _("Apply again") }}{% else %}{{ _("Use type") }}{% endif %}</button>
+  <a href="{{ back }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+</form>
+{% endif %}
+{% endblock %}

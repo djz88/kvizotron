@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Draw"
+msgstr "Losování"
+
+#: manifest.py
+msgid "Draws reward winners and keeps the history of draws."
+msgstr "Losuje výherce odměn a uchovává historii losování."
+

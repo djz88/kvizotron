@@ -46,7 +46,7 @@ def test_a_run_without_stored_values_reads_defaults():
     QuizRun.objects.filter(pk=run.pk).update(results_json={})
     run.refresh_from_db()
     assert results.of(run)[SCOREBOARD_VISIBILITY] == "hidden"
-    assert results.revision_mode(run) == "separate"
+    assert results.revision_mode(run) == "percent"  # AC-06: one table by percent by default
 
 
 def test_test_run_never_has_a_visible_board():
@@ -87,6 +87,7 @@ def test_display_change_audited_without_names():
 
 
 def test_display_change_refused_with_profile_none():
+    """AC-09: a run that keeps no results cannot show a scoreboard."""
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID, data={"profile": "none"})
     with pytest.raises(results.ResultConflict) as error:
         results.set_display(run, {SCOREBOARD_VISIBILITY: "live"}, admin_id=ADMIN_ID)

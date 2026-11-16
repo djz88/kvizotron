@@ -22,7 +22,13 @@
 {% endif %}
 
 <h2>{{ _("Changes") }}</h2>
+{% if summary %}
+{% set n = summary.questions %}{% set pts = summary.points %}
+<p>{{ ngettext("%(num)d question", "%(num)d questions", n) }} · {% if pts == pts|int %}{{ ngettext("%(num)d point", "%(num)d points", pts|int) }}{% else %}{{ _("%(points)s points", points=pts) }}{% endif %} · {{ summary.locales|join(", ") }}</p>
+<details><summary>{{ _("Show all fields") }}</summary>{% include "admin/_diff.html" %}</details>
+{% else %}
 {% include "admin/_diff.html" %}
+{% endif %}
 
 {% if not problems %}
 <form method="post">

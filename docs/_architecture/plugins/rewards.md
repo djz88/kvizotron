@@ -36,7 +36,7 @@
 
 ## Settings
 
-Declared by the module (group `scoreboard`, level `advanced`, scopes global and quiz: they apply to the
+Declared by the module (group `rewards`, level `advanced`, scopes global and quiz: they apply to the
 whole run, not to one question):
 
 | Key | Values | Default | On the run |

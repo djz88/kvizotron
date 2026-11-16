@@ -1,11 +1,12 @@
 {% extends "admin/base.html" %}
+{% from "admin/_list_bar.html" import list_bar %}
 {% block content %}
 {% include "admin/_quiz_header.html" %}
-<p class="row-actions">
-  {% if can_import and not quiz.archived_at %}<a href="{{ url('admin_import_new') }}?target=draft:{{ quiz.id }}">{{ _("Import questions") }}</a>{% endif %}
-  <a href="{{ url('admin_quiz_export', args=[quiz.id]) }}">{{ _("Download as CSV") }}</a>
-  {% if rows|selectattr("kind", "equalto", "draw")|list %}<small>{{ _("Draw rows are not included in a download.") }}</small>{% endif %}
-</p>
+{% set draw_note = _("Draw rows are not included in a download.") if rows|selectattr("kind", "equalto", "draw")|list else "" %}
+{% call list_bar(_("Questions"), question_total, draw_note) %}
+  {% if can_import and not quiz.archived_at %}<a href="{{ url('admin_import_new') }}?target=draft:{{ quiz.id }}" role="button" class="secondary outline">{{ _("Import questions") }}</a>{% endif %}
+  <a href="{{ url('admin_quiz_export', args=[quiz.id]) }}" role="button" class="secondary outline">{{ _("Download as CSV") }}</a>
+{% endcall %}
 {% if rows %}
 <ol class="rows">
   {% for row in rows %}
@@ -13,7 +14,7 @@
   <li class="draw-row">
     <div class="row-main">
       {% if quiz.archived_at %}<span>{{ _("%(count)s from the bank %(bank)s", count=row.count, bank=row.bank_name) }}</span>{% else %}<a href="{{ url('admin_draw_edit', args=[quiz.id, row.id]) }}">{{ _("%(count)s from the bank %(bank)s", count=row.count, bank=row.bank_name) }}</a>{% endif %}
-      <small>{% if row.tag %}{{ row.tag }} · {% endif %}{{ _("Points: %(count)s", count=row.points) }} · {{ _("usable %(usable)s of %(total)s", usable=row.usable, total=row.total) }}</small>
+      <small>{% if row.folder_path %}{{ row.folder_path }} · {% endif %}{% if row.tag %}{{ row.tag }} · {% endif %}{% if row.difficulty_label %}{{ row.difficulty_label }} · {% endif %}{{ _("Points: %(count)s", count=row.points) }} · {{ _("usable %(usable)s of %(total)s", usable=row.usable, total=row.total) }}</small>
       {% if row.bank_missing %}<span class="chip chip-draft">{{ _("The bank no longer exists") }}</span>{% elif row.usable < row.count %}<span class="chip chip-draft">{{ _("Not enough questions") }}</span>{% endif %}
     </div>
     {% if not quiz.archived_at %}

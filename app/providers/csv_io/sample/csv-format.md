@@ -35,7 +35,8 @@ Needed only for a new quiz. Ignored, with a warning, when adding to a draft or a
 | `scoring` | A scoring strategy of the type. The type's first when blank |
 | `explanation_<language>` | Shown when the quiz reveals explanations |
 | `sources` | One source per line within the cell. An `https://` line becomes a link |
-| `tags` | Comma separated. Used only in a bank |
+| `tags` | Comma separated. Used only in a bank. One of `easy`, `normal` and `hard` sets the difficulty a quiz can ask for; a question without one counts as `normal`, and more than one of them skips the row with an error |
+| `folder` | The folder of the question in a bank, as a path with `/`, like `EU/trade`, at most four levels. Missing folders are created, an existing one is found regardless of case. Blank means no folder. Used only in a bank. Paths are relative to the bank; the check page shows where they land and can put them under another folder, add a top folder, or rename or remove the top folders of the file |
 | `setting_<key>` | A question setting, see below |
 
 ## Type `choice`

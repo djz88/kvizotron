@@ -1,0 +1,9 @@
+{# The search of a settings page, the same form as the bank's (AC-168). `search_page` is the page without `q`. #}
+<form method="get" action="{{ search_page }}" class="bank-search" role="search">
+  {% if request.GET.get("lang") %}<input type="hidden" name="lang" value="{{ request.GET.get('lang') }}">{% endif %}
+  <input type="search" name="q" value="{{ query }}" aria-label="{{ _('Search the settings') }}" placeholder="{{ _('Search the settings') }}">
+  <button type="submit">{{ _("Search") }}</button>
+</form>
+{% if query %}
+<p class="search-state">{% if not groups|selectattr("matched")|list %}<span role="status">{{ _("No setting matches.") }}</span> {% endif %}<a href="{{ search_page }}">{{ _("Clear the search") }}</a></p>
+{% endif %}

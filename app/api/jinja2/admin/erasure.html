@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Erasure request") }}</h1>
+<p><a href="{{ url('retention_history') }}">{{ _("Deletion history") }}</a></p>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+{% if confirming %}
+<h2>{{ _("Please confirm") }}</h2>
+<p>{{ _("These people will be deleted with their attempts, answers, photos and reward claims. Prepared export files that include one of their runs will be deleted too, including an export of all runs of a quiz. The runs and their other participants stay, and draw history keeps only a pseudonym. This cannot be undone.") }}</p>
+{% from "admin/_erasure_rows.html" import erasure_table %}
+{{ erasure_table(confirming, false, none) }}
+<form method="post" action="{{ url('retention_erasure') }}">
+  {{ csrf_input }}
+  <input type="hidden" name="action" value="erase">
+  <input type="hidden" name="confirm" value="1">
+  <input type="hidden" name="email" value="{{ email }}">
+  <input type="hidden" name="name" value="{{ name }}">
+  {% for row in confirming %}<input type="hidden" name="participant" value="{{ row.found.participant_id }}">
+  {% endfor %}
+  <button type="submit">{{ _("Confirm") }}</button>
+  <a href="{{ url('retention_erasure') }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+</form>
+{% else %}
+<form method="post" action="{{ url('retention_erasure') }}">
+  {{ csrf_input }}
+  <input type="hidden" name="action" value="search">
+  <label>{{ _("E-mail") }}
+    <input type="email" name="email" value="{{ email }}" autocomplete="off" maxlength="254">
+  </label>
+  <button type="submit" class="secondary">{{ _("Find by e-mail") }}</button>
+</form>
+<form method="post" action="{{ url('retention_erasure') }}">
+  {{ csrf_input }}
+  <input type="hidden" name="action" value="search">
+  <label>{{ _("Nickname") }}
+    <input type="text" name="name" value="{{ name }}" autocomplete="off" maxlength="200">
+  </label>
+  <small>{{ _("One nickname can belong to different people, so tick only the rows you mean.") }}</small>
+  <button type="submit" class="secondary">{{ _("Find by nickname") }}</button>
+</form>
+{% if searched %}
+<h2>{{ _("Found") }}</h2>
+{% if rows %}
+<form method="post" action="{{ url('retention_erasure') }}">
+  {{ csrf_input }}
+  <input type="hidden" name="action" value="erase">
+  <input type="hidden" name="email" value="{{ email }}">
+  <input type="hidden" name="name" value="{{ name }}">
+  {% from "admin/_erasure_rows.html" import erasure_table %}
+  {{ erasure_table(rows, true, ticked) }}
+  <button type="submit" class="secondary outline">{{ _("Erase the selected") }}</button>
+</form>
+{% else %}
+<p>{{ _("Nobody was found.") }}</p>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

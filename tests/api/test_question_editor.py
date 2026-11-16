@@ -196,7 +196,7 @@ def played(client, quiz, *, lang="cs"):
     }
     for question in run.current_revision.snapshot_json["questions"]:
         fields[f"{question['id']}:options[]"] = question["definition"]["correct"]
-    action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+    action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
     return text(client.post(action, fields, headers=HTMX))
 
 
@@ -318,7 +318,7 @@ def test_whole_percentages_have_no_decimals(client, correct, cs, en):
     }
     question = run.current_revision.snapshot_json["questions"][0]["id"]
     fields[f"{question}:options[]"] = correct
-    action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+    action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
     assert cs in text(client.post(action, fields, headers=HTMX))
 
 
@@ -355,7 +355,7 @@ def test_a_result_with_decimals_uses_the_comma_in_czech(client):
     }
     question = run.current_revision.snapshot_json["questions"][0]["id"]
     fields[f"{question}:options[]"] = [OPTION_A]
-    action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+    action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
     page = text(client.post(action, fields, headers=HTMX))
     assert "0,5 / 1" in page and "50 %" in page
 

@@ -1,5 +1,6 @@
 import pytest
 
+from app.contracts import COLOR_PALETTE
 from app.domain import settings
 from app.domain.models import AppSetting
 from app.kernel.errors import StartupError
@@ -77,28 +78,28 @@ def test_change_is_audited():
 
 
 def test_palette_defaults_to_blue_teal():
-    assert settings.resolve(settings.COLOR_PALETTE) == "blue_teal"
+    assert settings.resolve(COLOR_PALETTE) == "blue_teal"
 
 
 def test_palette_override_beats_global():
     quiz = make_quiz()
-    settings.set_global(settings.COLOR_PALETTE, "red_plum", admin_id=None)
-    settings.set_override(settings.COLOR_PALETTE, quiz, "indigo_pink", admin_id=None)
-    assert settings.resolve(settings.COLOR_PALETTE, quiz) == "indigo_pink"
-    assert settings.resolve(settings.COLOR_PALETTE) == "red_plum"
+    settings.set_global(COLOR_PALETTE, "red_plum", admin_id=None)
+    settings.set_override(COLOR_PALETTE, quiz, "indigo_pink", admin_id=None)
+    assert settings.resolve(COLOR_PALETTE, quiz) == "indigo_pink"
+    assert settings.resolve(COLOR_PALETTE) == "red_plum"
 
 
 def test_unknown_palette_is_refused():
     with pytest.raises(settings.InvalidSettingValue):
-        settings.set_global(settings.COLOR_PALETTE, "neon", admin_id=None)
+        settings.set_global(COLOR_PALETTE, "neon", admin_id=None)
 
 
 def test_stored_value_no_longer_offered_falls_back_to_the_default():
     quiz = make_quiz()
-    AppSetting.objects.create(key=settings.COLOR_PALETTE, quiz=None, value_json="retired")
-    AppSetting.objects.create(key=settings.COLOR_PALETTE, quiz=quiz, value_json="retired")
-    assert settings.resolve(settings.COLOR_PALETTE, quiz) == "blue_teal"
-    assert settings.quiz_override(settings.COLOR_PALETTE, quiz) is None
+    AppSetting.objects.create(key=COLOR_PALETTE, quiz=None, value_json="retired")
+    AppSetting.objects.create(key=COLOR_PALETTE, quiz=quiz, value_json="retired")
+    assert settings.resolve(COLOR_PALETTE, quiz) == "blue_teal"
+    assert settings.quiz_override(COLOR_PALETTE, quiz) is None
 
 
 def module_declaring(key):
@@ -124,7 +125,7 @@ def module_declaring(key):
 
 def test_a_duplicate_key_stops_the_start():
     with pytest.raises(StartupError):
-        settings.register_modules([module_declaring(settings.COLOR_PALETTE)])
+        settings.register_modules([module_declaring(COLOR_PALETTE)])
 
 
 def test_a_module_setting_joins_the_catalogue(monkeypatch):

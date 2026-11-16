@@ -1,15 +1,78 @@
 {% extends "admin/base.html" %}
 {% from "admin/_import_issues.html" import issues %}
+{% macro folder_tree(nodes) %}
+<ul>
+  {% for node in nodes %}
+  <li>{{ node.name }} ({{ node.count }}) · {% if node.exists %}{{ _("existing folder") }}{% else %}<strong>{{ _("new folder") }}</strong>{% endif %}
+    {% if node.children %}{{ folder_tree(node.children) }}{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
 {% block content %}
 <h1>{{ _("Check the import") }}</h1>
 <p>{{ target_label }}</p>
 {% if refused %}
 <p class="notice" role="alert">{{ refused }}</p>
+{% endif %}
+{% if structure %}
+<section aria-labelledby="structure-heading">
+  <h2 id="structure-heading">{{ _("Where the questions go") }}</h2>
+  {% if structure.error %}<p class="notice" role="alert">{{ structure.error }}</p>{% endif %}
+  <p>{{ _("Bank %(name)s", name=structure.bank) }}</p>
+  {{ folder_tree(structure.tree.folders) }}
+  {% if structure.tree.without_folder %}<p>{{ _("Without a folder: %(count)s", count=structure.tree.without_folder) }}</p>{% endif %}
+  {% if structure.tree.unused %}
+  <p>{% if replace %}{{ _("Folders of the bank the file does not use, empty after the replace: %(names)s", names=structure.tree.unused|join(", ")) }}{% else %}{{ _("Folders of the bank the file does not use: %(names)s", names=structure.tree.unused|join(", ")) }}{% endif %}</p>
+  {% endif %}
+  <form method="get">
+    {% if lang %}<input type="hidden" name="lang" value="{{ lang }}">{% endif %}
+    <label for="placement-under">{{ _("Put under") }}</label>
+    <select id="placement-under" name="under">
+      <option value="">{{ _("Top level of the bank") }}</option>
+      {% for folder_id, path in structure.under_choices %}
+      <option value="{{ folder_id }}"{% if structure.chosen.get("under") == folder_id %} selected{% endif %}>{{ path }}</option>
+      {% endfor %}
+    </select>
+    <label for="placement-added">{{ _("Add a top folder") }}</label>
+    <input id="placement-added" name="added" maxlength="80" value="{{ structure.chosen.get('added', '') }}">
+    {% for top in structure.tops %}
+    <fieldset>
+      <legend>{{ _("Folder %(name)s of the file", name=top.name) }}</legend>
+      <label for="placement-name-{{ top.index }}">{{ _("Folder name") }}</label>
+      <input id="placement-name-{{ top.index }}" name="name_{{ top.index }}" maxlength="80" value="{{ top.value }}">
+      <label><input type="checkbox" name="drop_{{ top.index }}" value="1"{% if top.dropped %} checked{% endif %}> {{ _("Remove this level") }}</label>
+    </fieldset>
+    {% endfor %}
+    <button type="submit" class="secondary">{{ _("Apply the structure") }}</button>
+  </form>
+  {% if structure.short_rows %}
+  <h3>{{ _("Draw rows that will get fewer questions than they ask for") }}</h3>
+  <ul>
+    {% for row in structure.short_rows %}
+    <li>{{ row.quiz }} · {{ row.folder or _("whole bank") }}{% if row.tag %} · {{ row.tag }}{% endif %}{% if row.difficulty %} · {{ row.difficulty }}{% endif %} · {{ _("%(available)s of %(wanted)s", available=row.available, wanted=row.wanted) }}</li>
+    {% endfor %}
+  </ul>
+  <p><small>{{ _("This does not stop the replace. Change the structure above, or fix the rows in the quiz afterwards.") }}</small></p>
+  {% endif %}
+</section>
+{% endif %}
+{% if refused %}
+{{ issues(errors, _("Rows with errors"), issue_view) }}
 <a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
 {% else %}
 <p>{{ _("Questions to import: %(count)s", count=count) }}</p>
-{{ issues(errors, _("Rows that will be skipped")) }}
-{{ issues(warnings, _("Warnings")) }}
+{% if replace %}
+<p class="notice">{{ _("Questions of the bank that will be deleted: %(count)s", count=replace.removed) }}</p>
+{% if replace.quizzes %}
+<p>{{ _("Quizzes that draw from this bank: %(quizzes)s", quizzes=replace.quizzes|join(", ")) }}</p>
+<p><small>{{ _("Their published questions stay as they are. Their draw rows show an unpublished change until you publish again.") }}</small></p>
+{% else %}
+<p>{{ _("No quiz draws from this bank.") }}</p>
+{% endif %}
+{% endif %}
+{{ issues(errors, _("Rows that will be skipped"), issue_view) }}
+{{ issues(warnings, _("Warnings"), issue_view) }}
 {% if unused %}<p>{{ _("Columns not used: %(columns)s", columns=unused|join(", ")) }}</p>{% endif %}
 {% if preview %}
 <h2>{{ _("First questions") }}</h2>
@@ -20,12 +83,15 @@
 </section>
 {% endfor %}
 {% endif %}
-{% if count %}
+{% if count and not placement_error %}
 <form method="post" action="{{ url('admin_import_confirm', args=[job_id]) }}">
   {{ csrf_input }}
-  <button type="submit">{{ _("Import") }}</button>
+  {% for name, value in placement_values.items() %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  <button type="submit">{% if replace %}{{ _("Replace the questions") }}{% else %}{{ _("Import") }}{% endif %}</button>
   <a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
 </form>
+{% elif count %}
+<a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>
 {% else %}
 <p class="notice" role="alert">{{ _("No row can be imported.") }}</p>
 <a href="{{ upload_again }}" role="button" class="secondary">{{ _("Upload another file") }}</a>

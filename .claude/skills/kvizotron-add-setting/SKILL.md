@@ -16,7 +16,7 @@ Zeptej se uživatele přes `AskUserQuestion`, pokud to zadání výslovně neř�
 - **Rozsah.** Výchozí je global → kvíz → otázka. Užší nabídni jen s konkrétním důvodem, který pak půjde do `scope_reason`.
 - **Výchozí hodnota**, pokud mění chování stávajících kvízů.
 
-Skupinu a úroveň (`group`, `level`) zvol sám a napiš je do zprávy: skupina podle toho, čeho se nastavení týká (`playing`, `answers`, `participants`, `scoreboard`, `data`, `look`, `technical`), úroveň `basic` jen pro to, co admin mění u většiny kvízů. Bez nich je nastavení `technical` a `advanced` (ADR-0052).
+Skupinu a úroveň (`group`, `level`) zvol sám a napiš je do zprávy: skupina podle toho, čeho se nastavení týká (`playing`, `answers`, `participants`, `scoreboard`, `rewards`, `data`, `look`, `technical`), úroveň `basic` jen pro to, co admin mění u většiny kvízů. Bez nich je nastavení `technical` a `advanced` (ADR-0052).
 
 Spěch ani „pak na to mrknu“ tuhle otázku neruší. Rozsah se v uložených datech a importech mění špatně. Nemůžeš-li se zeptat, zastav se a napiš otázku; rozsah nevybírej za uživatele.
 

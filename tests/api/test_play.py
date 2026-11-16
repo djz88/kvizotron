@@ -37,7 +37,7 @@ class Play:
         self.start_response = client.post(f"/r/{run.id}/start", {"lang": lang}, headers=HTMX)
         assert self.start_response.status_code == 200
         html = self.start_response.content.decode()
-        self.action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+        self.action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
         self.fields = {
             "attempt_token": hidden(html, "attempt_token"),
             "submission_key": hidden(html, "submission_key"),
@@ -146,6 +146,7 @@ def test_submit_needs_no_csrf_token(run):
 
 
 def test_tampered_score_started_at_revision_and_manifest_fields_do_not_change_result(client, run):
+    """AC-08: a forged score, start time, revision or manifest changes nothing, is not refused."""
     response = Play(client, run).submit(
         OPTION_B,
         score="999",
@@ -160,6 +161,7 @@ def test_tampered_score_started_at_revision_and_manifest_fields_do_not_change_re
     attempt = Attempt.objects.get()
     assert attempt.score == 0
     assert attempt.revision_id == run.current_revision_id
+    assert attempt.started_at.year > 2000  # the server's own start time, not the forged one
 
 
 def test_changed_token_is_403_and_attempt_stays_open(client, run):
@@ -172,6 +174,7 @@ def test_changed_token_is_403_and_attempt_stays_open(client, run):
 
 
 def test_signed_token_with_other_revision_is_403(client, run):
+    """AC-08: even a correctly signed token cannot move an attempt to another revision."""
     play = Play(client, run)
     claims = tokens.verify(play.fields["attempt_token"])
     forged = tokens.issue(replace(claims, revision_id=uuid7()))
@@ -259,6 +262,14 @@ def test_submit_after_close_is_409_with_translated_message(client, run):
     response = play.submit()
     assert response.status_code == 409
     assert "Цей запуск завершився." in text(response)
+
+
+def test_submit_during_close_is_refused_not_500(client, run, logged_in):
+    play = Play(client, run)
+    assert logged_in.post(f"/admin/runs/{run.id}/close").status_code == 302
+    response = play.submit()
+    assert response.status_code == 409
+    assert response.status_code != 500
 
 
 def test_expired_attempt_is_410_with_translated_message(client, run):

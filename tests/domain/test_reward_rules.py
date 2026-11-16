@@ -151,6 +151,7 @@ def test_rules_refused_with_profile_none():
 
 
 def test_rules_refused_with_after_each():
+    """AC-18: a run with reward rules does not open on a quiz that reveals after each question."""
     quiz = with_template(THRESHOLD)
     answers_after_each(quiz)
     with pytest.raises(rewards.RewardConflict) as refused:
@@ -274,6 +275,7 @@ def test_plan_stores_run_settings():
 
 
 def test_quiz_after_each_refused_when_run_has_rules(logged_in):
+    """AC-18: answers after each question are refused, with a reason, in a run with rewards."""
     quiz = with_template(THRESHOLD)
     authoring.open_run(quiz, admin_id=ADMIN_ID)
     response = logged_in.post(

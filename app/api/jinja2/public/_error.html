@@ -1,3 +1,4 @@
 {{ message }}
 {% if one_per_browser %}<br>{{ _('One attempt per browser applies.') }}{% endif %}
+{% if result_line %}<br>{{ result_line }}{% endif %}
 {% if result_url %}<br><a href="{{ result_url }}">{{ _('See your result') }}</a>{% endif %}

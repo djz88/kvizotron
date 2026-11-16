@@ -2,12 +2,13 @@
 
 import hashlib
 import io
+import logging
 import os
 import struct
 import tempfile
 import time
 from collections.abc import Mapping, Sequence
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 from xml.parsers import expat
@@ -23,6 +24,7 @@ from app.contracts import AddressStatus, ImageAddressInvalid, ImageRefused, Stor
 from . import remote
 from .models import AddressCheck, MediaAsset
 
+logger = logging.getLogger(__name__)
 MB = 1024 * 1024
 MAX_RASTER_BYTES = 15 * MB
 MAX_SVG_GIF_BYTES = 5 * MB
@@ -209,6 +211,14 @@ def _usable(data: bytes) -> bool:
     return True
 
 
+def _remove_unsaved(path: Path) -> None:
+    """A file nothing points to is removed; the error that caused it stays."""
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as error:
+        logger.warning("An unsaved media file could not be removed: %s", type(error).__name__)
+
+
 class LocalMediaStorage:
     id = "local"
 
@@ -233,6 +243,12 @@ class LocalMediaStorage:
         (Path(settings.KVZ_MEDIA_PATH) / asset.storage_key).unlink(missing_ok=True)
         asset.delete()
 
+    def private_assets_older_than(self, cutoff: datetime) -> Sequence[str]:
+        ids = MediaAsset.objects.filter(private=True, created_at__lt=cutoff).values_list(
+            "pk", flat=True
+        )
+        return [str(asset_id) for asset_id in ids]
+
     def _saved(self, content: bytes, mime_type: str, extension: str, *, private: bool) -> str:
         asset = MediaAsset(
             mime_type=mime_type,
@@ -243,11 +259,21 @@ class LocalMediaStorage:
         asset.storage_key = f"{asset.id}.{extension}"
         directory = Path(settings.KVZ_MEDIA_PATH)
         directory.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temporary:
-            temporary.write(content)
-        os.chmod(temporary.name, 0o640)
-        os.replace(temporary.name, directory / asset.storage_key)
-        asset.save()
+        target = directory / asset.storage_key
+        temporary = tempfile.NamedTemporaryFile(dir=directory, delete=False)
+        try:
+            with temporary:
+                temporary.write(content)
+            os.chmod(temporary.name, 0o640)
+            os.replace(temporary.name, target)
+        except BaseException:
+            _remove_unsaved(Path(temporary.name))
+            raise
+        try:
+            asset.save()
+        except BaseException:
+            _remove_unsaved(target)
+            raise
         return str(asset.id)
 
     def check_image_address(self, url: str) -> None:

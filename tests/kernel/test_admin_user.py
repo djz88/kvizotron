@@ -47,8 +47,12 @@ def test_several_admins_are_independent(db):
     assert not bob.check_password(PASSWORD)
 
 
-def test_no_email_field():
-    assert "email" not in {field.name for field in AdminUser._meta.get_fields()}
+@pytest.mark.django_db
+def test_email_is_optional_and_empty_by_default():
+    """D1 addendum: an account may carry a contact e-mail for quiz footers; it is never required."""
+    field = AdminUser._meta.get_field("email")
+    assert (field.blank, field.max_length) == (True, 254)
+    assert AdminUser.objects.create_admin("carol", "another password here").email == ""
 
 
 def test_session_settings():

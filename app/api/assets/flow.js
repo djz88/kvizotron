@@ -173,6 +173,78 @@
     }
   }
 
+  // After Start or Continue the form replaces the button that had the focus, so the focus goes to
+  // the first question on view. A restored attempt is moved to its step first, which is why this waits.
+  function focusFirstStep() {
+    var form = document.querySelector("form[data-flow]");
+    var section = form && form.querySelector(".flow-question:not([hidden])");
+    if (section) {
+      section.focus();
+    }
+  }
+
+  function startedPlay(event) {
+    var config = event.detail && event.detail.requestConfig;
+    var origin = config && config.elt;
+    return Boolean(
+      origin && origin.matches && origin.matches("form[data-start-form], form[data-resume-form]")
+    );
+  }
+
+  // Whether a question has any answer. A question with several fields (blanks, pairs) counts as
+  // answered when any one is filled in; an ordering always has an order; a photo stored earlier
+  // (marked by the server) counts although a resumed page cannot show it in the file input.
+  function isFilled(section) {
+    if (section.querySelector("[data-sortable], [data-photo-sent]")) {
+      return true;
+    }
+    return Array.prototype.some.call(section.querySelectorAll("input, select"), function (field) {
+      if (field.type === "hidden" || field.type === "submit" || field.type === "button") {
+        return false;
+      }
+      if (field.type === "radio" || field.type === "checkbox") {
+        return field.checked;
+      }
+      if (field.type === "file") {
+        return field.files && field.files.length > 0;
+      }
+      return field.value.trim() !== "";
+    });
+  }
+
+  function countUnanswered(form) {
+    return Array.prototype.filter.call(form.querySelectorAll(".flow-question"), function (section) {
+      var hasField = section.querySelector("input:not([type=hidden]), select");
+      return hasField && !isFilled(section);
+    }).length;
+  }
+
+  // Asks before the answers go with blanks left. The automatic send at the end of the time limit
+  // (countdown.js flags it with auto_submit) never asks, and without script the form just posts.
+  document.addEventListener("htmx:confirm", function (event) {
+    var form = event.detail.elt;
+    if (!form || form.tagName !== "FORM" || !form.matches("form[data-flow]")) {
+      return;
+    }
+    var text = form.dataset.unansweredConfirm;
+    if (!text || form.querySelector('[name="auto_submit"]')) {
+      return;
+    }
+    var count = countUnanswered(form);
+    if (count === 0) {
+      return;
+    }
+    event.preventDefault();
+    if (window.confirm(text.replace("{count}", count))) {
+      event.detail.issueRequest(true);
+    }
+  });
+
   document.addEventListener("DOMContentLoaded", setup);
-  document.addEventListener("htmx:afterSwap", setup);
+  document.addEventListener("htmx:afterSwap", function (event) {
+    setup();
+    if (startedPlay(event)) {
+      window.setTimeout(focusFirstStep, 0);
+    }
+  });
 })();

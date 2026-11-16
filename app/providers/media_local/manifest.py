@@ -13,6 +13,8 @@ def _(text: str) -> str:
 
 MANIFEST = {
     "id": "media.local",
+    "name": _("Media storage"),
+    "description": _("Images and photos stored on this server."),
     "kind": "provider",
     "version": "1.0.0",
     "app": "app.providers.media_local.apps.MediaLocalConfig",

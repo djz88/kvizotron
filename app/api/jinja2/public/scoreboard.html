@@ -1,21 +1,22 @@
 {% extends "public/base.html" %}
 {% block title %}{{ _("Scoreboard") }} · {{ title }} · Kvízotron{% endblock %}
+{# The projector view is only the board, for a screen in a room: no bar, links, buttons or footer. #}
+{% block header %}{% if not projector %}{{ super() }}{% endif %}{% endblock %}
+{% block footer %}{% if not projector %}{{ super() }}{% endif %}{% endblock %}
 {% block content %}
 {% if not projector %}{% include "public/_mode_bar.html" %}{% endif %}
 <section class="scoreboard{% if projector %} projector{% endif %}">
   <div class="hero">
     <h1>{{ title }}</h1>
     <p>{{ _("Scoreboard") }}</p>
+    {% if shared_numbers %}<p>{{ _("Shared scoreboard of runs %(runs)s", runs=shared_numbers) }}</p>{% endif %}
   </div>
+  {% if not projector %}
   <p class="scoreboard-tools">
-    {% if projector %}
-    <a href="{{ page_url }}?lang={{ locale }}">{{ _("Normal view") }}</a>
-    <button type="button" class="secondary" data-fullscreen hidden>{{ _("Full screen") }}</button>
-    {% else %}
-    <a href="{{ page_url }}?view=projector&amp;lang={{ locale }}">{{ _("Projector") }}</a>
-    · <a href="{{ quiz_url }}?lang={{ locale }}">{{ _("Back to the quiz") }}</a>
-    {% endif %}
+    {% if projector_link %}<a href="{{ page_url }}?view=projector&amp;lang={{ locale }}" target="_blank" rel="noopener">{{ _("Projector") }}</a>
+    · {% endif %}<a href="{{ quiz_url }}?lang={{ locale }}">{{ _("Back to the quiz") }}</a>
   </p>
+  {% endif %}
   {% include "public/_scoreboard_rows.html" %}
   {% if winners %}
   <section class="card winners">

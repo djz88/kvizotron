@@ -1,0 +1,54 @@
+{# `branding_group` from admin_view.branding_group; `branding_sources` is set at a quiz. A separate form: it carries a file. #}
+{% from "admin/_setting_row.html" import setting_row, info_row %}
+{% if branding_group %}
+<section class="form-section settings-form" id="branding">
+  <h2>{{ _("Name, logo and texts") }}</h2>
+  <p>{{ _("These changes apply immediately, without publishing. An empty English or Ukrainian text shows the Czech one.") }}</p>
+  {% if logo_preview %}
+  {% call info_row(_("Logo in the bar")) %}<span class="logo-preview">
+    <img src="{{ logo_preview.logo_url }}" alt="" width="32" height="32">
+    {% if logo_preview.sources["logo"] == "default" %}{{ _("Built-in logo (%(family)s), chosen by the colour palette.", family=logo_preview.logo_family) }}
+    {% else %}{{ _("A custom logo is used for the bar.") }}{% endif %}
+  </span>{% endcall %}
+  {% endif %}
+  {# The level's own logos: at a quiz its overrides, at the application every logo that is not the built-in one. #}
+  {% set src = branding_sources or logo_preview.sources %}
+  {% set own_logos = {"logo": src["logo"] == ("quiz" if branding_sources else "global"), "hero_logo": src["hero_logo"] == ("quiz" if branding_sources else "global")} %}
+  <form method="post" enctype="multipart/form-data" action="{{ branding_action }}">
+    {{ csrf_input }}
+    {{ branding_form.non_field_errors() }}
+    {% for field in branding_group.fields %}
+    {% if field.name in ("remove_logo", "remove_hero_logo") %}
+    {# A set logo is removed by a button, not a checkbox; no logo of its own, nothing to remove. #}
+    {% set base = "logo" if field.name == "remove_logo" else "hero_logo" %}
+    {% if own_logos[base] %}
+    {% set thumb = logo_preview.logo_url if base == "logo" else logo_preview.hero_logo_url %}
+    {% set label = logo_preview.logo_label if base == "logo" else logo_preview.hero_logo_label %}
+    {% call info_row() %}<p class="logo-row"><img src="{{ thumb }}" alt="" width="24" height="24">{% if label %}<span class="logo-name" title="{{ label }}">{{ label }}</span>{% endif %}<button type="submit" form="clear-{{ base }}" class="secondary outline" aria-label="{{ _("Remove") }}: {{ label or (_("Logo") if base == "logo" else _("Landing page logo")) }}">{{ _("Remove") }}</button></p>{% endcall %}
+    {% elif branding_sources %}
+    {% call info_row() %}<small>{{ _("Inherited from global settings") }}</small>{% endcall %}
+    {% endif %}
+    {% else %}
+    {{ setting_row(field) }}
+    {% if branding_sources and field.name in ("name_uk", "motto_uk", "footer_uk", "contact_email") %}
+    {% set base = "contact_email" if field.name == "contact_email" else field.name.split("_")[0] %}
+    {% if branding_sources[base] == "quiz" %}
+    {% call info_row() %}<button type="submit" form="clear-{{ base }}" class="secondary outline">{{ _("Remove override") }}</button>{% endcall %}
+    {% else %}
+    {% call info_row() %}<small>{{ _("Inherited from global settings") }}</small>{% endcall %}
+    {% endif %}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% if branding_group.hidden %}<p class="group-hidden">{{ _("More settings in All: %(count)s", count=branding_group.hidden) }}</p>{% endif %}
+    <button type="submit">{{ _("Save") }}</button>
+  </form>
+  {# Separate forms, so that Enter in a text field submits Save and never a removal. #}
+  {% for base in ("name", "motto", "footer", "contact_email", "logo", "hero_logo") if (branding_sources and branding_sources[base] == "quiz") or (not branding_sources and base in own_logos and own_logos[base]) %}
+  <form method="post" id="clear-{{ base }}" action="{{ branding_action }}">
+    {{ csrf_input }}
+    <input type="hidden" name="clear" value="{{ base }}">
+  </form>
+  {% endfor %}
+</section>
+{% endif %}

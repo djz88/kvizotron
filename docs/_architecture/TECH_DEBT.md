@@ -11,11 +11,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 
 ## OPEN
 
-### TD-022 Automatic submission is not repeated after a server error — OPEN
-- Where: `app/api/assets/countdown.js:138`
-- Effect: the page repeats it only after a network error. A 5xx or a connection that hangs leaves the page waiting, the time runs out, and the attempt is lost
-- Solution: also repeat on `htmx:responseError` with status 500 or more and on `htmx:timeout`, and give the request a timeout
-
 ### TD-023 Run status and time zone are read more often than needed — OPEN
 - Where: `app/api/run_clock.py:13`, `app/domain/clock.py:37`
 - Effect: `/media/` requests and the 30 s asks for the time also run the two schedule queries, and every shown time reads the zone from the database. Cheap at about 50 participants, but it adds up on long lists
@@ -46,25 +41,10 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: categories in a file are lost on import, with a note in the report
 - Solution:
 
-### TD-015 Photo files left behind when storing fails midway — OPEN
-- Where: `app/api/play.py:337` (`with_files`), `app/providers/media_local/provider.py:236` (`_saved`)
-- Effect: if a later photo of one submission fails with anything but `ImageRefused`, such as a full disk or a locked database, the photos already written stay on the volume with no row pointing to them. `_saved` also writes the file before its row, so a failed save leaves one file. Nobody sees them, but they take space
-- Solution: let `with_files` append to a list the caller owns and remove it on any exception; remove the file in `_saved` when the row cannot be saved
-
 ### TD-016 Walkthrough loads all answers on every request — OPEN
 - Where: `app/domain/walkthrough.py:60` (`available`), `:113` (`photo_for_public`), `app/api/public.py` (`_walkthrough_url`)
 - Effect: `available` loads every answer row of the run, on each page view of an ended quiz when answers are not public and once per image of the walkthrough, so a gallery of 30 photos loads them 30 times
 - Solution: decide from question settings without loading answers where possible, and keep the result for the length of a request
-
-### TD-017 Closed quiz page fails when a question type's module is uninstalled — OPEN
-- Where: `app/domain/walkthrough.py:74` (`_plugin`), called from `available` and `of_run`
-- Effect: after a question type's module is uninstalled, the public page of an ended quiz answers 500 when its answers are not public, and the walkthrough answers 500 in any case
-- Solution: catch `UnknownPort` as `_own_answers` in `app/api/public.py` does, and leave such a question out
-
-### TD-018 Number answer with a thousands separator is graded wrong without a message — OPEN
-- Where: `app/plugins/questions/number/plugin.py:39` (`parse_number`)
-- Effect: a comma is a decimal separator as the docs say, so `1,000` reads as 1 and is graded wrong, with only the hint under the field to warn about it
-- Solution: ask to confirm or show a message for exactly three digits after a separator, in the page's script and without changing what the server accepts
 
 ### TD-019 Stale tab posting a photo form to a switched attempt gets a bare 415 — OPEN
 - Where: `app/api/play.py:99` (`accepts_upload`), `:113`
@@ -76,27 +56,12 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: the links to questions with photos are sorted by question id, so with several photo questions they do not follow the order of the quiz. Cosmetic
 - Solution: sort by position in the run's last revision, as `_questions` already lists them
 
-### TD-021 Hand-crafted result photo address logs its token — OPEN
-- Where: `app/urls.py:24`, the `uuid` part of `result_photo`
-- Effect: `/v/<token>/photo/<not a uuid>` answers 404, and Django logs that with the path, so a token can reach the log. Only a hand-crafted address does this; pages never link to one
-- Solution: take the last part as a string, and answer 204 for anything that is not a known id
-
-### TD-026 MediaStorageProvider has no shared contract suite — OPEN
-- Where: `tests/providers/test_media_local.py`, `tests/test_wiring.py:34`
-- Effect: the project rule asks every module to pass a shared suite in `tests/contracts/`. `media_local` has only its own tests, so a second media provider would have nothing to prove itself against
-- Solution: add `tests/contracts/media_storage.py` when a second provider is planned, and drop the exception
-
 ### TD-027 C2: name_key max_length 80 is short for 3x casefold expansion (e.g. ﬃ), harmless on SQLite — OPEN
 - Where:
 - Effect:
 - Solution:
 
 ### TD-028 C2: start under forbid with a required name shows name_required before already_played — OPEN
-- Where:
-- Effect:
-- Solution:
-
-### TD-029 C2: a start POST without a cookie creates a Participant row each time; limit with D5 — OPEN
 - Where:
 - Effect:
 - Solution:
@@ -156,11 +121,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: It restates the stateless refusal list and the 24-hour rule, so they can drift from ADR-0050.
 - Solution: Link ADR-0050 instead of repeating.
 
-### TD-041 Public scoreboard response has no Vary: Accept-Language, Cookie — OPEN
-- Where: app/api/scoreboard.py, `_cache`.
-- Effect: Without a cookie the answer is `public, max-age=5`, but its language can come from Accept-Language and its "you" mark from the cookie; a shared cache keyed on the URL could serve another language or drop the mark. The stack has no shared cache today.
-- Solution: Add `Vary: Accept-Language, Cookie`, or answer `private` everywhere.
-
 ### TD-042 Own place on a scoreboard counts unlisted participants and reveals their number — OPEN
 - Where: app/domain/results.py, `place_of`.
 - Effect: With unnamed participants left out, "place k of N" still counts them, so a participant learns how many rows are hidden.
@@ -207,15 +167,218 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: A rule form shows threshold, minimum, winners and alternates for every kind; help texts say which kind uses them.
 - Solution: Group the fields by kind and show only the chosen kind's fields (without inline script).
 
-### TD-051 C5: an IntegrityError from refresh is reported as a used submission key — OPEN
-- Where: app/domain/attempts.py `_store`, the `except IntegrityError` around the submission transaction.
-- Effect: A unique-constraint failure from `rewards.refresh` would be reported as `submission_key_used`. Unlikely under IMMEDIATE transactions, but it hides the cause.
-- Solution: Narrow the handler to the submission key constraint, and add a query-count test for `refresh`.
-
 ### TD-052 C5: published winners reach the projector only on page load — OPEN
 - Where: app/api/scoreboard.py and public/scoreboard.html: the winners section is outside the 15 s refreshed rows.
 - Effect: On a projector left open, newly published winners appear only after a reload.
 - Solution: Move the winners into the refreshed fragment, or refresh the section on its own.
+
+### TD-053 D1: play error pages show the global branding — OPEN
+- Where: `app/api/play.py` `_error`
+- Effect: An error page during play (closed run, bad token) shows the global name, logo and colours instead of the quiz's.
+- Solution: Pass `branding_quiz` where the caller knows the run; most of the 18 call sites do not, so thread the quiz through.
+
+### TD-054 D1: palette and custom colours save in two steps — OPEN
+- Where: `app/api/admin_settings.py`, `app/api/admin_quizzes.py` (settings save then `save_colours`)
+- Effect: A failure between the two writes could leave `custom` without its colours; validation runs first, so it is unlikely.
+- Solution: Wrap both writes in one `transaction.atomic()`.
+
+### TD-055 D1: no Remove override for a quiz's custom colours — OPEN
+- Where: `app/api/jinja2/admin/_branding_fields.html`, `app/domain/branding.py`
+- Effect: After the quiz palette goes back to the global value, its stored colours stay; they are inert but the field shows as modified.
+- Solution: Clear the quiz colours when the palette override is removed, or offer Remove override for them.
+
+### TD-056 D1: branding resolution costs several queries per page — OPEN
+- Where: `app/api/rendering.py` `page()`, `app/domain/branding.resolve`
+- Effect: About 6–8 small queries per page; fine for ~50 participants on SQLite.
+- Solution: Cache the resolved global row per request or with a short-lived cache; check in the D5 load test.
+
+### TD-057 D1: footer details — OPEN
+- Where: `app/api/rendering.py`, `tests/api/test_branding_pages.py`, `tests/api/test_admin_branding.py`
+- Effect: Footer constants sit mid-file and the badge map is rebuilt per request; one footer test depends on whitespace; no test of the year in another time zone or of the 254-character limit in the form.
+- Solution: Move the constants up, parse the paragraph text in the test, add the two tests.
+
+### TD-058 D1: admins page edge cases — OPEN
+- Where: `app/api/admin_users.py` `_change_email`, `app/domain/branding.py` `set_contact_email`
+- Effect: A tampered `admin_id` shows its error nowhere; the domain `ValueError` for a bad e-mail is not translated (the form message is).
+- Solution: Show a page-level message for an unknown account; raise a translated error.
+
+### TD-059 D1: section panel polish — OPEN
+- Where: `app/api/assets/sections.js`, `app/plugins/theme_default/assets/theme.css`
+- Effect: Marking the current section can pick the wrong item for tall sections; an archived quiz's settings page leaves an empty right column.
+- Solution: Mark the section nearest the top; drop the grid when the page has no panel.
+
+### TD-060 D1: Makefile is generated by heimdall — OPEN
+- Where: `Makefile`
+- Effect: `env-update`, the pinned pre-commit and the uv version check are hand edits; regenerating the Makefile would drop them.
+- Solution: Port the changes to the heimdall template.
+
+### TD-061 D1: colour derivation tidiness — OPEN
+- Where: `app/plugins/theme_default/colours.py`, `app/plugins/theme_default/assets/theme.css`
+- Effect: The `darker` parameter shadows the `darker()` function, `PAIRS` is duplicated between the plugin and `tests/test_palettes.py`, and `.motto` is a generic selector.
+- Solution: Rename the parameter, add a test that the two lists are equal, scope the selector.
+
+### TD-062 Export: table_sink suite as mixin with test_* methods; ExportJobView.status as Literal; ExportTable columns/headers length check — OPEN
+- Where: `tests/support/sheets_fake.py`, `tests/contracts/`, `app/contracts/` (`ExportJobView`, `ExportTable`)
+- Effect: The table_sink suite is not a mixin with `test_*` methods, so a new sink cannot inherit it; `ExportJobView.status` is a plain `str`; an `ExportTable` with fewer headers than columns is accepted.
+- Solution: Turn the suite into a mixin, type `status` as a `Literal` of the five statuses, check lengths in `ExportTable.__post_init__`.
+
+### TD-063 Export: validate table names against SAFE_NAME; tidy outside the IMMEDIATE lock; skip tidy write lock on idle polls — OPEN
+- Where: `app/providers/csv_io/results.py` (`_csv_name`, `_tidy`, `claim_next`, `jobs`)
+- Effect: A table name is trusted to be a safe file name; `_tidy` deletes directories inside the IMMEDIATE transaction of `claim_next` and takes the write lock on every 2 s poll even when nothing changed.
+- Solution: Check table names against `SAFE_NAME`, remove directories after the commit, skip the update when there is nothing to tidy.
+
+### TD-064 Export: shared contract suite for ResultsExporterProvider before the D3 jobs container — OPEN
+- Where: `tests/contracts/`, `app/providers/csv_io/results.py`
+- Effect: `ResultsExporterProvider` is tested only through the CSV provider; a second implementation (the D3 jobs container) has no shared suite to pass.
+- Solution: Move the provider tests that state the contract into `tests/contracts/` as a suite every implementation inherits.
+
+### TD-065 Export: entitlements N+1 on attempt.revision; narrow except in question text; per-label locale fallback; draw admin column as login — OPEN
+- Where: `app/domain/results_export.py` (entitlements, question text, headers, draws)
+- Effect: Entitlements read `attempt.revision` per row (N+1); the question text helper catches a broad exception; a missing translation falls back per file, not per label; the draw file names the admin by id, not login.
+- Solution: `select_related` the revision, narrow the except, fall back per label, show the admin's login.
+
+### TD-066 Export: public _status_label; edge-case tests (personal file without confirmation, invalid bundle, unknown file, score run without photos); atomic restart against double submit — OPEN
+- Where: `app/api/admin_runs.py` `_status_label`, `app/api/admin_results_export.py`, `tests/api/test_results_export.py`, `app/providers/csv_io/results.py` `restart`
+- Effect: The export page imports a private helper of another view module; edge cases (personal file without confirmation on ZIP, invalid bundle, unknown file, a `score` run without photos) have no tests; two quick restart submits can both create a job before the old row is deleted.
+- Solution: Make the label helper public, add the tests, delete the old row and create the new one in one transaction keyed on the old status.
+
+### TD-069 Attempts table on the run page overflows on a phone — OPEN
+- Where: `app/api/jinja2/admin/run.html:160`
+- Effect: The attempts table (C3) is wider than the phone screen and scrolls the page sideways
+- Solution: Use the `stack` table layout with `data-label` cells, as the other admin tables do
+
+### TD-070 Runs table is 7 px wider than the page when a held run widens the status cell — OPEN
+- Where: `app/api/jinja2/admin/runs.html`, `app/api/assets/`
+- Effect: A held run's status cell with the deletion date makes the runs table 7 px wider than the page
+- Solution: Let the status cell wrap or give it a maximum width
+
+### TD-071 A deleted run's page still offers what no longer exists — OPEN
+- Where: `app/api/jinja2/admin/run.html`, `app/api/jinja2/admin/prize_draw.html`, `app/domain/retention.py`
+- Effect: The page of a deleted run still shows scoreboard settings and an export link; the draw page says it keeps no scores for a run that had them; a 64-character pseudonym overflows the draw Name column
+- Solution: Hide settings and export for a deleted run, word the draw page by whether scores existed, and wrap or shorten the pseudonym
+
+### TD-073 admin_retention reaches into private helpers of other modules — OPEN
+- Where: `app/api/admin_retention.py:20`, `app/api/admin_runs.py`
+- Effect: The view imports `_run_context` from `admin_runs` across modules (the refusal is now the public `admin_common.refusal`); a malformed run id on the held form gives a generic message; a replacement theme must supply the `.deletion-soon` style or the warning is not visible
+- Solution: Make the helpers public, give the malformed id a specific message and put `.deletion-soon` in the theme contract
+
+### TD-077 D4: command to remove a module and reverse its migrations — OPEN
+- Where: `app/kernel/management/commands/modules.py`; promised in `docs/_architecture/modules/kernel.md`
+- Effect: an operator who removes a module package has no check that nothing needs it, and its tables stay behind
+- Solution: a command that refuses while an active quiz or stored revision needs the module, and otherwise reverses its migrations
+
+### TD-078 D4: refusal for a closed run does not say that archiving it lifts the block — OPEN
+- Where: `app/domain/usage.py`, `reward_rule_usage` and `_LIVE`
+- Effect: a closed run that is not archived blocks disabling `drawings.manual` or `rewards.threshold`, and the reason names only the run, so the admin does not learn what lifts it
+- Solution: a reason text for a closed run that says archiving it lifts the block
+
+### TD-079 D4: two concurrent module switches can write two audit events — OPEN
+- Where: `app/kernel/lifecycle.py`, `set_enabled`
+- Effect: the check runs outside the transaction, so two requests at the same moment can both pass and write two audit rows; the state itself stays right
+- Solution: read the state again inside `transaction.atomic()` and return when it is already there
+
+### TD-080 D4: module list ignores Czech collation and its buttons fill the column — OPEN
+- Where: `app/api/admin_plugins.py`, `plugins_page`; `app/api/jinja2/admin/plugins.html`
+- Effect: names starting with Č or Ú sort after Z, and each switch is as wide as its column, which makes the rows tall
+- Solution: sort by a key that follows the admin language and give the switch a compact button style
+
+### TD-086 D5: make load cannot tell 127.0.0.1 from 127.0.0.2 and cannot combine photo with reveal — OPEN
+- Where: `tools/load_participants.py:402`, `deploy/load.sh` (the `load` quiz)
+- Effect: measured on the `kvizotron-load` stack (the follow-up): the published ports are served by Docker's proxy, so every loopback source (127.0.0.1, 127.0.0.2) reaches Caddy as one address and shares one request-limit bucket, while a connection to the machine's LAN address keeps its source and is counted apart. The probe therefore proves only that a LAN source is counted apart and reports the loopback line as not measured; and a quiz with a photo question cannot use reveal after each question, because the application forbids the combination (a person must grade the photo), so the heaviest mode is run on two quizzes (`load` with photos, `reveal` without) and never together
+- Solution: for the first half nothing in the application can change what Docker's proxy hides (a stack that publishes no port through the proxy would); if the combination becomes allowed, merge the two seeded quizzes. Until then the limits are documented in `docs/deployment.md`
+
+### TD-087 D5: other connection resets by gunicorn still surface as 502 — OPEN
+- Where: `deploy/Caddyfile`, `Dockerfile:33` (gunicorn)
+- Effect: `keepalive 1s` removes the 502 for a connection that gunicorn closes after 2 s of idleness, but other resets by gunicorn (a worker restart, a killed or recycled thread) still surface as 502, and Caddy does not retry a POST because that could write twice. The automatic submission at the deadline is now repeated by the page after a 5xx (its submission key makes a repeat safe, [ADR-0060](adr/0060-login-reservation-and-address-ceiling.md)), but the server refuses any send after the limit, so a reset on that submit is covered only when it clears within the margin before the limit (about 3.5 seconds); a reset on `start` still is not covered, because a repeated start would create a second attempt
+- Solution: if it shows in practice, make `start` safe to repeat (it has no key; a repeat creates another attempt) and let the proxy retry it, or keep gunicorn from restarting workers
+
+### TD-088 D5: the Caddyfile test hardcodes gunicorn's keep-alive default — OPEN
+- Where: `tests/test_deploy_headers.py:26`
+- Effect: the test asserts that Caddy's `keepalive` is below 2, gunicorn's default, without reading what the `Dockerfile` starts gunicorn with, so adding `--keep-alive 1` to the `CMD` would pass the test while the proxy could again reuse a closed connection
+- Solution: read `--keep-alive` from the `CMD` in the `Dockerfile` (default 2) and compare Caddy's value with it
+
+### TD-091 D5 follow-up: a 429 at the deadline cannot be recovered by waiting — OPEN
+- Where: `app/api/assets/countdown.js` (the 429 repeat), `app/api/play.py` (`_limited`, bucket `submit`)
+- Effect: a 429 on the automatic submission repeats after `Retry-After`, which is always 60 seconds and so always after the limit, and the server rejects any send after the limit with `attempt_expired` (`attempts._check_still_valid`, no grace, [ADR-0025](adr/0025-deadline-boundary-second-semantics.md)). The attempt is lost, though the participant now sees the server's verdict. It needs more than the submit limit of 120 a minute from one address, for example a class of over 120 on one address finishing in the same minute. The repeats of the automatic submission make it likelier: every send counts toward the same bucket, so a shared address where each participant sends once and up to six more times after failures raises the volume well above the number of participants, and a very large group hitting the deadline together can meet 429
+- Solution: do not count a repeat of an attempt that is still in progress in the `submit` bucket, or count only the first send per attempt, or raise the default; decide it with ADR-0025 in mind (no grace after the limit)
+
+### TD-092 D5 follow-up: a hung request at the deadline is neither cut nor repeated — OPEN
+- Where: `app/api/assets/countdown.js`
+- Effect: a request that hangs when the automatic submission is sent is only ended by the browser or the network, so no repeat follows inside the margin. A request timeout was tried and removed: a cut request that the server still stores made the repeat get 410, and the participant was told the time had run out although the original committed
+- Solution: a timeout together with a repeat that treats 410 as "maybe stored" and tries the stored-result path, or a server answer that reports a stored attempt for the key before the expiry check
+
+### TD-093 delete_images is not exception-safe: a locked database in delete_image replaces the original error and skips the remaining ids — OPEN
+- Where: `app/api/rendering.py` `delete_images` and `delete_image` of the media provider; predates the D5 follow-up
+- Effect: `delete_images` runs after the transaction that forgot the assets and calls `delete_image` in a plain loop. When one call raises (for example a locked database), the exception replaces the error the caller was already handling and the remaining ids are not tried, so their files stay until the sweep finds them
+- Solution: try every id, log the exception type only for each failure and raise once at the end (or return the ids that stayed), and let a caller that is already failing keep its own error
+
+### TD-094 Quiz type: live game led by a host — OPEN
+- Where: no such mode; every attempt runs at the participant's own pace (`app/plugins/quiz_flow/plugin.py:21`, `app/domain/attempts.py`). Left out of the quiz presets (2026-11-12) as too large for a preset
+- Effect: a Kahoot-style game cannot be run. Missing: a host screen that moves all participants to the next question together; a time limit per question (only per attempt today, `attempt_limit`); points for speed; a bonus for a streak of right answers; the standings after each question and a podium at the end; a team mode (one score from the members' answers)
+- Solution: its own milestone: a run mode led by the host with a shared question pointer pushed to the participants (HTMX polling or SSE), timing per question measured on the server, a scoring strategy that takes the answer time, and a scoreboard view per question
+
+### TD-095 Quiz type: full pub quiz (teams, rounds, joker, closest wins) — OPEN
+- Where: the pub quiz preset covers one phone per team with the team name as nickname and pages as rounds; teams, rounds and jokers have no model (`app/domain/models.py`)
+- Effect: missing for the full format: teams as an entity (members, team size limit); rounds as a unit with standings after each round; a joker round chosen by the team in advance that doubles its points; a tie-breaker where the closest number wins (the Number type only has a tolerance); pace led by the quizmaster (see TD-094)
+- Solution: rounds as named groups of questions in a revision with a score per round on the scoreboard; a joker as a per-attempt choice of one round; a "closest wins" tie-break policy on a Number question; teams after TD-094 or as a participant kind
+
+### TD-096 Quiz type: course with a practice that unlocks the final test and a certificate — OPEN
+- Where: the Practice and Final test presets stand alone; quizzes do not know about each other (`app/domain/models.py`, `Quiz`)
+- Effect: a course cannot require a passed practice before the final test, and a passed test gives no certificate
+- Solution: a link from one quiz to another with a condition (passed or finished in the same browser or for the same participant), and a certificate page or PDF with the name, quiz, date and score, issued from the official attempt
+
+### TD-097 Quiz type: personality quiz with an outcome instead of a score — OPEN
+- Where: scoring sums points (`app/plugins/scoring/strategies.py`); the result page shows a score (`app/plugins/results/`)
+- Effect: a "which … are you" quiz cannot be made: answers cannot point to outcomes, and the result cannot be an outcome with its text and image
+- Solution: outcomes defined on the quiz, each choice option weighted toward outcomes, a scoring strategy that picks the outcome with the highest weight, and a result view that shows the outcome instead of the score
+
+### TD-098 Quiz type: trail with QR stations — OPEN
+- Where: a run has one link and QR code (`app/api/admin_runs.py`); questions have no place or order of unlocking
+- Effect: an outdoor trail (bojovka) where each station has its own QR code that opens its question cannot be made, except as one quiz per station with no common score
+- Solution: stations as groups of questions with their own QR code inside one attempt, opened in any or a fixed order, with the attempt open until the last station or the deadline
+
+### TD-099 Quiz type: poll without right answers or score — OPEN
+- Where: the Choice type allows no right answer (`app/plugins/questions/choice/plugin.py:1`), but scoring, the result page and the run statistics assume a score; left out of the quiz types (2026-11-12, `docs/superpowers/specs/2026-11-12-quiz-types-design.md`)
+- Effect: a poll can only be faked as a quiz where every answer is wrong or right, and its result page shows a meaningless score
+- Solution: check how a question without a right answer scores and what the statistics show per option; then a poll type with no score on the result page and the answer distribution in the statistics
+
+### TD-100 Quiz types saved by an admin from a quiz — OPEN
+- Where: quiz types come only from plugins (`docs/superpowers/specs/2026-11-12-quiz-types-design.md`)
+- Effect: an admin who tuned a quiz cannot reuse its settings as a type for other quizzes, other than duplicating the quiz
+- Solution: "Save as type" on the quiz settings page storing the quiz's overrides under a name, listed with the plugin types, with rename and delete
+
+### TD-101 Navigation, reveal, shuffle and sources are read live by an open run — OPEN
+- Where: `app/domain/attempts.py:234` (`settings.flow(run.quiz)` at each attempt start), `app/api/rendering.py:237` (`show_sources`), `app/domain/rewards.py:211` (reveal checked against the live quiz)
+- Effect: unlike the time limit, participants, data profile, scoreboard and rewards, which a run copies when it is planned or opened, these values follow the quiz: a settings change or a new quiz type during an open run changes new attempts of that run, and sources also change on result pages of finished attempts. The quiz types overview only warns about it (`docs/superpowers/specs/2026-11-12-quiz-types-design.md`)
+- Solution: copy them onto the run at planning or opening like the other run values, with a migration, and read them from the run
+
+### TD-102 Review fixes 2026-11-16: deferred minors — OPEN
+- Where: `app/domain/rate_limit.py`, `app/api/admin_runs.py`, `app/domain/rewards.py`, `app/domain/participants.py`, `app/api/play_switch.py`, `app/api/admin_forms.py`, `app/api/assets/countdown.js`, the deploy gunicorn command, and tests under `tests/`
+- Effect: minor leftovers of the 2026-11-16 final review, none changes behaviour today:
+  - `rate_limit.allow` and `record` are dead code kept as a test patch target
+  - no archived-quiz API test for grading approve/delete, and three identical `except QuizArchived` blocks in `admin_runs`
+  - the A4 test patches `events._handlers` and `is_enabled`
+  - `grant_manual` loads the full grantable list and checks outside the transaction
+  - no entry-point test for a stale heartbeat
+  - the 35 s grace assumes the gunicorn default `graceful_timeout` (30 s) and does not pin it
+  - `find_or_create` treats every `IntegrityError` as a key race
+  - test gaps: switch API `IN_PROGRESS` assert, closed-run submit message, confirm Cancel link, confirm attribute in step/page/preview modes
+  - the `auto_submit` marker stays for the lifetime of the page
+  - the focused question section has no accessible name
+  - the `<details>` split in the first-publication test is fragile
+  - D3 helper tests were written without a RED step
+  - verbose re-exports in `play_switch`, and `admin_forms` re-exports private `_number_help` and `_value_choices`
+- Solution: remove the dead code and the duplicate blocks, pin `--graceful-timeout 30`, narrow the `IntegrityError` handling, move the grant check inside the transaction, add the missing tests, name the focused section, and tidy the re-exports
+
+### TD-103 Full merge of runs into one — OPEN
+- Where: app/domain/results.py (shared board, `QuizRun.board_main`), app/domain/models.py `QuizRun`, `Attempt`, `Participant`; ADR-0065 deferred it, ADR-0007 forbids a run taking over results.
+- Effect: Runs of one quiz can only show one shared scoreboard (ADR-0065); their attempts, participants, rewards and draws stay in each run. An admin who wants one run with everyone in it cannot get it.
+- Solution: Not designed. Before any work a new ADR replacing ADR-0007 has to decide:
+  - whose run rules win: data profile and retention, participant rules, access code, rewards, schedule;
+  - duplicate browsers and nicknames: the same browser or nickname in two runs, and which attempt is official;
+  - immutable entitlements and draw history (ADR-0053): kept, recomputed or refused when a run has them;
+  - what happens to the source run: deleted, archived or left empty;
+  - the source run's exports and private result links: still valid, redirected or broken.
 
 ## RESOLVED
 

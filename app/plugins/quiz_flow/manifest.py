@@ -8,6 +8,9 @@ def _(text: str) -> str:
 
 MANIFEST = {
     "id": "flow.basic",
+    "name": _("Quiz flow"),
+    "description": _("How a participant moves through the questions."),
+    "always_on": True,
     "kind": "plugin",
     "version": "1.0.0",
     "app": "app.plugins.quiz_flow.apps.QuizFlowConfig",

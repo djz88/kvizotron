@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Draw"
+msgstr "Жеребкування"
+
+#: manifest.py
+msgid "Draws reward winners and keeps the history of draws."
+msgstr "Обирає переможців винагород і зберігає історію жеребкувань."
+

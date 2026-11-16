@@ -75,9 +75,13 @@ def test_quiz_state_ignores_test_run():
 
 def test_public_quiz_page_and_landing_never_show_a_test_run():
     quiz = published_quiz()
-    make_test_run(quiz)
+    run = make_test_run(quiz)
     client = FormClient()
-    assert client.get(f"/q/{quiz.slug}?lang=en").status_code == 404
+    page = client.get(f"/q/{quiz.slug}?lang=en")
+    html = page.content.decode()
+    assert page.status_code == 200
+    assert "This quiz is not running right now." in html
+    assert "/start" not in html and str(run.id) not in html
     assert quiz.slug not in client.get("/?lang=en").content.decode()
 
 
@@ -110,7 +114,7 @@ def test_usage_counts_a_test_run_as_needing_its_modules():
     make_test_run(quiz)
     reasons = usage.question_type_usage("question.choice")
     assert reasons
-    assert quiz.slug in reasons[0]
+    assert quiz.slug in reasons[0].text
 
 
 def test_test_copy_is_hidden_from_revision_list_and_latest_published(logged_in):

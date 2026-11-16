@@ -6,6 +6,7 @@ changes only while the run is planned, its texts at any time. Entitlements are h
 cancelled with a reason, manual rewards are granted by hand, and conflicts are shown as messages.
 """
 
+import re
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -13,7 +14,7 @@ import pytest
 
 from app.contracts import ASK_EMAIL, REWARD_SOURCE, REWARD_THRESHOLDS, WINNER_CONTACT
 from app.domain import attempts, authoring, participants, rewards, run_schedule, settings
-from app.domain.models import Attempt, QuizRun, RewardEntitlement, RewardRule
+from app.domain.models import Attempt, Quiz, QuizRun, RewardEntitlement, RewardRule
 from tests.domain.helpers import ADMIN_ID, OPTION_A, published_quiz
 from tests.support.client import FormClient
 from tests.support.clock import freeze
@@ -215,7 +216,9 @@ def test_plan_form_sets_threshold_mode_and_contact(showing_all):
     run = quiz.runs.get()
     assert rewards.of(run) == {REWARD_THRESHOLDS: "all", WINNER_CONTACT: "silent"}
     html = text(showing_all.get(f"/admin/runs/{run.id}/plan?lang=en"))
-    assert '<option value="all" selected>' in html
+    assert re.search(
+        rf'<input type="radio" name="{REWARD_THRESHOLDS}" value="all"[^>]*checked', html
+    )
     # A field left out keeps the run's value instead of taking the quiz's.
     showing_all.post(
         f"/admin/runs/{run.id}/plan?lang=en", {"starts_at": START, WINNER_CONTACT: "warn"}
@@ -373,8 +376,8 @@ def test_advanced_fields_shown_with_showing_all(showing_all):
     quiz = published_quiz()
     html = text(showing_all.get(f"/admin/quizzes/{quiz.id}/plan?lang=en"))
     assert f'name="{REWARD_THRESHOLDS}"' in html and f'name="{WINNER_CONTACT}"' in html
-    scoreboard = html[html.index('id="group-scoreboard"') :]
-    assert f'name="{REWARD_THRESHOLDS}"' in scoreboard
+    rewards_group = html.split('id="group-rewards"')[1].split("</details>")[0]  # AC-168
+    assert f'name="{REWARD_THRESHOLDS}"' in rewards_group
     showing_all.cookies["kvz_admin_view"] = "basic"
     basic = text(showing_all.get(f"/admin/quizzes/{quiz.id}/plan?lang=en"))
     assert f'name="{REWARD_THRESHOLDS}"' not in basic
@@ -435,3 +438,70 @@ def test_add_a_reward_looks_like_a_button(logged_in):
     quiz = published_quiz()
     html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/rewards?lang=en"))
     assert '<summary role="button">Add a reward</summary>' in html
+
+
+ARCHIVED = "This quiz is archived. Restore it to change it."
+
+
+def archived_run(*rules):
+    """A closed run of an archived quiz: only a closed run lets a quiz be archived."""
+    run = authoring.open_run(with_template(*rules), admin_id=ADMIN_ID)
+    return run
+
+
+def archive(run):
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    Quiz.objects.filter(pk=run.quiz_id).update(archived_at=NOW)
+
+
+def test_entitlement_change_on_an_archived_quiz_answers_409(logged_in):
+    run = archived_run(rule_data("participation", name="Účast"))
+    play(run, "a" * 20)
+    row = RewardEntitlement.objects.get()
+    archive(run)
+    address = f"/admin/entitlements/{row.id}?lang=en"
+    for data in ({"action": "hand_over"}, {"action": "cancel", "reason": "Vrátil"}):
+        response = logged_in.post(address, data)
+        assert response.status_code == 409 and ARCHIVED in text(response)
+    row.refresh_from_db()
+    assert row.status == "granted"
+    assert logged_in.get(f"/admin/runs/{run.id}/rewards?lang=en").status_code == 200
+
+
+def test_manual_grant_on_an_archived_quiz_answers_409(logged_in):
+    run = archived_run(rule_data("manual", name="Ručně"))
+    who = play(run, "a" * 20)
+    rule = RewardRule.objects.get(run=run, kind="manual")
+    archive(run)
+    response = logged_in.post(
+        f"/admin/runs/{run.id}/rewards/grant?lang=en",
+        {"rule": str(rule.id), "participant": str(who.id)},
+    )
+    assert response.status_code == 409 and ARCHIVED in text(response)
+    assert not RewardEntitlement.objects.exists()
+
+
+def test_draw_on_an_archived_quiz_answers_409(logged_in):
+    run = archived_run(rule_data("draw", name="Cena"))
+    play(run, "a" * 20)
+    rule = RewardRule.objects.get(run=run, kind="draw")
+    archive(run)
+    response = logged_in.post(f"/admin/runs/{run.id}/draw/{rule.id}?lang=en", {"action": "draw"})
+    assert response.status_code == 409 and ARCHIVED in text(response)
+    assert logged_in.get(f"/admin/runs/{run.id}/draw?lang=en").status_code == 200
+
+
+def test_run_changes_on_an_archived_quiz_answer_409(logged_in):
+    run = archived_run(rule_data("participation", name="Účast"))
+    who = play(run, "a" * 20)
+    archive(run)
+    for address, data in (
+        (f"/admin/runs/{run.id}/scoreboard?lang=en", {"scoreboard_visibility": "during"}),
+        (f"/admin/runs/{run.id}/code?lang=en", {"action": "generate"}),
+        (f"/admin/runs/{run.id}/participants/{who.id}/name?lang=en", {"name": "Nové"}),
+    ):
+        response = logged_in.post(address, data)
+        assert response.status_code == 409 and ARCHIVED in text(response)
+    run.refresh_from_db()
+    assert run.access_code_hash == ""
+    assert logged_in.get(f"/admin/runs/{run.id}?lang=en").status_code == 200

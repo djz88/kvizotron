@@ -1,0 +1,24 @@
+{% macro inline_name(field) %}
+{% set tag = field.tag %}
+{% set wrapper = "div" if tag.startswith("h") else "span" %}
+{% set uid = field.field ~ "-" ~ field.key %}
+<{{ wrapper }} class="inline-name" id="name-{{ uid }}">
+{%- if field.editing %}
+  <form method="post" action="{{ field.save_url }}" class="inline-name-form" hx-post="{{ field.save_url }}" hx-target="closest .inline-name" hx-swap="outerHTML">
+    {{ csrf_input }}
+    {% for key, value in field.hidden.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+    <input type="text" name="{{ field.field }}" value="{{ field.value }}" maxlength="{{ field.max_length }}"{% if field.required %} required{% endif %}{% if field.editing and field.placeholder %} placeholder="{{ field.placeholder }}"{% endif %} autofocus aria-label="{{ field.label }}"{% if field.error %} aria-invalid="true" aria-describedby="name-msg-{{ uid }}"{% endif %}>
+    {%- if field.suffix %}<span class="inline-name-suffix">{{ field.suffix }}</span>{% endif %}
+    <button type="submit">{{ _("Save") }}</button>
+    <a href="{{ field.back_page }}" class="inline-name-cancel secondary outline" role="button" hx-get="{{ field.view_url }}" hx-target="closest .inline-name" hx-swap="outerHTML">{{ _("Cancel") }}</a>
+    {% if field.error %}<p class="inline-name-error" role="alert" id="name-msg-{{ uid }}">{{ field.error }}</p>{% endif %}
+  </form>
+{%- else %}
+  {% if field.bare %}{% elif field.link %}<a href="{{ field.link }}" class="inline-name-text">{{ field.value }}{{ field.suffix }}</a>
+  {%- else %}<{{ tag }} class="inline-name-text">{% if field.value or not field.placeholder %}{{ field.value }}{% else %}<em>{{ field.placeholder }}</em>{% endif %}</{{ tag }}>{% endif %}
+  <a href="{{ field.edit_page }}" class="inline-name-pencil" hx-get="{{ field.edit_url }}" hx-target="closest .inline-name" hx-swap="outerHTML" aria-label="{{ field.pencil_label or _('Edit name: %(name)s', name=field.value) }}" title="{{ field.pencil_label or _('Edit name') }}">✎</a>
+  {% if field.note %}<small class="inline-name-note">{{ field.note }}</small>{% endif %}
+  {% if field.saved %}<small class="inline-name-saved" role="status">{{ _("Saved") }}</small>{% endif %}
+{%- endif %}
+</{{ wrapper }}>
+{% endmacro %}

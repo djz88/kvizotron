@@ -8,12 +8,13 @@ from app.domain import settings
 from app.kernel.manifest import SettingDeclaration
 
 
-def test_groups_are_the_seven_in_order():
+def test_groups_are_the_eight_in_order():
     assert SETTING_GROUPS == (
         "playing",
         "answers",
         "participants",
         "scoreboard",
+        "rewards",
         "data",
         "look",
         "technical",
@@ -31,12 +32,14 @@ def test_basic_settings_are_exactly_the_first_cut():
         "navigation_mode",
         "page_size",
         "attempt_limit",
+        "pass_mark",
         "reveal_moment",
         "repeat_attempts",
         "ask_name",
         "scoreboard_visibility",
         "data_profile",
         "color_palette",
+        "show_hero_logo",
         "time_zone",
     }
 
@@ -49,9 +52,9 @@ def test_basic_settings_are_exactly_the_first_cut():
         ("unfinished_attempt", "playing"),
         ("local_resume", "playing"),
         ("photo_visibility", "answers"),
-        ("none_option", "answers"),
+        ("none_option", "playing"),
         ("duplicate_names", "participants"),
-        ("revision_mode", "scoreboard"),
+        ("revision_mode", "technical"),
         ("official_attempt", "scoreboard"),
         ("retention_period", "data"),
         ("announce_planned", "look"),
@@ -83,3 +86,13 @@ def test_manifest_refuses_an_unknown_group():
 def test_manifest_refuses_an_unknown_level():
     with pytest.raises(ValidationError):
         _declaration(level="expert")
+
+
+def test_rewards_none_option_and_revision_mode_moved():
+    """AC-168: rewards have their own group; two settings sit where they belong."""
+    group = {key: definition.group for key, definition in settings.CATALOGUE.items()}
+    assert {group[k] for k in ("reward_source", "reward_thresholds", "winner_contact")} == {
+        "rewards"
+    }
+    assert group["none_option"] == "playing"
+    assert group["revision_mode"] == "technical"

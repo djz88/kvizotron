@@ -16,11 +16,14 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import pgettext
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from app.api.admin_auth import admin_required
-from app.api.admin_forms import RewardRuleForm
+from app.api.admin_common import uuid_or_404
+from app.api.admin_forms import RewardNameForm, RewardRuleForm
+from app.api.admin_quizzes import archived_message
 from app.api.admin_workspace import workspace
+from app.api.inline_name import NameField, render_field, wants_partial
 from app.api.rendering import page
 from app.contracts import REWARD_RUN_KEYS, REWARD_SOURCE
 from app.domain import authoring, draws, results, rewards, settings
@@ -86,19 +89,72 @@ def _new_form(quiz: Quiz, data: Any = None) -> RewardRuleForm:
     )
 
 
+def _default_name(rule: RewardRule) -> str:
+    return str(((rule.texts_json or {}).get(rule.quiz.default_locale) or {}).get("name") or "")
+
+
+def _shows_default_name(rule: RewardRule, locale: str) -> bool:
+    """The summary shows the default-language name unless the admin's language has its own."""
+    own = ((rule.texts_json or {}).get(locale) or {}).get("name")
+    return locale == rule.quiz.default_locale or not own
+
+
+def _host_url(rule: RewardRule) -> str:
+    if rule.run_id is not None:
+        return reverse("admin_run_rewards", args=[rule.run_id])
+    return reverse("admin_quiz_rewards", args=[rule.quiz_id])
+
+
+def _name_field(
+    rule: RewardRule,
+    locale: str,
+    *,
+    editing: bool = False,
+    value: str | None = None,
+    error: str = "",
+    saved: bool = False,
+) -> NameField:
+    """The name in the quiz's default language; the pencil sits beside the row's summary."""
+    host, name_url = _host_url(rule), reverse("admin_reward_rule_name", args=[rule.id])
+    return NameField(
+        label=_("Name"),
+        field="name",
+        key=str(rule.id),
+        value=_default_name(rule) if value is None else value,
+        save_url=name_url,
+        edit_url=f"{name_url}?edit=1",
+        view_url=name_url,
+        edit_page=f"{host}?edit={rule.id}#reward-{rule.id}",
+        back_page=f"{host}#reward-{rule.id}",
+        max_length=rewards.NAME_LENGTH,
+        editing=editing,
+        error=error,
+        saved=saved,
+        bare=True,
+        mirror=f"reward-name-{rule.id}" if _shows_default_name(rule, locale) else "",
+    )
+
+
 def _rule_rows(
     rules: list[RewardRule],
     locale: str,
     locked: bool,
     bound: tuple[RewardRule, RewardRuleForm] | None,
+    editing: str = "",
+    name_field: NameField | None = None,
 ) -> list[dict[str, Any]]:
     kinds = _kind_labels()
     rows = []
     for rule in rules:
         form = bound[1] if bound and bound[0].pk == rule.pk else _rule_form(rule, locked)
+        if name_field is not None and name_field.key == str(rule.pk):
+            field = name_field
+        else:
+            field = _name_field(rule, locale, editing=editing == str(rule.pk))
         rows.append(
             {
                 "rule": rule,
+                "name_field": field,
                 "form": form,
                 "name": rewards.text(rule, rule.quiz, locale, "name"),
                 "description": rewards.text(rule, rule.quiz, locale, "description"),
@@ -127,11 +183,19 @@ def _quiz_page(
     bound: tuple[RewardRule, RewardRuleForm] | None = None,
     error: str | None = None,
     status: int = 200,
+    name_field: NameField | None = None,
 ) -> HttpResponse:
     locale = request.locale  # type: ignore[attr-defined]
     source = settings.resolve(REWARD_SOURCE, quiz=quiz)
     context = workspace(quiz, "rewards", error) | {
-        "rules": _rule_rows(rewards.template_of(quiz), locale, False, bound),
+        "rules": _rule_rows(
+            rewards.template_of(quiz),
+            locale,
+            False,
+            bound,
+            request.GET.get("edit", "") if request.method == "GET" else "",
+            name_field,
+        ),
         "new_form": new_form or _new_form(quiz),
         "new_action": reverse("admin_quiz_reward_new", args=[quiz.id]),
         "source": settings.CATALOGUE[REWARD_SOURCE].value_labels[source],
@@ -224,12 +288,14 @@ def _run_page(
     bound: tuple[RewardRule, RewardRuleForm] | None = None,
     error: str | None = None,
     status: int = 200,
+    name_field: NameField | None = None,
 ) -> HttpResponse:
     locale = request.locale  # type: ignore[attr-defined]
     quiz = run.quiz
     planned = run.status == QuizRun.Status.SCHEDULED
     rules = rewards.rules_of(run)
-    rows = _rule_rows(rules, locale, not planned, bound)
+    editing = request.GET.get("edit", "") if request.method == "GET" else ""
+    rows = _rule_rows(rules, locale, not planned, bound, editing, name_field)
     numbers = results.participant_numbers(run)
     context = workspace(quiz, "runs", error) | {
         "run": run,
@@ -341,14 +407,47 @@ def reward_rule(request: HttpRequest, rule_id: UUID) -> HttpResponse:
     return _rule_saved(rule)
 
 
+@admin_required
+@require_http_methods(["GET", "POST"])
+def reward_rule_name(request: HttpRequest, rule_id: UUID) -> HttpResponse:
+    """The name of a reward on the spot (AC-160): only its text in the default language."""
+    rule = get_object_or_404(
+        RewardRule.objects.select_related("quiz", "run").exclude(run__kind=QuizRun.Kind.TEST),
+        pk=rule_id,
+    )
+    locale = request.locale  # type: ignore[attr-defined]
+    if request.method == "GET":
+        editing = request.GET.get("edit") == "1"
+        if not wants_partial(request):
+            field = _name_field(rule, locale)
+            return redirect(field.edit_page if editing else field.back_page)
+        return render_field(request, _name_field(rule, locale, editing=editing))
+    typed = request.POST.get("name", "")
+    form = RewardNameForm(request.POST)
+    message, status = "", 400
+    if not form.is_valid():
+        message = " ".join(form.errors["name"])
+    else:
+        default = rule.quiz.default_locale
+        texts = {code: dict(row) for code, row in (rule.texts_json or {}).items()}
+        texts.setdefault(default, {})["name"] = form.cleaned_data["name"]
+        try:
+            rewards.save_texts(rule, texts, admin_id=str(request.user.pk))
+        except authoring.QuizArchived:
+            message, status = _archived(), 409
+        except rewards.RuleInvalid:
+            message = _("The name is too long.")
+    if message:
+        field = _name_field(rule, locale, editing=True, value=typed, error=message)
+        if wants_partial(request):
+            return render_field(request, field, status=status)
+        return _rule_page(request, rule, name_field=field, status=status)
+    if wants_partial(request):
+        return render_field(request, _name_field(rule, locale, saved=True))
+    return _rule_saved(rule)
+
+
 # Entitlements ----------------------------------------------------------------------------------
-
-
-def _uuid(value: str) -> UUID:
-    try:
-        return UUID(value)
-    except ValueError as exc:
-        raise Http404 from exc
 
 
 @admin_required
@@ -368,6 +467,8 @@ def entitlement(request: HttpRequest, entitlement_id: UUID) -> HttpResponse:
             rewards.cancel(row, request.POST.get("reason", ""), admin_id=admin_id)
         else:
             return HttpResponseBadRequest()
+    except authoring.QuizArchived:
+        return _run_page(request, run, error=archived_message(), status=409)
     except rewards.RuleInvalid as refused:
         if refused.code == "reason":
             error = _("Enter a reason, at most 200 characters.")
@@ -384,16 +485,18 @@ def reward_grant(request: HttpRequest, run_id: UUID) -> HttpResponse:
     run = _run(run_id)
     rule = get_object_or_404(
         RewardRule,
-        pk=_uuid(request.POST.get("rule", "")),
+        pk=uuid_or_404(request.POST.get("rule", "")),
         run=run,
         kind=RewardRule.Kind.MANUAL,
     )
     participant = get_object_or_404(
-        Participant, pk=_uuid(request.POST.get("participant", "")), run=run
+        Participant, pk=uuid_or_404(request.POST.get("participant", "")), run=run
     )
     try:
         rewards.grant_manual(rule, participant, admin_id=str(request.user.pk))
-    except rewards.RuleInvalid, rewards.RuleLocked:
+    except authoring.QuizArchived:
+        return _run_page(request, run, error=archived_message(), status=409)
+    except rewards.RuleInvalid, rewards.RuleLocked, rewards.NotGrantable:
         return _run_page(request, run, error=_("This reward cannot be granted."), status=409)
     return redirect("admin_run_rewards", run.id)
 
@@ -403,6 +506,7 @@ def reward_grant(request: HttpRequest, run_id: UUID) -> HttpResponse:
 
 def _draw_refusals() -> dict[str, str]:
     return {
+        "plugin_disabled": _("The module that draws winners is disabled."),
         "run_not_closed": _("A draw is possible only after the run has closed."),
         "stateless": _("This run keeps no scores, so there is nobody to draw from."),
         "grading_pending": _("Some answers still wait for grading. Grade them before the draw."),
@@ -437,9 +541,13 @@ def _person(participant: Participant | None, run: QuizRun, locale: str, numbers:
 
 
 def _entry_row(entry: DrawEntry, run: QuizRun, locale: str, numbers: dict) -> dict[str, Any]:
-    return {"id": entry.id, "position": entry.position} | _person(
-        entry.participant, run, locale, numbers
+    # The pseudonym is what stays of a person whose data were deleted (D3).
+    person = (
+        {"name": entry.pseudonym, "email": ""}
+        if entry.participant is None
+        else _person(entry.participant, run, locale, numbers)
     )
+    return {"id": entry.id, "position": entry.position} | person
 
 
 def _draw_section(
@@ -463,7 +571,7 @@ def _draw_section(
     history = [
         {
             "when": row.created_at,
-            "admin": admins.get(row.admin_id, row.admin_id),
+            "admin": admins.get(row.admin_id, _("a deleted admin")),
             "action": labels.get(row.action, row.action),
             "reason": row.reason,
             "count": row.eligible_count,
@@ -527,7 +635,7 @@ def run_draw_action(request: HttpRequest, run_id: UUID, rule_id: UUID) -> HttpRe
         elif action in ("move_up", "substitute"):
             entry = get_object_or_404(
                 DrawEntry,
-                pk=_uuid(request.POST.get("entry", "")),
+                pk=uuid_or_404(request.POST.get("entry", "")),
                 draw__rule=rule,
                 role=DrawEntry.Role.WINNER,
             )
@@ -537,6 +645,8 @@ def run_draw_action(request: HttpRequest, run_id: UUID, rule_id: UUID) -> HttpRe
             draws.set_public(rule, action == "publish", admin_id=admin_id)
         else:
             return HttpResponseBadRequest()
+    except authoring.QuizArchived:
+        return _draw_page(request, run, error=archived_message(), status=409)
     except draws.DrawRefused as refused:
         status = 400 if refused.reason == "reason_missing" else 409
         error = _draw_refusals().get(refused.reason, refused.reason)

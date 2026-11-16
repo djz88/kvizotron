@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Deletion trail"
+msgstr "Záznam mazání"
+
+#: manifest.py
+msgid "Records every deletion of a run's data."
+msgstr "Zaznamenává každé smazání dat běhu."
+

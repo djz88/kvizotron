@@ -1,0 +1,17 @@
+{#- Two lines: the organisation's (its text and contact) and the application's, which cannot be turned off.
+    Each part stays whole, so a line wraps only between parts. -#}
+<footer class="site-footer">
+  {%- if branding.footer or branding.contact_email %}
+  <p class="site-footer-line">
+    {%- if branding.footer %}<span class="site-footer-part">{{ branding.footer }}</span>{% endif -%}
+    {%- if branding.footer and branding.contact_email %} · {% endif -%}
+    {%- if branding.contact_email %}<span class="site-footer-part">{{ _("Need help? Write to") }} <a href="{{ branding.contact_email|mailto }}">{{ branding.contact_email }}</a>.</span>{% endif -%}
+  </p>
+  {%- endif %}
+  <p class="site-footer-line">
+    <span class="site-footer-part"><a href="{{ url('about') }}?lang={{ locale }}">GPL-3.0-or-later</a></span> ·
+    <span class="site-footer-part site-footer-badges">{% for tech, src in footer_badges %}<img src="{{ src }}" alt="{{ tech }}" width="64" height="20">{% endfor %}</span> ·
+    <span class="site-footer-part"><a href="{{ url('about') }}?lang={{ locale }}">{{ _("Runs on Kvízotron") }}{% if app_version %} {{ app_version }}{% endif %}</a></span> ·
+    <span class="site-footer-part">{{ footer_year }}</span>
+  </p>
+</footer>

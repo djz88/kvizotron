@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Admin login"
+msgstr "Přihlášení správců"
+
+#: manifest.py
+msgid "Accounts of the administrators."
+msgstr "Účty správců."
+

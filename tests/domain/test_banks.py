@@ -121,3 +121,94 @@ def test_bank_of_an_archived_quiz_cannot_be_deleted():
     with pytest.raises(banks.BankInUse) as error:
         banks.delete(bank, admin_id=ADMIN_ID)
     assert error.value.quizzes == ["archivovany"]
+
+
+def test_language_counts():
+    """AC-162: the languages a bank has, with the number of questions complete in each."""
+    bank = make_bank()
+    add_bank_question(bank, locales=("cs",))
+    add_bank_question(bank, locales=("cs", "uk"))
+    assert banks.language_counts(bank, ALL) == {"cs": 2, "uk": 1}
+    assert banks.language_counts(make_bank("Prázdná"), ALL) == {}
+
+
+def test_levels_of_defaults_to_normal_and_ignores_case():
+    """AC-163: a question with no level tag counts as normal; case and spaces do not matter."""
+    assert banks.levels_of(["EU"]) == {"normal"}
+    assert banks.levels_of([]) == {"normal"}
+    assert banks.levels_of([" Hard "]) == {"hard"}
+    assert banks.levels_of(["easy", "EU"]) == {"easy"}
+
+
+def test_two_levels_on_one_question_are_refused():
+    """AC-164: a question has at most one of the level tags."""
+    with pytest.raises(banks.MoreThanOneLevel):
+        banks.check_one_level(["easy", "hard"])
+    banks.check_one_level(["easy", "EASY"])
+    banks.check_one_level(["EU"])
+    bank = make_bank()
+    with pytest.raises(banks.MoreThanOneLevel):
+        add_bank_question(bank, tags=("easy", "hard"))
+    assert not BankQuestion.objects.exists()
+
+
+def level_bank():
+    bank = make_bank()
+    for tags in (("easy",), ("hard",), ("EU",), ("normal",)):
+        add_bank_question(bank, tags=tags)
+    return bank
+
+
+def level_row(bank, difficulty=None, **fields):
+    row = {"bank_id": str(bank.id), "tag": "", "points": 1} | fields
+    if difficulty is not None:
+        row["difficulty"] = difficulty
+    return row
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "expected"),
+    [("easy", 1), ("hard", 1), ("normal", 2), ("", 4), (None, 4)],
+)
+def test_a_row_with_a_level_draws_only_that_level(difficulty, expected):
+    """AC-163: a level on the row keeps only the questions of that level."""
+    row = level_row(level_bank(), difficulty)
+    assert banks.usable_count(row, ["cs"]) == (expected, expected)
+    assert len(banks.pool(row, ["cs"])) == expected
+
+
+def test_level_and_tag_must_both_match():
+    bank = make_bank()
+    add_bank_question(bank, tags=("EU", "easy"))
+    add_bank_question(bank, tags=("US", "easy"))
+    assert banks.usable_count(level_row(bank, "easy", tag="EU"), ["cs"]) == (1, 1)
+
+
+def test_a_question_with_two_level_tags_saved_earlier_matches_both():
+    bank = make_bank()
+    question_id = add_bank_question(bank)
+    BankQuestion.objects.filter(pk=question_id).update(tags=["easy", "hard"])
+    assert banks.usable_count(level_row(bank, "easy"), ["cs"]) == (1, 1)
+    assert banks.usable_count(level_row(bank, "hard"), ["cs"]) == (1, 1)
+    assert banks.usable_count(level_row(bank, "normal"), ["cs"]) == (0, 0)
+
+
+def test_level_choices_start_with_the_random_mix():
+    assert [value for value, _label in banks.level_choices()] == ["", "easy", "normal", "hard"]
+    assert banks.level_label("") == ""
+    assert banks.level_label("hard") == dict(banks.level_choices())["hard"]
+
+
+def test_level_labels_live_in_their_own_translation_context():
+    from django.utils.translation import gettext, override
+
+    with override("cs"):
+        assert banks.level_label("normal") == "Normální"
+        assert gettext("Normal") == "Normal"  # the bare word is not taken by the level label
+
+
+def test_used_by_names_the_quizzes_that_draw_from_a_bank():
+    bank = bank_with(1)
+    assert banks.used_by(bank) == []
+    add_row(make_quiz(slug="kviz-a"), bank)
+    assert banks.used_by(bank) == ["kviz-a"]

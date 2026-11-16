@@ -5,7 +5,7 @@ import re
 import secrets
 import time
 from collections.abc import Callable, Collection, Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -18,9 +18,19 @@ from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 
-from app.api import code_limit, i18n, scoreboard
+from app.api import i18n, pass_mark, rate_limit, scoreboard
+from app.api.play_errors import (
+    COUNTED_MESSAGES,
+    MESSAGES,
+    STATUS,
+    _error,
+    _is_htmx,
+    _limited,
+    _message_fragment,
+    message_context,
+)
 from app.api.rendering import (
     delete_images,
     flow_options,
@@ -34,16 +44,16 @@ from app.api.rendering import (
     result_sources,
     reveal_context,
 )
-from app.contracts import ASK_WHEN, LOCAL_RESUME, MAX_PHOTO_BYTES, ImageRefused
+from app.contracts import AFTER_PASS, ASK_WHEN, LOCAL_RESUME, MAX_PHOTO_BYTES, ImageRefused
 from app.domain import (
     access_codes,
     attempts,
     data_policy,
     grading,
     participants,
+    results,
     reveal,
     rewards,
-    settings,
     tokens,
     visibility,
 )
@@ -52,68 +62,7 @@ from app.kernel import registry
 
 KEY = re.compile(r"[A-Za-z0-9_-]{8,64}")
 SUBMIT_ROUTE = re.compile(r"/a/([0-9a-fA-F-]{36})/submit")
-STOP_POLLING = 286
-# A photo sent as a run ends still gets a real answer. Later than this its body stays unread.
-LATE_PHOTO_WINDOW = timedelta(minutes=10)
-STATUS = {
-    "invalid_request": 400,
-    "invalid_answer": 400,
-    "invalid_token": 403,
-    "not_found": 404,
-    "run_closed": 409,
-    "run_not_started": 409,
-    "already_submitted": 409,
-    "submission_key_used": 409,
-    "attempt_switched": 409,
-    "attempt_expired": 410,
-    "attempt_gone": 410,
-    "revision_unavailable": 503,
-    "reveal_not_allowed": 403,
-    "not_in_attempt": 403,
-    "test_link_ended": 410,
-    "already_played": 409,
-    "time_is_up": 410,
-    "attempt_closed": 409,
-    "name_required": 422,
-    "name_too_long": 422,
-    "email_required": 422,
-    "email_invalid": 422,
-    "name_taken": 409,
-    "code_required": 403,
-    "not_in_run": 403,
-    "resume_off": 409,
-}
 IDENTITY_CODES = ("name_required", "name_too_long", "email_required", "email_invalid", "name_taken")
-MESSAGES = {
-    "invalid_request": _("The form could not be read. Please try again."),
-    "invalid_answer": _("An answer could not be read. Please check your answers."),
-    "invalid_token": _("This attempt is not valid. Please start again."),
-    "not_found": _("This attempt does not exist."),
-    "run_closed": _("This run has ended."),
-    "run_not_started": _("This quiz has not started yet."),
-    "already_submitted": _("This attempt has already been submitted."),
-    "submission_key_used": _("This attempt has already been submitted."),
-    "attempt_switched": _(
-        "This attempt was replaced by a newer version of the quiz. Please reload the page."
-    ),
-    "attempt_expired": _("The time for this attempt has run out."),
-    "attempt_gone": _("This attempt has already been submitted or has ended."),
-    "revision_unavailable": _("This quiz is temporarily unavailable."),
-    "reveal_not_allowed": _("This quiz does not show answers now."),
-    "not_in_attempt": _("This question is not part of your attempt."),
-    "test_link_ended": _("This test has ended."),
-    "already_played": _("You have already played this run in this browser."),
-    "time_is_up": _("Time is up for your attempt. It cannot be started again."),
-    "attempt_closed": _("This attempt was closed because you started again."),
-    "name_required": _("Please enter your name."),
-    "name_too_long": _("The name can have at most 40 characters."),
-    "email_required": _("Please enter your e-mail."),
-    "email_invalid": _("The e-mail address does not look right."),
-    "name_taken": _("This name is already used in this run. Please choose another one."),
-    "code_required": _("This run needs an access code. Reload the page and enter it."),
-    "not_in_run": _("This attempt belongs to another run."),
-    "resume_off": _("This quiz does not let you continue an attempt on this device."),
-}
 DROP_COPY = frozenset(
     {
         "not_in_run",
@@ -128,10 +77,6 @@ DROP_COPY = frozenset(
         "test_link_ended",
     }
 )
-
-
-def _is_htmx(request: HttpRequest) -> bool:
-    return request.headers.get("HX-Request") == "true"
 
 
 def _no_store(response: HttpResponse) -> HttpResponse:
@@ -149,21 +94,17 @@ def _respond(
     return page(request, "public/play.html", context | {"partial": partial}, locale)
 
 
-def _error(
-    request: HttpRequest, code: str, locale: str, extra: Mapping[str, Any] | None = None
-) -> HttpResponse:
-    context = {"message": MESSAGES[code], **(extra or {})}
-    if _is_htmx(request):
-        return _message_fragment(context, locale, STATUS[code])
-    context |= {"partial": "public/_error_page.html"}
-    return page(request, "public/play.html", context, locale, status=STATUS[code])
-
-
-def _message_fragment(context: dict[str, Any], locale: str, status: int) -> HttpResponse:
-    translation.activate(locale)
-    response = HttpResponse(render_to_string("public/_error.html", context), status=status)
-    response["HX-Retarget"] = "#play-message"
-    return response
+def start_refusal(
+    run: QuizRun, participant: Participant | None, locale: str
+) -> dict[str, Any] | None:
+    """The message a start would meet, for a page that should not offer it; None when it is open."""
+    decision = participants.start_decision(run, participant)
+    if decision == "played":
+        code, extra = played_result(run, participant, locale)
+        return message_context(code, locale, extra)
+    if decision == "time_up":
+        return message_context("time_is_up", locale)
+    return None
 
 
 def accepts_upload(request: HttpRequest) -> bool:
@@ -184,7 +125,7 @@ def accepts_upload(request: HttpRequest) -> bool:
         return False
     if attempt.status == Attempt.Status.IN_PROGRESS and attempt.run.status != QuizRun.Status.OPEN:
         closed_at = attempt.run.closed_at
-        if closed_at is None or timezone.now() > closed_at + LATE_PHOTO_WINDOW:
+        if closed_at is None or timezone.now() > closed_at + attempts.LATE_UPLOAD_WINDOW:
             return False
     return uploads(attempt)
 
@@ -255,7 +196,7 @@ def _play_context(
     """The questions page, the same for a new attempt and for one that carries on."""
     attempt = started.attempt
     return {
-        "palette_quiz": run.quiz,
+        "branding_quiz": run.quiz,
         "mode_bar": mode_bar_of(run),
         "attempt": attempt,
         "attempt_token": started.token,
@@ -274,6 +215,8 @@ def _play_context(
 @csrf_exempt
 @require_POST
 def start(request: HttpRequest, run_id: UUID) -> HttpResponse:
+    if (refused := _limited(request, "start")) is not None:
+        return refused
     run = QuizRun.all_kinds.filter(pk=run_id).select_related("current_revision").first()
     if run is None:
         return _error(request, "not_found", request.locale)  # type: ignore[attr-defined]
@@ -309,7 +252,8 @@ def start(request: HttpRequest, run_id: UUID) -> HttpResponse:
         return _error(request, "revision_unavailable", locale)
     except attempts.AttemptError as error:
         if error.code == "already_played":
-            return _error(request, error.code, locale, played_result(participant))
+            code, extra = played_result(run, participant, locale)
+            return _error(request, code, locale, extra)
         return _error(request, error.code, locale)
     context = _play_context(
         run,
@@ -399,24 +343,24 @@ def enter_code(request: HttpRequest, run_id: UUID) -> HttpResponse:
         return redirect(reverse("test_link", args=[run.test_link.token]))
     if not run.access_code_hash:  # nothing to guess, so nothing to count
         return redirect(reverse("quiz_run", args=[run.quiz.slug, run.id]))
-    ip = code_limit.client_ip(request)
-    if not code_limit.allow(ip, time.monotonic()):
+    ip = rate_limit.client_ip(request)
+    if not rate_limit.try_acquire("code", ip, time.monotonic()):
         response = public.quiz_page(
             request,
             run,
             code_error=_("Too many wrong codes. Please try again in a minute."),
             status=429,
         )
-        response["Retry-After"] = "60"
+        response["Retry-After"] = rate_limit.retry_after()
         return response
     if not access_codes.matches(run, request.POST.get("code", "")):
-        code_limit.failed(ip, time.monotonic())
         return public.quiz_page(
             request,
             run,
             code_error=_("The access code is not right. Please try again."),
             status=403,
         )
+    rate_limit.release("code", ip)  # only wrong guesses keep their slot
     response = redirect(reverse("quiz_run", args=[run.quiz.slug, run.id]))
     _set_cookie(
         response,
@@ -458,19 +402,41 @@ def rewards_shown(attempt: Attempt, locale: str) -> list[rewards.ShownReward]:
     return rewards.shown(participant, locale)
 
 
-def played_result(participant: Participant | None) -> dict[str, Any]:
-    """The refusal's extra lines: the person's own result when there is one."""
-    context: dict[str, Any] = {"one_per_browser": True}
-    finished = (
-        Attempt.objects.filter(participant=participant, status__in=Attempt.FINISHED)
-        .order_by("-submitted_at")
-        .first()
-        if participant is not None
-        else None
-    )
-    if finished is not None:
-        context["result_url"] = reverse("result", args=[tokens.issue_result(finished.id)])
-    return context
+def played_result(
+    run: QuizRun, participant: Participant | None, locale: str
+) -> tuple[str, dict[str, Any]]:
+    """Which refusal this is, and its extra lines: the person's own kept result when there is one.
+
+    A pass that ends the test comes before the limit; without either it is "one per browser".
+    """
+    found = results.kept(participant) if participant is not None else None
+    rules = participants.rules_of(run)
+    code = "already_played"
+    extra: dict[str, Any] = {"one_per_browser": True}
+    if results.kept_passed(found, run) is True and rules.get(AFTER_PASS) == "stop":
+        code, extra = "already_passed", {}
+    elif participants.attempts_left(run, participant) == 0:
+        code, extra = "attempts_used", {"count": participants.limit_of(rules)}
+    if found is not None:
+        extra["result_url"] = reverse("result", args=[tokens.issue_result(found.attempt.id)])
+        line = pass_mark.line(
+            found.figures.score,
+            found.figures.max_score,
+            found.waiting,
+            results.pass_mark(run),
+            locale,
+        )
+        if line:
+            extra["result_line"] = line
+    elif participant is not None:  # nothing scored: still the link to the latest finished one
+        latest = (
+            Attempt.objects.filter(participant=participant, status__in=Attempt.FINISHED)
+            .order_by("-submitted_at")
+            .first()
+        )
+        if latest is not None:
+            extra["result_url"] = reverse("result", args=[tokens.issue_result(latest.id)])
+    return code, extra
 
 
 def _answers(request: HttpRequest) -> dict[str, dict[str, str | list[str]]]:
@@ -504,12 +470,15 @@ def with_files(
     answers: dict[str, Any],
     read: Callable[[bytes, list[str]], str],
     lenient: bool = False,
+    stored: list[str] | None = None,
 ) -> list[str]:
     """Hands each file to `read` for an asset id. Returns the ids; a refusal leaves none.
 
     `lenient` is for the automatic submission: a refused file is left out and the rest stay.
+    A caller that passes `stored` owns that list and finds every id written in it, also when
+    this raises anything but a refusal, so it can remove them.
     """
-    stored: list[str] = []
+    stored = [] if stored is None else stored
     try:
         for question in attempts.questions_of(attempt):
             for field in attempts.file_fields(question):
@@ -601,7 +570,7 @@ def _try_again(
     answers = _answers(request)
     without_files(attempt, answers)
     context = {
-        "palette_quiz": attempt.run.quiz,
+        "branding_quiz": attempt.run.quiz,
         "mode_bar": mode_bar_of(attempt.run),
         "attempt": attempt,
         "attempt_token": request.POST.get("attempt_token", ""),
@@ -626,7 +595,7 @@ def _revealed(attempt: Attempt, answers: Mapping[str, Any], locale: str) -> list
     A repeated submission may carry anything, and its score is already stored.
     """
     flow = attempts.flow_of(attempt)
-    if flow["moment"] == settings.RevealMoment.NEVER:
+    if not reveal.shows_answers(attempt, timezone.now()):
         return []
     rows = []
     for question in attempts.questions_of(attempt):
@@ -657,6 +626,8 @@ def _result_link(
 @csrf_exempt
 @require_POST
 def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
+    if (refused := _limited(request, "submit")) is not None:
+        return refused
     received_at = received_time(request)
     automatic = request.POST.get("auto_submit") == "1"
     attempt = Attempt.objects.filter(pk=attempt_id).select_related("revision", "run").first()
@@ -686,8 +657,13 @@ def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
         if request.FILES and attempt.status == Attempt.Status.IN_PROGRESS:
             attempts.verify_open(attempt_id, token, received_at)
             with translation.override(locale):
-                stored = with_files(
-                    request, attempt, answers, _store_photo(attempt), lenient=automatic
+                with_files(
+                    request,
+                    attempt,
+                    answers,
+                    _store_photo(attempt),
+                    lenient=automatic,
+                    stored=stored,
                 )
         result = attempts.submit(
             attempt_id,
@@ -724,8 +700,9 @@ def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
     except registry.UnknownPort:
         return _error(request, "revision_unavailable", locale)
     form = identity_form(attempt)
+    link = _result_link(attempt, result, form is not None)
     context = {
-        "palette_quiz": attempt.run.quiz,
+        "branding_quiz": attempt.run.quiz,
         "mode_bar": mode_bar_of(attempt.run),
         "revealed": revealed,
         "earned": result.earned_points,
@@ -736,66 +713,24 @@ def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
         "pending": result.pending,
         "time_ran_out": automatic,
         "identity_form": form,
-        "result_link": _result_link(attempt, result, form is not None),
+        "result_link": link,
+        "after_close_note": reveal.after_close_note(attempt, locale)
+        if link or attempt.run.kind == QuizRun.Kind.TEST
+        else "",
         "stateless": data_policy.is_stateless(data_policy.profile_of_attempt(attempt)),
         "remember_quiz": attempt.run.quiz.slug if attempt.run.kind == QuizRun.Kind.NORMAL else "",
         "rewards": rewards_shown(attempt, locale),
         **scoreboard.place_context(attempt),
+        **pass_mark.context(
+            attempt,
+            locale,
+            score=result.earned_points,
+            maximum=result.max_points,
+            pending=result.pending,
+        ),
     }
     response = _respond(request, "public/_result.html", context, locale)
     return _no_store(response) if form is not None else response
-
-
-@csrf_exempt
-@require_POST
-def check(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
-    """One question's reveal as a fragment. Only the script asks for it, and nothing is stored."""
-    attempt = Attempt.objects.filter(pk=attempt_id).select_related("revision").first()
-    if attempt is None:
-        code = attempts.missing_code(attempt_id, request.POST.get("attempt_token", ""))
-        return _error(request, code, request.locale)  # type: ignore[attr-defined]
-    snapshot = attempt.revision.snapshot_json
-    locale = _locale(request, snapshot["locales"], snapshot["default_locale"])
-    if locale is None:
-        return _error(request, "invalid_request", snapshot["default_locale"])
-    question_id = request.POST.get("check_question", "")
-    try:
-        question, level = attempts.check(
-            attempt_id, request.POST.get("attempt_token", ""), question_id
-        )
-        answers = _answers(request)
-        without_files(attempt, answers)
-        answer = answers.get(question_id)
-        answer = None if reveal.is_blank(answer) else answer
-        revealed = reveal.of_question(question, answer, level, locale)
-        row = reveal_context(
-            question, revealed, answer, locale, with_prompt=False, quiz=attempt.run.quiz
-        )
-    except registry.UnknownPort:
-        return _error(request, "revision_unavailable", locale)
-    except attempts.AttemptError as error:
-        return _error(request, error.code, locale)
-    translation.activate(locale)
-    return HttpResponse(render_to_string("public/_reveal.html", {"revealed": row}, request))
-
-
-@require_GET
-def revision_status(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
-    """Polled while playing. Status 286 tells HTMX to stop, 204 to leave the page as it is."""
-    attempt = Attempt.objects.filter(pk=attempt_id).select_related("run", "revision").first()
-    if (
-        attempt is None
-        or attempt.status in Attempt.FINISHED
-        or attempt.run.status != QuizRun.Status.OPEN
-    ):
-        return HttpResponse(status=STOP_POLLING)
-    if not attempts.must_switch(attempt):
-        return HttpResponse(status=204)
-    snapshot = attempt.revision.snapshot_json
-    locale = i18n.negotiate(request, snapshot["locales"], snapshot["default_locale"])
-    translation.activate(locale)
-    context = {"attempt": attempt}
-    return HttpResponse(render_to_string("public/_switch_notice.html", context, request))
 
 
 @csrf_exempt
@@ -809,39 +744,14 @@ def attempt_time(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
     return JsonResponse({"remaining": left})
 
 
-@csrf_exempt
-@require_POST
-def switch(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
-    attempt = Attempt.objects.filter(pk=attempt_id).select_related("revision").first()
-    if attempt is None:
-        code = attempts.missing_code(attempt_id, request.POST.get("attempt_token", ""))
-        return _error(request, code, request.locale)  # type: ignore[attr-defined]
-    snapshot = attempt.revision.snapshot_json
-    locale = _locale(request, snapshot["locales"], snapshot["default_locale"])
-    if locale is None:
-        return _error(request, "invalid_request", snapshot["default_locale"])
-    token = request.POST.get("attempt_token", "")
-    try:
-        answers = _answers(request)
-        without_files(attempt, answers)
-        result = attempts.switch(attempt_id, token, answers)
-        current = result.started.attempt.revision.snapshot_json
-        locale = i18n.negotiate(request, current["locales"], current["default_locale"])
-        questions = _questions(result.started.attempt, locale, result.answers, result.changed)
-    except registry.UnknownPort:
-        return _error(request, "revision_unavailable", locale)
-    except attempts.AttemptError as error:
-        return _error(request, error.code, locale)
-    context = {
-        "palette_quiz": attempt.run.quiz,
-        "mode_bar": mode_bar_of(attempt.run),
-        "attempt": result.started.attempt,
-        "attempt_token": result.started.token,
-        "submission_key": result.started.submission_key,
-        "questions": questions,
-        "flow": flow_options(attempts.flow_of(result.started.attempt)),
-        "uploads": uploads(result.started.attempt),
-        "identity": _identity_of_form(request, attempt),
-        **time_context(result.started.attempt),
-    }
-    return _respond(request, "public/_questions.html", context, locale)
+# Names that moved to the split modules and are still imported from here (not a star-import list).
+__all__ = [
+    "COUNTED_MESSAGES",
+    "MESSAGES",
+    "STATUS",
+    "_error",
+    "_is_htmx",
+    "_limited",
+    "_message_fragment",
+    "message_context",
+]

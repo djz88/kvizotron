@@ -1,8 +1,9 @@
 {% extends "public/base.html" %}
 {% block content %}
 <div class="hero">
-  <img class="about-logo" src="/assets/logo.svg" alt="" width="96" height="96">
-  <h1>{{ _("Turn on your brain. Start Kvízotron.") }}</h1>
+  {% if branding.show_hero_logo %}{% with width=144, height=50, alt="" %}{% include "public/_hero_logo.html" %}{% endwith %}{% endif %}
+  {% set motto = branding.motto.split(". ", 1) %}
+  <h1>{% if motto|length == 2 %}<span class="motto-first">{{ motto[0] }}.</span> <span class="motto-rest">{{ motto[1] }}</span>{% else %}{{ branding.motto }}{% endif %}</h1>
   <p>{{ _("Quizzes and contests without registration, right on your phone.") }}</p>
 </div>
 <div class="card">
@@ -10,7 +11,7 @@
   <ul class="quiz-list">
     {% for quiz in quizzes %}
     <li{% if quiz.featured %} class="is-featured"{% endif %}>
-      <a href="/q/{{ quiz.slug }}?lang={{ locale }}"><strong>{{ quiz.title }}</strong>{% if quiz.description %}<span>{{ quiz.description }}</span>{% endif %}</a>
+      <a href="/q/{{ quiz.slug }}?lang={{ locale }}">{% if quiz.mark %}<small class="quiz-org">{% if quiz.mark.logo_url %}<img src="{{ quiz.mark.logo_url }}" alt="" width="20" height="20">{% endif %}{% if quiz.mark.name %}<span class="quiz-org-name">{{ quiz.mark.name }}</span>{% endif %}</small>{% endif %}<strong>{{ quiz.title }}</strong>{% if quiz.description %}<span>{{ quiz.description }}</span>{% endif %}</a>
     </li>
     {% endfor %}
   </ul>
@@ -23,7 +24,7 @@
   <h2>{{ _("Coming up") }}</h2>
   <ul class="quiz-list">
     {% for quiz in coming_up %}
-    <li><a href="/q/{{ quiz.slug }}?lang={{ locale }}"><strong>{{ quiz.title }}</strong><span>{{ _("Starts %(when)s", when=quiz.starts) }}</span></a></li>
+    <li><a href="/q/{{ quiz.slug }}?lang={{ locale }}">{% if quiz.mark %}<small class="quiz-org">{% if quiz.mark.logo_url %}<img src="{{ quiz.mark.logo_url }}" alt="" width="20" height="20">{% endif %}{% if quiz.mark.name %}<span class="quiz-org-name">{{ quiz.mark.name }}</span>{% endif %}</small>{% endif %}<strong>{{ quiz.title }}</strong><span>{{ _("Starts %(when)s", when=quiz.starts) }}</span></a></li>
     {% endfor %}
   </ul>
 </section>

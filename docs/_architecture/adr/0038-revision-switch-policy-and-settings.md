@@ -42,7 +42,7 @@ Rules:
 * A switched attempt cannot be submitted, so one start gives one result. The new attempt keeps the original start
   time, so switching buys no time.
 * Settings live in `app_setting` with a code catalogue of keys, values and defaults. Module configuration stays
-  in `plugin_configuration` (D4).
+  in `plugin_configuration`, created when a module first needs it (ADR-0057).
 
 ### Consequences
 

@@ -1,4 +1,40 @@
-#: jinja2/theme_default/layout.html:19
+#: manifest.py
+msgid "Default theme"
+msgstr "Стандартна тема"
+
+#: manifest.py
+msgid "The look of the pages and the colour palettes."
+msgstr "Вигляд сторінок і колірні палітри."
+
+#: manifest.py
+msgid "Colours"
+msgstr "Кольори"
+
+#: manifest.py
+msgid "Blue and teal"
+msgstr "Синій і бірюзовий"
+
+#: manifest.py
+msgid "Indigo and pink"
+msgstr "Індиго і рожевий"
+
+#: manifest.py
+msgid "Violet and white"
+msgstr "Фіолетовий і білий"
+
+#: manifest.py
+msgid "Green and blue"
+msgstr "Зелений і синій"
+
+#: manifest.py
+msgid "Red and plum"
+msgstr "Червоний і сливовий"
+
+#: manifest.py
+msgid "Custom colours"
+msgstr "Власні кольори"
+
+#: jinja2/theme_default/layout.html
 msgid "Skip to content"
 msgstr "Перейти до вмісту"
 

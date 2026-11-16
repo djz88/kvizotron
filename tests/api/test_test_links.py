@@ -1,6 +1,7 @@
 """Test links from both sides: what a tester gets, and what the admin sees (AC-46, AC-47)."""
 
 import logging
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -297,3 +298,152 @@ def test_a_test_link_counts_down(client):
     html = text(started(client, link))
     assert 'id="countdown"' in html
     assert "data-time-url" in html
+
+
+# --- the shown address of one link (AC-167) ----------------------------------------------
+
+HTMX = {"HTTP_HX_REQUEST": "true"}
+
+
+def address_url(link):
+    return f"/admin/tests/{link.id}/address"
+
+
+def links_url(link):
+    return f"/admin/quizzes/{link.run.quiz_id}/tests"
+
+
+def test_the_address_of_a_link_has_a_pencil_and_saves(logged_in):
+    """AC-167: the pencil changes only the shown address of that one link."""
+    link = a_link()
+    other = a_link(link.run.quiz)
+    html = text(logged_in.get(links_url(link)))
+    assert f'href="{links_url(link)}?edit=address-{link.id}"' in html
+    response = logged_in.post(address_url(link), {"address": "10.0.0.5:8080"}, **HTMX)
+    assert response.status_code == 200
+    assert f"https://10.0.0.5:8080/t/{link.token}" in text(response)
+    html = text(logged_in.get(links_url(link)))
+    assert f'href="https://10.0.0.5:8080/t/{link.token}"' in html
+    assert f">https://10.0.0.5:8080/t/{link.token}<" in html
+    assert f'href="http://testserver/t/{other.token}"' in html
+
+
+def test_the_pencil_says_edit_the_address(logged_in):
+    link = a_link()
+    html = text(logged_in.get(links_url(link) + "?lang=en"))
+    block = html.split(f'id="name-address-{link.id}"')[1]
+    pencil = block.split('class="inline-name-pencil"')[1].split(">")[0]
+    assert 'title="Edit the address"' in pencil
+
+
+def test_a_bad_address_keeps_the_field_with_its_message(logged_in):
+    link = a_link()
+    response = logged_in.post(address_url(link), {"address": "https://a.cz/x"}, **HTMX)
+    assert response.status_code == 400
+    html = text(response)
+    assert 'value="https://a.cz/x"' in html
+    assert "inline-name-error" in html
+    response = logged_in.post(address_url(link), {"address": "https://a.cz/x"})
+    assert response.status_code == 400
+    html = text(response)
+    assert 'name="address"' in html
+    assert "<h1" in html or "quiz-header" in html
+    link.refresh_from_db()
+    assert link.shown_origin == ""
+
+
+def test_an_empty_address_goes_back_to_the_admins_address(logged_in):
+    link = a_link()
+    run_links.set_origin(link, "a.cz", admin_id=ADMIN_ID)
+    response = logged_in.post(address_url(link), {"address": ""}, **HTMX)
+    assert response.status_code == 200
+    assert f"http://testserver/t/{link.token}" in text(response)
+    link.refresh_from_db()
+    assert link.shown_origin == ""
+
+
+def test_the_field_can_be_emptied_and_shows_the_admins_address_as_a_hint(logged_in):
+    link = a_link()
+    html = text(logged_in.get(address_url(link) + "?edit=1", **HTMX))
+    field_tag = html.split('name="address"')[1].split(">")[0]
+    assert "required" not in field_tag
+    assert 'placeholder="http://testserver"' in field_tag
+    assert 'value="http://testserver"' in field_tag  # the current address, ready to edit
+    assert f"/t/{link.token}" in html
+    run_links.set_origin(link, "10.0.0.5:8080", admin_id=ADMIN_ID)
+    html = text(logged_in.get(address_url(link) + "?edit=1", **HTMX))
+    assert 'value="https://10.0.0.5:8080"' in html.split('name="address"')[1].split(">")[0]
+
+
+def test_saving_the_admins_own_address_keeps_following_it(logged_in):
+    """The prefilled address saved unchanged stays "the address the admin uses"."""
+    link = a_link()
+    response = logged_in.post(address_url(link), {"address": "http://testserver"}, **HTMX)
+    assert response.status_code == 200
+    link.refresh_from_db()
+    assert link.shown_origin == ""
+
+
+def test_the_note_says_only_the_copy_changes(logged_in):
+    link = a_link()
+    html = text(logged_in.get(links_url(link)))
+    assert "Mění pouze zobrazení pro kopírování" in html
+
+
+def test_without_javascript_the_pencil_opens_the_field_on_the_page(logged_in):
+    link = a_link()
+    other = a_link(link.run.quiz)
+    html = text(logged_in.get(f"{links_url(link)}?edit=address-{link.id}"))
+    assert html.count('name="address"') == 1
+    # a <form> inside <p> is moved out of it by the browser, away from `.inline-name`
+    assert not re.search(r"<p>[^<]*<span class=\"inline-name\" id=\"name-address", html)
+    assert f'id="name-address-{link.id}"' in html
+    assert f'id="name-address-{other.id}"' in html
+    response = logged_in.get(address_url(link) + "?edit=1")
+    assert response.status_code == 302
+    assert response["Location"] == f"{links_url(link)}?edit=address-{link.id}"
+    response = logged_in.post(address_url(link), {"address": "a.cz"})
+    assert response.status_code == 302
+
+
+def test_an_archived_quiz_shows_no_pencil_and_refuses_the_save(logged_in):
+    link = a_link()
+    authoring.archive_quiz(link.run.quiz, admin_id=ADMIN_ID)
+    html = text(logged_in.get(links_url(link)))
+    assert f'id="name-address-{link.id}"' not in html
+    assert f'href="http://testserver/t/{link.token}"' in html
+    response = logged_in.get(address_url(link) + "?edit=1", **HTMX)
+    assert 'name="address"' not in text(response)
+    assert "inline-name-pencil" not in text(response)
+    response = logged_in.post(address_url(link), {"address": "a.cz"})
+    assert response.status_code == 409
+    assert f'id="name-address-{link.id}"' not in text(response)
+    response = logged_in.post(address_url(link), {"address": "a.cz"}, **HTMX)
+    assert response.status_code == 409
+    link.refresh_from_db()
+    assert link.shown_origin == ""
+
+
+def test_test_link_shows_answers_at_the_end_even_after_close_and_says_when():
+    quiz = published_quiz(locales=("cs", "en"))
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    settings.set_override(settings.REVEAL_LEVEL, quiz, "answers", admin_id=ADMIN_ID)
+    link = a_link(quiz)
+    client = FormClient()
+    html = text(started(client, link))
+    attempt = Attempt.objects.get()
+    question = attempts.questions_of(attempt)[0]
+    result = text(
+        client.post(
+            f"/a/{attempt.id}/submit",
+            {
+                "attempt_token": field(html, "attempt_token"),
+                "submission_key": field(html, "submission_key"),
+                "lang": "en",
+                f"{question['id']}:options[]": [OPTION_A],
+            },
+        )
+    )
+    assert "reveal-list" in result
+    assert "In a real run, the correct answers are shown only after the run closes." in result
+    assert "at this link after the run closes" not in result  # the answers are already there

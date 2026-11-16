@@ -6,6 +6,7 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
+from app.contracts import COLOR_PALETTE
 from app.domain import settings
 from app.domain.models import QuizRevision
 from tests.domain.helpers import open_quiz_run
@@ -34,7 +35,8 @@ def test_privacy_page_says_what_it_covers(client):
 def test_privacy_page_shows_the_default_period_and_the_browser_copy(client):
     # AC-79, AC-80
     html = text(client.get("/privacy?lang=en"))
-    assert "90 days" in html and "another period" in html and "later version" in html
+    assert "90 days" in html and "another period" in html and "deleted automatically" in html
+    assert "later version" not in html
     assert "at most 24 hours" in html
 
 
@@ -58,7 +60,8 @@ def test_menu_keeps_the_chosen_language(client):
 def test_home_shows_slogan_motto_and_quiz_description(client):
     open_quiz_run(description={"cs": "Krátký popis"})
     html = text(client.get("/?lang=cs"))
-    assert "Zapni mozek. Spusť Kvízotron." in html
+    assert '<span class="motto-first">Zapni mozek.</span>' in html
+    assert '<span class="motto-rest">Spusť Kvízotron.</span>' in html
     assert 'class="hero"' in html
     assert "Krátký popis" in html
 
@@ -67,7 +70,7 @@ def test_quiz_page_shows_title_description_and_start(client):
     run = open_quiz_run(description={"cs": "Krátký popis"})
     html = text(client.get("/q/kviz"))
     assert "Název cs" in html and "Krátký popis" in html
-    assert f'action="/r/{run.id}/start"' in html
+    assert f'action="/r/{run.id}/start?lang=cs"' in html
 
 
 def test_old_revision_without_description_still_shows_its_page(client):
@@ -104,7 +107,7 @@ def test_active_language_is_marked(client):
 
 def test_quiz_palette_applies_only_to_its_public_pages(client):
     run = open_quiz_run()
-    settings.set_override(settings.COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
+    settings.set_override(COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
     assert 'data-palette="indigo_pink"' in text(client.get("/q/kviz"))
     assert 'data-palette="blue_teal"' in text(client.get("/"))
     assert 'data-palette="blue_teal"' in text(client.get("/about"))
@@ -112,15 +115,15 @@ def test_quiz_palette_applies_only_to_its_public_pages(client):
 
 def test_palette_applies_to_a_page_drawn_without_javascript(client):
     run = open_quiz_run()
-    settings.set_override(settings.COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
+    settings.set_override(COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
     html = text(client.post(f"/r/{run.id}/start", {"lang": "cs"}))
     assert 'data-palette="indigo_pink"' in html
 
 
 def test_deleting_override_returns_to_global(client):
     run = open_quiz_run()
-    settings.set_override(settings.COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
-    settings.set_override(settings.COLOR_PALETTE, run.quiz, None, admin_id=None)
+    settings.set_override(COLOR_PALETTE, run.quiz, "indigo_pink", admin_id=None)
+    settings.set_override(COLOR_PALETTE, run.quiz, None, admin_id=None)
     assert 'data-palette="blue_teal"' in text(client.get("/q/kviz"))
 
 
@@ -164,37 +167,57 @@ def test_public_and_admin_pages_name_the_icons(client, address):
     assert 'rel="apple-touch-icon"' in html and "/assets/apple-touch-icon.png" in html
 
 
-def test_logo_is_served(client):
-    response = client.get("/assets/logo.svg")
+FAMILIES = ("aurora", "mint", "amber")
+KINDS = ("bar", "hero-light", "hero-dark", "about-light", "about-dark")
+NAMES = [f"logo-{family}-{kind}.svg" for family in FAMILIES for kind in KINDS]
+
+
+def served(client, name):
+    return b"".join(client.get(f"/assets/{name}").streaming_content).decode()
+
+
+@pytest.mark.parametrize("name", NAMES)
+def test_builtin_logo_is_served_as_svg(client, name):
+    response = client.get(f"/assets/{name}")
     assert response.status_code == 200
     assert response["Content-Type"].startswith("image/svg+xml")
 
 
-def test_logo_has_no_script_or_outside_reference(client):
+@pytest.mark.parametrize("name", NAMES)
+def test_builtin_logo_is_plain_vector(client, name):
     """An SVG served as an image cannot run a script anyway; the file stays plain all the same."""
-    svg = b"".join(client.get("/assets/logo.svg").streaming_content).decode()
-    assert "<script" not in svg and "href=" not in svg and "on" + "load" not in svg
+    svg = served(client, name)
+    for forbidden in ("<script", "href=", "<image", "data:", "on" + "load"):
+        assert forbidden not in svg
 
 
-def test_logo_is_the_designers_drawing(client):
-    """The served logo is the designer's file (1254 square, sparkle in the middle), not a redraw."""
-    svg = b"".join(client.get("/assets/logo.svg").streaming_content).decode()
-    assert 'viewBox="0 0 1254 1254"' in svg
-    assert 'data-shape="white-192-0"' in svg
+@pytest.mark.parametrize("family", FAMILIES)
+def test_builtin_logo_shapes(client, family):
+    assert 'viewBox="0 0 240.00 240.00"' in served(client, f"logo-{family}-bar.svg")
+    for kind in ("hero-light", "hero-dark"):
+        assert 'viewBox="0 0 1120 390"' in served(client, f"logo-{family}-{kind}.svg")
+    for kind in ("about-light", "about-dark"):
+        assert 'viewBox="0 0 1100 760"' in served(client, f"logo-{family}-{kind}.svg")
+
+
+@pytest.mark.parametrize("old", ["logo.png", "logo-full.svg", "logo.svg"])
+def test_replaced_logo_names_are_gone(client, old):
+    assert client.get(f"/assets/{old}").status_code == 404
 
 
 @pytest.mark.parametrize("path", ["/", "/about", "/how-it-works"])
 def test_bar_shows_the_logo(client, path):
     assert re.search(
-        r'<a class="site-name"[^>]*>\s*<img class="site-logo" src="/assets/logo.svg"',
+        r'<a class="site-name"[^>]*>\s*<img class="site-logo" src="/assets/logo-mint-bar.svg"',
         text(client.get(path)),
     )
 
 
+@pytest.mark.parametrize("path", ["/", "/about"])
+def test_the_large_logo_is_centred(client, path):
+    assert re.search(r'class="about-logo about-logo-centered\b', text(client.get(path)))
+
+
 def test_about_and_home_show_the_logo_large(client):
-    assert 'class="about-logo"' in text(client.get("/about"))
-    assert 'class="about-logo"' in text(client.get("/"))
-
-
-def test_logo_is_the_icon(client):
-    assert '<link rel="icon" type="image/svg+xml" href="/assets/logo.svg">' in text(client.get("/"))
+    assert re.search(r'class="about-logo\b', text(client.get("/about")))
+    assert re.search(r'class="about-logo\b', text(client.get("/")))

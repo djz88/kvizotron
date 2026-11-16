@@ -1,0 +1,64 @@
+#: manifest.py
+msgid "Quiz types"
+msgstr "Typy kvízů"
+
+#: manifest.py
+msgid "Named bundles of quiz settings, such as a practice quiz or a contest."
+msgstr "Pojmenované sady nastavení kvízu, například procvičování nebo soutěž."
+
+#: plugin.py
+msgid "Practice"
+msgstr "Procvičování"
+
+#: plugin.py
+msgid "Learning: answers and explanations after each question, no time limit."
+msgstr "Učení: odpovědi a vysvětlení po každé otázce, bez časového limitu."
+
+#: plugin.py
+msgid "Final test"
+msgstr "Závěrečný test"
+
+#: plugin.py
+msgid "One named attempt in 30 minutes; answers are kept and never shown."
+msgstr "Jeden pokus se jménem za 30 minut; odpovědi se uloží a nikdy se neukážou."
+
+#: plugin.py
+msgid "Exam with a resit"
+msgstr "Zkouška s opravným pokusem"
+
+#: plugin.py
+msgid "An exam with a pass mark and a second attempt; the better one counts and answers are shown after the run closes."
+msgstr "Zkouška s hranicí úspěšnosti a druhým pokusem; počítá se lepší z nich a odpovědi se ukážou po uzavření běhu."
+
+#: plugin.py
+msgid "Mock test"
+msgstr "Zkouška nanečisto"
+
+#: plugin.py
+msgid "A test in 30 minutes that can be repeated, with explanations at the end."
+msgstr "Test na 30 minut, který jde opakovat, s vysvětlením na konci."
+
+#: plugin.py
+msgid "Contest"
+msgstr "Soutěž o ceny"
+
+#: plugin.py
+msgid "One attempt with a name and an e-mail, the scoreboard after the end; add the prize on the Rewards tab."
+msgstr "Jeden pokus se jménem a e-mailem, žebříček po skončení; cenu přidejte na záložce Odměny."
+
+#: plugin.py
+msgid "Pub quiz"
+msgstr "Hospodský kvíz"
+
+#: plugin.py
+msgid "One phone per team with the team name as nickname, ten questions per page and a live scoreboard."
+msgstr "Jeden telefon na tým s názvem týmu jako přezdívkou, deset otázek na stránku a žebříček během hry."
+
+#: plugin.py
+msgid "Basic quiz"
+msgstr "Jednoduchý kvíz"
+
+#: plugin.py
+msgid "Removes the quiz's own settings, so the global settings apply again."
+msgstr "Odebere vlastní nastavení kvízu, takže znovu platí globální nastavení."
+

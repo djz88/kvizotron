@@ -3,14 +3,15 @@
 import re
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from django.core.cache import cache
 
-from app.contracts import SCOREBOARD_LIVE_NAMES, SCOREBOARD_VISIBILITY
+from app.contracts import SCOREBOARD_LIVE_NAMES, SCOREBOARD_SHOW_SCORE, SCOREBOARD_VISIBILITY
 from app.domain import authoring, participants, results, run_links
 from app.domain.models import Attempt, Participant
-from tests.domain.helpers import ADMIN_ID, OPTION_A, published_quiz
+from tests.domain.helpers import ADMIN_ID, OPTION_A, add_question, published_quiz
 from tests.support.client import FormClient
 
 pytestmark = pytest.mark.django_db
@@ -91,12 +92,48 @@ def test_live_board_lists_rows_without_email_or_ids(client):
     assert not [found for found in UUID.findall(html) if found.replace("-", "") != run.id.hex]
 
 
-def test_projector_view_has_rank_name_score_only(client):
-    run = a_run(scoreboard_show_time="on")
+def test_projector_view_has_rank_name_score_only(logged_in):
+    """By points: rank, name and score. By percent (the default) the score carries its percent."""
+    run = a_run(scoreboard_show_time="on", revision_mode="separate")
     played(run, "Ema")
-    html = text(client.get(url(run, "?view=projector&lang=en")))
+    html = text(logged_in.get(url(run, "?view=projector&lang=en")))
     assert "projector" in html and "Ema" in html
     assert "Submitted" not in html and "%" not in html
+    results.set_display(run, {"revision_mode": "percent"}, admin_id=ADMIN_ID)
+    cache.clear()
+    html = text(logged_in.get(url(run, "?view=projector&lang=en")))
+    assert "Submitted" not in html and "100 %" in html
+
+
+def test_projector_view_is_a_clean_page(logged_in):
+    """Only the board: no menu, language switch, links, buttons or footer."""
+    run = a_run()
+    played(run, "Ema")
+    body = text(logged_in.get(url(run, "?view=projector&lang=en"))).split("<body", 1)[1]
+    assert "Ema" in body
+    for leftover in (
+        'class="site-bar"',
+        "<footer",
+        "<button",
+        "Normal view",
+        "Full screen",
+        "<nav",
+    ):
+        assert leftover not in body, leftover
+    assert "<a " not in body
+
+
+def test_projector_links_open_a_new_window():
+    templates = Path(__file__).resolve().parents[2] / "app/api/jinja2"
+    names = (
+        "admin/_quiz_header.html",
+        "admin/run.html",
+        "admin/runs.html",
+        "public/scoreboard.html",
+    )
+    for name in names:
+        for link in re.findall(r"<a [^>]*view=projector[^>]*>", (templates / name).read_text()):
+            assert 'target="_blank"' in link and 'rel="noopener"' in link, (name, link)
 
 
 def test_fragment_polls_while_open_and_stops_when_final(client):
@@ -138,6 +175,21 @@ def test_own_row_marked_from_cookie_not_name():
     html = text(browser.get(url(run, "?lang=en")))
     assert html.count("data-mine") == 1
     assert text(FormClient().get(url(run))).count("data-mine") == 0
+
+
+def test_projector_view_never_marks_an_own_row(admin_user):
+    """AC-83: a screen in a room is shared, so it is neutral even in a browser that played."""
+    run = a_run(**{SCOREBOARD_LIVE_NAMES: "shown"})
+    played(run, "Ema", key="my-browser-key")
+    browser = FormClient()
+    browser.force_login(admin_user)
+    browser.cookies[participants.cookie_name(run)] = "my-browser-key"
+    for rest in ("?lang=en&view=projector", "/rows?lang=en&view=projector"):
+        html = text(browser.get(url(run, rest)))
+        assert "Ema" in html
+        assert "data-mine" not in html
+        assert "(you)" not in html
+    assert text(browser.get(url(run, "?lang=en"))).count("data-mine") == 1  # the own page stays
 
 
 def test_test_run_board_is_404(client):
@@ -186,9 +238,7 @@ def test_quiz_page_links_public_board(client):
     authoring.close_run(run, admin_id=ADMIN_ID)
     assert url(run) in text(client.get(f"/q/{run.quiz.slug}"))
     hidden = a_run(published_quiz("jiny"), **{SCOREBOARD_VISIBILITY: "hidden"})
-    assert "/scoreboard" not in text(client.get(f"/q/{hidden.quiz.slug}")).replace(
-        "/assets/scoreboard.js", ""
-    )
+    assert "/scoreboard" not in text(client.get(f"/q/{hidden.quiz.slug}"))
 
 
 def test_label_html_is_escaped(client):
@@ -212,4 +262,128 @@ def test_table_stacks_on_a_phone(client):
     # Found in the browser: five columns overflowed a 390 px screen.
     run = a_run(scoreboard_show_time="on")
     played(run, "Ema")
-    assert '<table class="stack">' in text(client.get(url(run)))
+    assert '<table class="stack compact">' in text(client.get(url(run)))
+
+
+@pytest.mark.parametrize("rest", ["?lang=en", "/rows?lang=en"])
+@pytest.mark.parametrize("with_cookie", [False, True])
+def test_scoreboard_page_and_rows_vary_on_language_and_cookie(rest, with_cookie):
+    """AC-142, TD-041: language and the own mark change the answer, so a cache keys on both."""
+    run = a_run()
+    played(run, "Ema", key="my-browser-key")
+    browser = FormClient()
+    if with_cookie:
+        browser.cookies[participants.cookie_name(run)] = "my-browser-key"
+    response = browser.get(url(run, rest))
+    assert response.status_code == 200
+    varied = {part.strip().lower() for part in response["Vary"].split(",")}
+    assert {"accept-language", "cookie"} <= varied
+    assert ("no-store" in response["Cache-Control"]) is with_cookie
+
+
+def test_projector_is_only_for_a_signed_in_admin(client):
+    """AC-83: without a login the projector address shows the normal public board.
+
+    The projector shows the score column even where the admin hid it, so a participant who adds
+    `?view=projector` must not get it.
+    """
+    run = a_run(**{SCOREBOARD_SHOW_SCORE: "off"})
+    played(run, "Ema", score=7)
+    for rest in ("?lang=en&view=projector", "/rows?lang=en&view=projector"):
+        html = text(client.get(url(run, rest)))
+        assert "Ema" in html
+        assert "projector" not in html
+        assert '<th scope="col">Score</th>' not in html and "Skóre</th>" not in html
+
+
+def test_public_page_has_no_projector_link(client):
+    run = a_run()
+    played(run, "Ema")
+    assert "view=projector" not in text(client.get(url(run, "?lang=en")))
+
+
+def test_admin_sees_the_projector_link_and_the_projector_is_not_cached(logged_in):
+    run = a_run()
+    played(run, "Ema")
+    own = logged_in.get(url(run, "?lang=en"))
+    assert "view=projector" in text(own)
+    assert own["Cache-Control"] == "private, no-store"
+    for rest in ("?lang=en&view=projector", "/rows?lang=en&view=projector"):
+        response = logged_in.get(url(run, rest))
+        assert "projector" in text(response)
+        assert response["Cache-Control"] == "private, no-store"
+
+
+def test_rows_are_a_compact_table_so_a_phone_shows_one_line_per_place(client):
+    run = a_run()
+    played(run, "Eva")
+    html = text(client.get(url(run, "/rows")))
+    assert '<table class="stack compact">' in html
+    assert 'class="rank"' in html
+    assert 'class="who"' in html
+
+
+def test_shared_board_lists_the_rows_of_every_run_and_names_the_runs(client):
+    """AC-177: the main run's page shows all linked runs' rows and says which runs they are."""
+    quiz = published_quiz("kviz", ("cs", "en", "uk"))
+    first = a_run(quiz)
+    authoring.close_run(first, admin_id=ADMIN_ID)
+    second = a_run(quiz)
+    played(first, "Anna")
+    played(second, "Boris")
+    results.share_board(second, [first], admin_id=ADMIN_ID)
+    html = text(client.get(url(second)))
+    assert "Anna" in html and "Boris" in html
+    assert "Společný žebříček běhů 1, 2" in html
+    assert "Společný žebříček běhů 1, 2" in text(client.get(url(second, "?lang=cs")))
+    assert "Спільна таблиця результатів запусків 1, 2" in text(client.get(url(second, "?lang=uk")))
+    own = text(client.get(url(first)))
+    assert "Boris" not in own
+    assert "Společný žebříček" not in own
+
+
+def test_a_run_without_a_shared_board_has_no_note(client):
+    run = a_run()
+    assert "Společný žebříček" not in text(client.get(url(run)))
+
+
+def _two_revision_runs():
+    """Run 1 of 1 point with Anna 1/1 (closed), run 2 of 2 points with Boris 1/2 (open)."""
+    quiz = published_quiz("kviz", ("cs", "en", "uk"))
+    first = a_run(quiz)
+    played(first, "Anna", score=1)
+    authoring.close_run(first, admin_id=ADMIN_ID)
+    add_question(quiz)
+    authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    second = a_run(quiz)
+    played(second, "Boris", score=1)
+    return first, second
+
+
+def test_projector_by_percent_shows_points_of_each_own_maximum_and_the_percent(logged_in):
+    """Ranked by percent, a bare score would mislead: each row shows score / max and percent."""
+    first, second = _two_revision_runs()
+    results.share_board(second, [first], admin_id=ADMIN_ID)
+    html = text(logged_in.get(url(second, "?view=projector&lang=en")))
+    assert html.index("Anna") < html.index("Boris")
+    assert re.search(r"1\s*/\s*1\b.*100 %", html, re.S)
+    assert re.search(r"1\s*/\s*2\b.*50 %", html, re.S)
+
+
+@pytest.mark.parametrize("main_is_second", [True, False])
+def test_own_place_on_a_shared_board_says_it_is_within_the_own_run(main_is_second):
+    first, second = _two_revision_runs()
+    if main_is_second:
+        results.share_board(second, [first], admin_id=ADMIN_ID)
+    else:
+        results.share_board(first, [second], admin_id=ADMIN_ID)
+    browser = FormClient()
+    html = text(submit_correct(browser, second, start(browser, second)))
+    assert "1. z 2 v běhu 2" in html
+
+
+def test_own_place_without_a_shared_board_names_no_run():
+    run = a_run()
+    played(run, "Ema", score=1)
+    browser = FormClient()
+    assert "v běhu" not in text(submit_correct(browser, run, start(browser, run)))

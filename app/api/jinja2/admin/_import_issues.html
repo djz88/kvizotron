@@ -1,6 +1,11 @@
-{% macro issues(rows, title) %}
+{% macro issues(rows, title, view) %}
 {% if rows %}
+{% set long = rows|length > 15 %}
 <h2>{{ title }}</h2>
+{% if long %}
+<p class="issues-toggle">{% if view.all %}<a href="{{ view.scroll_url }}">{{ _("Show in a scrollable table") }}</a>{% else %}<a href="{{ view.all_url }}">{{ _("Show all (%(count)s)", count=rows|length) }}</a>{% endif %}</p>
+{% endif %}
+{% if long and not view.all %}<div class="issues-scroll" role="region" tabindex="0" aria-label="{{ title }}">{% endif %}
 <table class="stack">
   <thead><tr><th>{{ _("Row") }}</th><th>{{ _("Column") }}</th><th>{{ _("Message") }}</th></tr></thead>
   <tbody>
@@ -13,5 +18,6 @@
     {% endfor %}
   </tbody>
 </table>
+{% if long and not view.all %}</div>{% endif %}
 {% endif %}
 {% endmacro %}

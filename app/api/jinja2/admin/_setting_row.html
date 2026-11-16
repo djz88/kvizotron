@@ -1,0 +1,24 @@
+{# One setting: the label left, the control with its help right on a wide screen (AC-168).
+   A choice drawn as radios is a radiogroup named by its label; Pico draws [role=group] as a button bar. #}
+{# `mark`: the value of the quiz type where the field deviates from it. #}
+{% macro setting_row(field, child=false, label=None, hide=false, mark=None) %}
+{% set grouped = field.use_fieldset %}
+{% set helptext = field.auto_id ~ "_helptext" %}
+{% set described = ((("mark-" ~ field.name) if mark else "") ~ " " ~ (field.aria_describedby or ""))|trim %}
+<div class="setting-row{% if child %} setting-child{% endif %}"{% if hide %} hidden{% endif %}{% if grouped %} role="radiogroup" aria-labelledby="{{ field.auto_id }}_legend"{% if described %} aria-describedby="{{ described }}"{% endif %}{% endif %}>
+  <div class="setting-label">{% if grouped %}<span class="setting-legend" id="{{ field.auto_id }}_legend">{{ label or field.label }}</span>{% else %}{{ field.label_tag(label or None, label_suffix="") }}{% endif %}</div>
+  <div class="setting-control">
+    {{ field.errors }}
+    {% if grouped or not mark %}{{ field }}{% else %}{{ field.as_widget(attrs={"aria-describedby": described}) }}{% endif %}
+    {% if mark %}<small class="type-mark" id="mark-{{ field.name }}">▲ {{ _("type: %(value)s", value=mark) }}</small>{% endif %}
+    {% if field.help_text %}<div class="helptext" id="{{ helptext }}">{{ field.help_text|safe }}</div>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+{# A line of the same shape that is not a form field: a label and a value, or only the right column. #}
+{% macro info_row(label="") %}
+<div class="setting-row">
+  <div class="setting-label">{{ label }}</div>
+  <div class="setting-control">{{ caller() }}</div>
+</div>
+{% endmacro %}

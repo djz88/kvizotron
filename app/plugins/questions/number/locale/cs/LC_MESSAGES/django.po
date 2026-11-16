@@ -1,108 +1,117 @@
-#: plugin.py:68
-msgid "The correct value must be a number, such as 3,14."
-msgstr "Správná hodnota musí být číslo, například 3,14."
-
-#: plugin.py:71
-msgid "This kind of tolerance is not known."
-msgstr "Tento druh tolerance není známý."
-
-#: plugin.py:77
-msgid "The tolerance must be a number, such as 0,5."
-msgstr "Tolerance musí být číslo, například 0,5."
-
-#: plugin.py:79
-msgid "The tolerance cannot be negative."
-msgstr "Tolerance nemůže být záporná."
-
-#: plugin.py:81
-msgid "A tolerance in percent cannot be used when the correct value is 0."
-msgstr "Toleranci v procentech nelze použít, když je správná hodnota 0."
-
-#: plugin.py:86
-msgid "Image"
-msgstr "Obrázek"
-
-#: plugin.py:86
-msgid "No copy"
-msgstr "Bez kopie"
-
-#: plugin.py:86
-msgid "Image address"
-msgstr "Adresa obrázku"
-
-#: plugin.py:86
-msgid "Image description"
-msgstr "Popis obrázku"
-
-#: jinja2/number/admin.html:20 plugin.py:90
-msgid "Exact value"
-msgstr "Přesná hodnota"
-
-#: jinja2/number/admin.html:21 plugin.py:90
-msgid "Plus or minus"
-msgstr "Plus minus"
-
-#: jinja2/number/admin.html:22 plugin.py:90
-msgid "Percent"
-msgstr "Procenta"
-
-#: plugin.py:109
+#: manifest.py plugin.py
 msgid "Number"
 msgstr "Číslo"
 
-#: plugin.py:136
+#: manifest.py
+msgid "Questions answered with a number."
+msgstr "Otázky s odpovědí číslem."
+
+#: plugin.py
+msgid "The correct value must be a number, such as 3,14."
+msgstr "Správná hodnota musí být číslo, například 3,14."
+
+#: plugin.py
+msgid "This kind of tolerance is not known."
+msgstr "Tento druh tolerance není známý."
+
+#: plugin.py
+msgid "The tolerance must be a number, such as 0,5."
+msgstr "Tolerance musí být číslo, například 0,5."
+
+#: plugin.py
+msgid "The tolerance cannot be negative."
+msgstr "Tolerance nemůže být záporná."
+
+#: plugin.py
+msgid "A tolerance in percent cannot be used when the correct value is 0."
+msgstr "Toleranci v procentech nelze použít, když je správná hodnota 0."
+
+#: plugin.py
+msgid "Image"
+msgstr "Obrázek"
+
+#: plugin.py
+msgid "No copy"
+msgstr "Bez kopie"
+
+#: plugin.py
+msgid "Image address"
+msgstr "Adresa obrázku"
+
+#: plugin.py
+msgid "Image description"
+msgstr "Popis obrázku"
+
+#: jinja2/number/admin.html plugin.py
+msgid "Exact value"
+msgstr "Přesná hodnota"
+
+#: jinja2/number/admin.html plugin.py
+msgid "Plus or minus"
+msgstr "Plus minus"
+
+#: jinja2/number/admin.html plugin.py
+msgid "Percent"
+msgstr "Procenta"
+
+#: plugin.py
 msgid "An image has no description in this language."
 msgstr "Obrázek nemá v tomto jazyce popis."
 
-#: plugin.py:214
+#: plugin.py
 msgid "The question has no text in any language."
 msgstr "Otázka nemá text v žádném jazyce."
 
-#: plugin.py:216
+#: plugin.py
 msgid "The correct value is missing."
 msgstr "Chybí správná hodnota."
 
-#: jinja2/number/admin.html:3 plugin.py:272
+#: jinja2/number/admin.html plugin.py
 msgid "Question"
 msgstr "Otázka"
 
-#: jinja2/number/admin.html:15 plugin.py:274
+#: jinja2/number/admin.html plugin.py
 msgid "Correct value"
 msgstr "Správná hodnota"
 
-#: jinja2/number/admin.html:19 plugin.py:275
+#: jinja2/number/admin.html plugin.py
 msgid "Tolerance"
 msgstr "Tolerance"
 
-#: plugin.py:276
+#: plugin.py
 msgid "Kind of tolerance"
 msgstr "Druh tolerance"
 
-#: jinja2/number/admin.html:13
+#: jinja2/number/admin.html
 msgid "Correct answer"
 msgstr "Správná odpověď"
 
-#: jinja2/number/admin.html:17
+#: jinja2/number/admin.html
 msgid "Write a unit in the question's text, not here."
 msgstr "Jednotku napište do textu otázky, ne sem."
 
-#: jinja2/number/admin.html:24
+#: jinja2/number/admin.html
 msgid "How much"
 msgstr "Kolik"
 
-#: jinja2/number/admin.html:26
+#: jinja2/number/admin.html
 msgid "Both limits count as right: 1000 with 5 percent accepts 950 to 1050."
 msgstr "Obě meze se počítají jako správné: 1000 s 5 procenty přijme 950 až 1050."
 
-#: jinja2/number/public.html:5
+#: jinja2/number/public.html
 msgid "Your answer"
 msgstr "Vaše odpověď"
 
-#: jinja2/number/public.html:7
+#: jinja2/number/public.html
 msgid "Write digits only, with a comma or dot for decimals."
 msgstr "Pište jen číslice, desetinná místa oddělte čárkou nebo tečkou."
 
-#: jinja2/number/solution.html:3
+#: jinja2/number/public.html
+#, python-brace-format
+msgid "“{value}” is read as {read}: a comma or a dot is a decimal sign. Type a large number without a separator."
+msgstr "„{value}“ se čte jako {read}: čárka i tečka jsou desetinné. Velké číslo pište bez oddělovače."
+
+#: jinja2/number/solution.html
 #, python-format
 msgid "your answer: %(answer)s"
 msgstr "vaše odpověď: %(answer)s"

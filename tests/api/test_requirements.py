@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.contracts import COLOR_PALETTE
 from app.domain import settings
 from tests.domain.helpers import ADMIN_ID, add_question, make_quiz, published_quiz
 from tests.support.requirements import REASON, needs_reveal_at_end
@@ -27,6 +28,7 @@ def use_url(quiz):
 
 
 def test_editor_shows_requirement_and_use_button(logged_in):
+    """AC-17: choosing a question type shows the settings its module requires."""
     quiz = needing()
     with needs_reveal_at_end():
         html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/questions/new?type=choice"))
@@ -75,9 +77,9 @@ def test_use_does_not_go_to_another_site(logged_in):
 def test_use_refuses_an_unknown_key(logged_in):
     quiz = needing()
     with needs_reveal_at_end():
-        response = logged_in.post(use_url(quiz), {"key": settings.COLOR_PALETTE})
+        response = logged_in.post(use_url(quiz), {"key": COLOR_PALETTE})
     assert response.status_code == 400
-    assert settings.quiz_override(settings.COLOR_PALETTE, quiz) is None
+    assert settings.quiz_override(COLOR_PALETTE, quiz) is None
 
 
 def test_use_needs_login(client):
@@ -89,6 +91,7 @@ def test_use_needs_login(client):
 
 
 def test_publish_page_lists_the_reason(logged_in):
+    """AC-17: the publication page explains why a conflicting setting blocks it."""
     quiz = needing()
     with needs_reveal_at_end():
         html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/publish"))

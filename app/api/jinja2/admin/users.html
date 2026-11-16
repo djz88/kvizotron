@@ -1,11 +1,46 @@
 {% extends "admin/base.html" %}
+{% from "admin/_inline_name.html" import inline_name with context %}
 {% block content %}
 <h1>{{ _("Admins") }}</h1>
-<ul>
-  {% for admin in admins %}<li>{{ admin.login }}</li>{% endfor %}
+{% if notice %}<p class="notice" role="alert">{{ notice }}</p>{% endif %}
+<ul class="admin-accounts">
+  {% for admin in admins %}
+  <li id="admin-{{ admin.id }}">
+    <article>
+      <header class="admin-account-head">
+        {{ inline_name(admin.login_field) }}
+        {% if not admin.is_active %}<mark class="admin-blocked">{{ _("Blocked") }}</mark>{% endif %}
+        {% if admin.is_self %}<small>{{ _("(you)") }}</small>{% endif %}
+      </header>
+      <form method="post" action="{{ url('admin_users') }}">
+        {{ csrf_input }}
+        {{ admin.form.as_div() }}
+        <button type="submit">{{ _("Save") }}</button>
+      </form>
+      <form method="post" action="{{ url('admin_user_password', args=[admin.id]) }}" class="admin-password">
+        {{ csrf_input }}
+        <label for="password-{{ admin.id }}">{{ _("New password") }}</label>
+        <div role="group">
+          <input type="password" name="password" id="password-{{ admin.id }}" autocomplete="new-password" required>
+          <button type="submit">{{ _("Set password") }}</button>
+        </div>
+      </form>
+      {% if not admin.is_self %}
+      <footer class="admin-account-actions">
+        <form method="post" action="{{ url('admin_user_active', args=[admin.id]) }}">
+          {{ csrf_input }}
+          <input type="hidden" name="active" value="{{ '0' if admin.is_active else '1' }}">
+          <button type="submit" class="secondary">{{ _("Block") if admin.is_active else _("Unblock") }}</button>
+        </form>
+        <a href="{{ url('admin_user_delete', args=[admin.id]) }}" role="button" class="secondary outline">{{ _("Delete") }}</a>
+      </footer>
+      {% endif %}
+    </article>
+  </li>
+  {% endfor %}
 </ul>
 <h2>{{ _("New admin") }}</h2>
-<form method="post">
+<form method="post" action="{{ url('admin_users') }}">
   {{ csrf_input }}
   {{ form.as_div() }}
   <button type="submit">{{ _("Create") }}</button>

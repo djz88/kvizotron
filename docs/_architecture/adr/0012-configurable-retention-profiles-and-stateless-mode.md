@@ -38,6 +38,6 @@ Chosen option: "Per-run profile (none / aggregate / answers / detailed) + retent
 
 ## More Information
 
-Refined by [ADR-0050](0050-data-profile-and-local-resume.md), which fixes the four profiles and the stateless attempt. FR-31, FR-33, FR-34; [../../privacy.md](../../privacy.md). Default period: [ADR-0029](0029-default-retention.md). Backups: 30 days by default. Image answers need stored answers ([ADR-0033](0033-image-answer-question-type.md)).
+Deletion itself is decided in [ADR-0056](0056-retention-job-summary-held-runs.md). Refined by [ADR-0050](0050-data-profile-and-local-resume.md), which fixes the four profiles and the stateless attempt. FR-31, FR-33, FR-34; [../../privacy.md](../../privacy.md). Default period: [ADR-0029](0029-default-retention.md). Backups: 30 days by default. Image answers need stored answers ([ADR-0033](0033-image-answer-question-type.md)).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)

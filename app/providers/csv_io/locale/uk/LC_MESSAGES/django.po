@@ -1,61 +1,69 @@
-#: provider.py:57
+#: manifest.py
+msgid "CSV import and export"
+msgstr "Імпорт та експорт CSV"
+
+#: manifest.py
+msgid "Questions and results in CSV files."
+msgstr "Запитання та результати у файлах CSV."
+
+#: provider.py
 msgid "The file is larger than 100 MB."
 msgstr "Файл більший за 100 МБ."
 
-#: reader.py:38
+#: reader.py
 msgid "The file has no column names."
 msgstr "Файл не має назв стовпців."
 
-#: reader.py:40
+#: reader.py
 msgid "A column name is used twice."
 msgstr "Назва стовпця використана двічі."
 
-#: reader.py:56
+#: reader.py
 msgid "This row has more cells than the file has columns."
 msgstr "Цей рядок має більше клітинок, ніж файл має стовпців."
 
-#: reader.py:64
+#: reader.py
 msgid "The file is not in UTF-8. Save it as CSV UTF-8."
 msgstr "Файл не в UTF-8. Збережіть його як CSV UTF-8."
 
-#: reader.py:66 reader.py:83
+#: reader.py
 msgid "The file could not be read as CSV."
 msgstr "Файл не вдалося прочитати як CSV."
 
-#: reader.py:80
+#: reader.py
 msgid "The file has more than 2000 rows."
 msgstr "Файл має понад 2000 рядків."
 
-#: reader.py:85
+#: reader.py
 msgid "The file is empty."
 msgstr "Файл порожній."
 
-#: reader.py:105
+#: reader.py
 #, python-format
 msgid "A file in the archive is too large: %(name)s"
 msgstr "Файл в архіві завеликий: %(name)s"
 
-#: reader.py:114 reader.py:151 reader.py:164
+#: reader.py
 msgid "The archive could not be read."
 msgstr "Архів не вдалося прочитати."
 
-#: reader.py:119
+#: reader.py
 msgid "The archive holds too many files or too much data."
 msgstr "Архів містить забагато файлів або даних."
 
-#: reader.py:122
+#: reader.py
 msgid "The archive is encrypted."
 msgstr "Архів зашифрований."
 
-#: reader.py:133
+#: reader.py
 msgid "The archive must hold exactly one CSV file at its top level."
 msgstr "Архів повинен мати рівно один файл CSV у корені."
 
-#: reader.py:142
+#: reader.py
 msgid "The CSV file is larger than 5 MB."
 msgstr "Файл CSV більший за 5 МБ."
 
-#: reader.py:165
+#: reader.py
 #, python-format
 msgid "The archive has no file named %(name)s."
 msgstr "В архіві немає файлу %(name)s."

@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 
 from app.api.admin_auth import admin_required
+from app.api.admin_common import confirm_page
 from app.api.admin_quizzes import edit_page, not_archived
 from app.api.admin_workspace import workspace
 from app.api.rendering import page
@@ -110,5 +111,4 @@ def discard(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
 
 
 def _confirm(request: HttpRequest, quiz: Quiz, message: str, action: str) -> HttpResponse:
-    context = {"quiz": quiz, "message": message, "action": action}
-    return page(request, "admin/confirm.html", context, request.locale)  # type: ignore[attr-defined]
+    return confirm_page(request, quiz=quiz, message=message, action=action)

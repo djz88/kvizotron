@@ -10,6 +10,10 @@ SECRET=$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')
 
 # Soubor deploy/.env provozovatele se sem nesmí dostat.
 export COMPOSE_DISABLE_ENV_FILE=1
+# Limity a doba uchování záloh z prostředí provozovatele by se přes compose dostaly do zkušebního
+# nasazení a 50 klientů z jedné adresy by dostalo 429.
+unset KVZ_LOGIN_ATTEMPTS_PER_MINUTE KVZ_CODE_ATTEMPTS_PER_MINUTE KVZ_SUBMITS_PER_MINUTE \
+    KVZ_STARTS_PER_MINUTE KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE KVZ_BACKUP_RETENTION_DAYS
 export KVZ_DOMAIN=localhost KVZ_SECRET_KEY="$SECRET" KVZ_HTTP_PORT="$HTTP_PORT" KVZ_HTTPS_PORT="$HTTPS_PORT"
 compose() { docker compose -p "$PROJECT" -f "$FILE" "$@"; }
 
@@ -86,6 +90,23 @@ for module in auth.local persistence.sqlite; do
     esac
 done
 
+check "jobs service is running" "$(compose ps --status running --services jobs)" "jobs"
+compose exec -T jobs python manage.py retention >/dev/null 2>&1
+check "retention pass exits 0 in jobs" "$?" "0"
+
+# Záloha: první průchod služby `jobs` ji udělá hned po startu; svazek vidí jen `jobs`.
+dated='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+listing=""
+for _ in $(seq 1 30); do
+    listing=$(compose exec -T jobs ls /data/backups 2>/dev/null)
+    [ -n "$listing" ] && break
+    sleep 1
+done
+check "jobs makes one dated backup at start" "$(printf '%s\n' "$listing" | grep -c .)/$(printf '%s\n' "$listing" | grep -Ec "^$dated\$")" "1/1"
+check "jobs is not root" "$(compose exec -T jobs id -u)" "1000"
+# Prázdný adresář je v obrazu (vlastník `kvizotron`), obsah svazku ale jen v `jobs`.
+check "app does not see the backups" "$(compose exec -T app ls -A /data/backups | grep -c .)" "0"
+
 # Heslo jen přes stdin, generované pro tento běh; nikam se nevypisuje.
 PASSWORD=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
 init_admin() { printf '%s\n' "$PASSWORD" | compose exec -T app python manage.py init_admin smoke-admin --password-stdin >/dev/null 2>&1; echo $?; }
@@ -107,6 +128,8 @@ case "$header" in
     *"default-src 'self'"*) echo "PASS CSP header is set" ;;
     *) echo "FAIL CSP header: $header"; failed=1 ;;
 esac
+hsts=$(curl -skI --resolve "localhost:$HTTPS_PORT:127.0.0.1" "$BASE/" | tr -d '\r' | sed -n 's/^[Ss]trict-[Tt]ransport-[Ss]ecurity: //p')
+check "HSTS header" "$hsts" "max-age=15552000"
 check "admin needs login" "$(web -o /dev/null -w '%{redirect_url}' "$BASE/admin/quizzes")" "$BASE/admin/login?next=/admin/quizzes"
 
 JAR=$(mktemp)
@@ -198,6 +221,39 @@ check "stored image is WebP" "$type" "image/webp"
 # Connecting by IP address sends no server name (SNI), as a browser on the LAN does.
 code=$(curl -sk -o /dev/null -w '%{http_code}' -H 'Host: localhost' "https://127.0.0.1:$HTTPS_PORT/healthz")
 check "TLS works without a server name" "$code" "200"
+
+# Nácvik obnovy je poslední: zastaví app a jobs a vymění data. Čerstvá záloha už obsahuje kvíz a obrázek.
+compose exec -T jobs python manage.py backup >/dev/null 2>&1
+check "manual backup exits 0 in jobs" "$?" "0"
+compose stop app jobs >/dev/null 2>&1
+restore_output=$(compose run --rm --no-deps jobs python manage.py restore latest 2>&1)
+restore_code=$?
+check "restore latest exits 0" "$restore_code" "0"
+[ "$restore_code" -eq 0 ] || echo "$restore_output"
+owners=$(compose run --rm --no-deps jobs sh -c 'stat -c %u "$KVZ_DB_PATH"; find /data/media -not -uid 1000 | wc -l; find /data/media -type f | wc -l' 2>/dev/null | tr -d '\r' | tr '\n' ' ')
+case "$owners" in
+    "1000 0 "[1-9]*) echo "PASS restored database and media belong to uid 1000" ;;
+    *) echo "FAIL owners after restore (database uid, foreign files, media files): $owners"; failed=1 ;;
+esac
+compose start app jobs >/dev/null 2>&1
+body=""
+for _ in $(seq 1 60); do
+    body=$(curl -sk --resolve "localhost:$HTTPS_PORT:127.0.0.1" "https://localhost:$HTTPS_PORT/healthz")
+    [ "$body" = '{"status": "ok"}' ] && break
+    sleep 1
+done
+check "healthz answers again after the restore" "$body" '{"status": "ok"}'
+quiz=$(compose exec -T app python manage.py shell -v 0 -c "
+from app.domain.models import Quiz
+print(Quiz.objects.filter(slug='smoke').exists())
+" | tail -n 1 | tr -d '\r')
+check "the smoke quiz survived the restore" "$quiz" "True"
+mode=$(compose exec -T app python -c "
+import os, sqlite3
+print(sqlite3.connect(os.environ['KVZ_DB_PATH']).execute('PRAGMA journal_mode').fetchone()[0])")
+check "database is back in WAL after the restore" "$mode" "wal"
+check "jobs service runs again after the restore" "$(compose ps --status running --services jobs)" "jobs"
+check "jobs log has no traceback" "$(compose logs jobs 2>&1 | grep -c Traceback)" "0"
 
 [ "$failed" -eq 0 ] && echo "SMOKE OK" || echo "SMOKE FAILED"
 exit "$failed"

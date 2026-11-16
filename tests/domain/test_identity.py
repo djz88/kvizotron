@@ -206,3 +206,38 @@ def test_optional_blank_is_not_missing():
     run = a_run(ask_name="optional", ask_email="optional")
     who = send(run, "", "a" * 20)
     assert not participants.missing(who)
+
+
+def test_an_address_is_stored_with_its_casefolded_key():
+    """AC-146: the key a search compares, set where the address is written."""
+    run = a_run(ask_email="optional")
+    who = send(run, "Jana", "a" * 20, email="  Jana@Example.ORG ")
+    assert who.email == "Jana@Example.ORG"
+    assert who.email_key == "jana@example.org"
+    other = send(run, "Eva", "b" * 20)
+    assert other.email is None and other.email_key is None
+
+
+def test_an_address_given_later_replaces_the_key_and_an_empty_one_keeps_it():
+    """AC-146: a later submission without an address leaves address and key as they were."""
+    run = a_run(ask_email="optional", repeat_attempts="allow")
+    first = send(run, "Jana", "a" * 20, email="A@B.cz")
+    again = send(run, "Jana", "a" * 20, email="")
+    assert (again.email, again.email_key) == (first.email, "a@b.cz")
+    changed = send(run, "Jana", "a" * 20, email="C@D.cz")
+    assert (changed.email, changed.email_key) == ("C@D.cz", "c@d.cz")
+
+
+@pytest.mark.parametrize(
+    ("raw", "key"),
+    [
+        (None, None),
+        ("", None),
+        ("   ", None),
+        ("  A@B.Example ", "a@b.example"),
+        ("Straße@X.de", "strasse@x.de"),
+    ],
+)
+def test_the_email_key_is_the_stripped_casefolded_address(raw, key):
+    """AC-146: one function gives the key, None when there is no address."""
+    assert participants.email_key_of(raw) == key

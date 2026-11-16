@@ -1,12 +1,14 @@
 """The private link: the final score, and what else settings let the author see (AC-58)."""
 
 import logging
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from app.domain import authoring, grading, run_links, settings, tokens
-from app.domain.models import AttemptAnswer
+from app.domain.models import Attempt, AttemptAnswer, QuizRun
 from tests.domain.helpers import ADMIN_ID, OPTION_A, add_question, make_quiz
 from tests.support.client import FormClient
 from tests.support.photos import Player, photo_quiz, run_of, upload
@@ -167,6 +169,47 @@ def test_invalid_token_is_200_with_one_message_and_never_logged(caplog):
     assert photo.status_code == 204
 
 
+def test_malformed_photo_address_is_204_and_logs_no_token(caplog):
+    """AC-147: a hand-crafted last part answers like an unknown id and logs nothing."""
+    player = played()
+    link = link_of(player)
+    token = link.removeprefix("/v/")
+    row = AttemptAnswer.objects.get()
+    unknown = "00000000-0000-7000-8000-000000000001"
+    with caplog.at_level(logging.DEBUG):
+        parts = ("not-a-uuid", "12345", "x" * 80)
+        bad = [FormClient().get(f"{link}/photo/{part}") for part in parts]
+        unknown_id = FormClient().get(f"{link}/photo/{unknown}")
+        known = FormClient().get(f"{link}/photo/{row.id}")
+    for response in bad:
+        assert response.status_code == 204 and response.content == b""
+        assert response["X-Robots-Tag"] == "noindex" and "no-store" in response["Cache-Control"]
+        assert response["Referrer-Policy"] == "no-referrer"
+    assert unknown_id.status_code == 204 and "no-store" in unknown_id["Cache-Control"]
+    assert known.status_code == 200 and "private" in known["Cache-Control"]
+    warned = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert not [r for r in warned if r.name.startswith("django")]
+    assert token not in caplog.text and token not in "".join(r.getMessage() for r in warned)
+
+
+def test_odd_photo_addresses_are_204_and_log_no_token(caplog):
+    """AC-147: a slash, an empty part and a very long part are refused like any bad id."""
+    link = link_of(played())
+    token = link.removeprefix("/v/")
+    addresses = [
+        f"{link}/photo/{part}" for part in ("not-a-uuid", "a/b", "a/b/c/", "", "x" * 5000)
+    ] + [f"{link}/photo", f"{link}/photo//"]
+    with caplog.at_level(logging.DEBUG):
+        responses = [FormClient().get(address) for address in addresses]
+    for address, response in zip(addresses, responses, strict=True):
+        if address.endswith("/photo"):  # no trailing slash: not a photo address at all
+            continue
+        assert response.status_code == 204 and response.content == b"", address[-30:]
+        assert response["X-Robots-Tag"] == "noindex" and "no-store" in response["Cache-Control"]
+    assert token not in caplog.text
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
 def test_attempt_token_is_not_a_result_token():
     player = played()
     token = player.form()["attempt_token"]
@@ -232,3 +275,76 @@ def test_test_attempt_is_not_remembered_for_the_quiz():
 def test_privacy_page_mentions_photos_and_the_stored_link():
     html = text(FormClient().get("/privacy?lang=en"))
     assert "photo" in html and "this browser" in html
+
+
+def after_close_player(level="answers"):
+    quiz = make_quiz()
+    add_question(quiz)
+    for key, value in (
+        (settings.DATA_PROFILE, "answers"),
+        (settings.ANSWERS_VISIBILITY, "participant"),
+        (settings.REVEAL_MOMENT, "after_close"),
+        (settings.REVEAL_LEVEL, level),
+    ):
+        settings.set_override(key, quiz, value, admin_id=ADMIN_ID)
+    run = run_of(quiz)
+    player = Player(run)
+    player.result = player.plain({f"{player.question('choice')}:options[]": ["bbbb2222"]})
+    return run, player
+
+
+def test_private_link_hides_until_window_passes():
+    """AC-175: the private link hides the answers until the window has passed."""
+    run, player = after_close_player()
+    link = link_of(player)
+    html = text(FormClient().get(link))
+    assert "Ne cs" in html and "reveal-correct" not in html and "Ano cs" not in html
+    assert "Správné odpovědi uvidíte" in html
+    now = timezone.now()
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=now - timedelta(minutes=9))
+    html = text(FormClient().get(link))
+    assert "reveal-correct" not in html and "Ano cs" not in html
+    assert "(od " in html and "nejdříve" not in html  # a closed run knows the moment exactly
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=now - timedelta(minutes=10, seconds=1))
+    html = text(FormClient().get(link))
+    assert "reveal-correct" in html and "Ano cs" in html
+    assert "Správné odpovědi uvidíte" not in html
+
+
+def test_private_link_shows_only_the_verdict_at_that_level_when_shown():
+    run, player = after_close_player(level="verdict")
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=timezone.now() - timedelta(minutes=11))
+    html = text(FormClient().get(link_of(player)))
+    assert "reveal-state" in html and "reveal-correct" not in html
+
+
+def test_the_private_link_never_shows_answers_before_is_shown_at_the_unknown_moment():
+    """An attempt with a moment this code does not know shows nothing."""
+    run, player = after_close_player()
+    Attempt.objects.update(settings_json={**Attempt.objects.get().settings_json, "moment": "later"})
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=timezone.now() - timedelta(minutes=11))
+    assert "reveal-correct" not in text(FormClient().get(link_of(player)))
+
+
+def test_a_reopened_run_hides_the_answers_again():
+    """AC-175: a run that is open again hides what its close had shown."""
+    run, player = after_close_player()
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=timezone.now() - timedelta(minutes=11))
+    assert "reveal-correct" in text(FormClient().get(link_of(player)))
+    QuizRun.objects.filter(pk=run.pk).update(status=QuizRun.Status.OPEN)
+    assert "reveal-correct" not in text(FormClient().get(link_of(player)))
+
+
+def test_an_old_attempt_without_a_moment_shows_no_answers():
+    """AC-175: settings stored before the moment existed show nothing, and do not break."""
+    run, player = after_close_player()
+    Attempt.objects.update(settings_json={"navigation": "all_at_once"})
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    QuizRun.objects.filter(pk=run.pk).update(closed_at=timezone.now() - timedelta(minutes=11))
+    response = FormClient().get(link_of(player))
+    assert response.status_code == 200
+    assert "reveal-correct" not in text(response)

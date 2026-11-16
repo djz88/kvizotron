@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Admin login"
+msgstr "Вхід адміністраторів"
+
+#: manifest.py
+msgid "Accounts of the administrators."
+msgstr "Облікові записи адміністраторів."
+

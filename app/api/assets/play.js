@@ -48,7 +48,14 @@
   });
   document.addEventListener("htmx:sendError", showNetworkError);
   document.addEventListener("htmx:responseError", showNetworkError);
-  document.addEventListener("htmx:beforeRequest", function () {
+  document.addEventListener("htmx:timeout", showNetworkError);
+  // A request of the participant's own (the form, the check button) clears the old message. The
+  // background poll for a new revision does not: it would erase the message of an answer, such
+  // as the server's verdict on an automatic submission, a few seconds after it was shown.
+  document.addEventListener("htmx:beforeRequest", function (event) {
+    if (event.target && event.target.closest && event.target.closest("#revision-notice")) {
+      return;
+    }
     var message = document.getElementById("play-message");
     if (message) {
       message.textContent = "";

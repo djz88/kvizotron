@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block content %}
+{% include "admin/_quiz_header.html" %}
+<h2>{{ _("Export results") }}</h2>
+<table class="stack">
+  <thead><tr><th>{{ _("Run") }}</th><th>{{ _("Status") }}</th><th>{{ _("Data") }}</th></tr></thead>
+  <tbody>
+    {% for item in runs %}
+    <tr>
+      <td data-label="{{ _('Run') }}"><a href="{{ url('admin_run', args=[item.run.id]) }}">{{ _("Run %(no)s", no=item.run.run_no) }}</a></td>
+      <td data-label="{{ _('Status') }}">{{ item.status }}</td>
+      <td data-label="{{ _('Data') }}">{{ item.profile }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">{{ _("There are no runs yet.") }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+{% if files %}
+<form method="post" action="{{ request.get_full_path() }}">
+  {{ csrf_input }}
+  <fieldset>
+    <legend>{{ _("Files") }}</legend>
+    {% for file in files %}
+    <label>
+      <input type="checkbox" name="files" value="{{ file.name }}"{% if file.name in chosen.files %} checked{% endif %}>
+      {{ file.label }}{% if file.count < run_total %} ({{ _("%(count)s of %(total)s runs", count=file.count, total=run_total) }}){% endif %}
+    </label>
+    {% endfor %}
+  </fieldset>
+  {% if has_photos %}
+  <label>
+    <input type="checkbox" name="photos" value="on"{% if chosen.photos %} checked{% endif %}>
+    {{ _("Include photos") }}
+  </label>
+  <small>{{ _("Only in the ZIP. Without photos the answers file still names each photo.") }}</small>
+  {% endif %}
+  {% if files|selectattr("personal")|list %}
+  <label>
+    <input type="checkbox" name="personal_ok" value="on">
+    {{ _("This export contains personal data") }}
+  </label>
+  <small>{{ _("Names, e-mail addresses, answers or prize winners. Keep the files safe and delete them when you no longer need them.") }}</small>
+  {% endif %}
+  <button type="submit" name="bundle" value="separate"{% if chosen.bundle != "separate" %} class="secondary"{% endif %}>{{ _("Download chosen files separately") }}</button>
+  <button type="submit" name="bundle" value="zip"{% if chosen.bundle == "separate" %} class="secondary"{% endif %}>{{ _("Download all as ZIP") }}</button>
+</form>
+{% else %}
+<p>{{ _("These runs have nothing to export.") }}</p>
+{% endif %}
+{% include "admin/_export_jobs.html" %}
+{% endblock %}

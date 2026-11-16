@@ -21,7 +21,10 @@ IDS = [f"{root.name}-{locale}" for root, locale, _ in CATALOGUES]
 
 def read(path: Path):
     with path.open("rb") as file:
-        return read_po(file) if path.suffix == ".po" else read_mo(file)
+        if path.suffix != ".po":
+            return read_mo(file)
+        # The catalogues have no header, so the plural count comes from the locale directory.
+        return read_po(file, locale=path.parent.parent.name)
 
 
 def is_admin_only(message) -> bool:
@@ -41,8 +44,11 @@ def test_catalogue_has_no_empty_translation(root, locale, directory):
 
 @pytest.mark.parametrize(("root", "locale", "directory"), CATALOGUES, ids=IDS)
 def test_compiled_catalogue_matches_source(root, locale, directory):
-    source = {m.id: m.string for m in read(directory / "django.po") if m.id and m.string}
-    compiled = {m.id: m.string for m in read(directory / "django.mo") if m.id}
+    def key(value):  # a plural message has a list in the .mo and a tuple in the .po
+        return tuple(value) if isinstance(value, (list, tuple)) else value
+
+    source = {key(m.id): key(m.string) for m in read(directory / "django.po") if m.id and m.string}
+    compiled = {key(m.id): key(m.string) for m in read(directory / "django.mo") if m.id}
     assert compiled == source
 
 
@@ -78,7 +84,10 @@ def test_every_text_of_a_manifest_is_translated():
             if text
         ]
         texts += [item.reason for item in module.settings_requirements.values()]
+        texts += [text for text in (module.name, module.description) if text]
         for text in texts:
+            if text.isdigit():
+                continue  # a number reads the same in every language
             with translation.override("cs"):
                 if translation.gettext(text) == text:  # noqa: INT001
                     missing.append(f"{module.id}: {text}")

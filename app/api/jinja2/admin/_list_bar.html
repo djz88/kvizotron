@@ -1,0 +1,12 @@
+{# The bar above a list (AC-170): its name and count on the left, managing the list (import,
+   replace, download) on the right as buttons, and an optional note below. The buttons come from
+   the call block: {% call list_bar(_("Questions"), count) %}<a role="button" ...>{% endcall %}. #}
+{% macro list_bar(title, count=None, note="") %}
+<div class="list-bar">
+  <div class="list-bar-head">
+    <h2>{{ title }}{% if count is not none %} <span class="list-bar-count">({{ count }})</span>{% endif %}</h2>
+    <div class="list-bar-actions">{{ caller() }}</div>
+  </div>
+  {% if note %}<small class="list-bar-note">{{ note }}</small>{% endif %}
+</div>
+{% endmacro %}

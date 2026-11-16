@@ -51,6 +51,8 @@ Rules:
 * **Test runs** never get rules, entitlements or draws ([ADR-0044](0044-preview-and-test-links.md)). A run with rules sets the participant cookie, like a visible scoreboard.
 * **Split.** The plugin `rewards.threshold` (port `reward`) says which thresholds an attempt reaches and applies the tier setting; `drawings.manual` (port `drawing`) orders, fingerprints and selects. Rules, entitlements, draw records, transactions and pages live in `app/domain/rewards.py`, `app/domain/draws.py` and `app/api/admin_rewards.py`, the same split as `results.local` (ADR-0051).
 
+* **A reward is renamed on the spot (addendum 2026-11-11).** The name in the quiz's default language has a pencil beside the summary of the reward's row (AC-160). It saves only the text through `rewards.save_texts`, so it works at any time, on a running run too, and the structure stays as it opened; the audit entry `reward.texts_saved` carries no name.
+
 ### Consequences
 
 * Good, because a prize changes hands only by an admin's action or by a better or regraded attempt before it is handed over

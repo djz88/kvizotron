@@ -1,7 +1,7 @@
 """Application settings: a quiz override beats the global value, which beats the default.
 
 Each setting states where it can be set (ADR-0042). Module configuration is a different thing and
-belongs to `plugin_configuration` (D4).
+belongs to `plugin_configuration`, created when a module first needs it (ADR-0057).
 """
 
 from collections.abc import Mapping, Sequence
@@ -28,9 +28,9 @@ from app.kernel.errors import StartupError
 from app.kernel.manifest import Manifest
 
 REVISION_SWITCH_POLICY = "revision_switch_policy"
-COLOR_PALETTE = "color_palette"
 NONE_OPTION = "none_option"
 SHOW_SOURCES = "show_sources"
+SHOW_HERO_LOGO = "show_hero_logo"
 NAVIGATION_MODE = "navigation_mode"
 PAGE_SIZE = "page_size"
 REVEAL_MOMENT = "reveal_moment"
@@ -59,16 +59,6 @@ class Policy(StrEnum):
     LET_FINISH = "let_finish"
 
 
-class Palette(StrEnum):
-    """Each value has a token block in the theme's stylesheet (FR-53)."""
-
-    BLUE_TEAL = "blue_teal"
-    INDIGO_PINK = "indigo_pink"
-    VIOLET_WHITE = "violet_white"
-    GREEN_BLUE = "green_blue"
-    RED_PLUM = "red_plum"
-
-
 class NoneOption(StrEnum):
     """Where the translated answer "None of the answers" appears."""
 
@@ -94,6 +84,7 @@ class RevealMoment(StrEnum):
     NEVER = "never"
     AT_END = "at_end"
     AFTER_EACH = "after_each"
+    AFTER_CLOSE = "after_close"
 
 
 class RevealLevel(StrEnum):
@@ -178,23 +169,6 @@ CATALOGUE = {
         "A new revision replaces the whole quiz, not one question.",
         group="technical",
     ),
-    COLOR_PALETTE: SettingDefinition(
-        COLOR_PALETTE,
-        tuple(Palette),
-        Palette.BLUE_TEAL.value,
-        gettext_lazy("Colours"),
-        {
-            Palette.BLUE_TEAL: gettext_lazy("Blue and teal"),
-            Palette.INDIGO_PINK: gettext_lazy("Indigo and pink"),
-            Palette.VIOLET_WHITE: gettext_lazy("Violet and white"),
-            Palette.GREEN_BLUE: gettext_lazy("Green and blue"),
-            Palette.RED_PLUM: gettext_lazy("Red and plum"),
-        },
-        QUIZ_WIDE,
-        "Colours belong to the quiz's pages, and a page holds many questions.",
-        group="look",
-        level=BASIC,
-    ),
     NONE_OPTION: SettingDefinition(
         NONE_OPTION,
         tuple(NoneOption),
@@ -206,7 +180,7 @@ CATALOGUE = {
             ),
             NoneOption.TRICK_QUESTIONS: gettext_lazy("Only on trick questions"),
         },
-        group="answers",
+        group="playing",
     ),
     DATA_PROFILE: SettingDefinition(
         DATA_PROFILE,
@@ -283,6 +257,17 @@ CATALOGUE = {
         },
         group="answers",
     ),
+    SHOW_HERO_LOGO: SettingDefinition(
+        SHOW_HERO_LOGO,
+        tuple(Switch),
+        Switch.ON.value,
+        gettext_lazy("Large logo on the home and About pages"),
+        {Switch.ON: gettext_lazy("Show"), Switch.OFF: gettext_lazy("Hide")},
+        ("global",),
+        "The large logo is shown on pages that belong to no quiz.",
+        group="look",
+        level=BASIC,
+    ),
     NAVIGATION_MODE: SettingDefinition(
         NAVIGATION_MODE,
         tuple(Navigation),
@@ -320,6 +305,7 @@ CATALOGUE = {
             RevealMoment.NEVER: gettext_lazy("Never"),
             RevealMoment.AT_END: gettext_lazy("At the end"),
             RevealMoment.AFTER_EACH: gettext_lazy("After each question"),
+            RevealMoment.AFTER_CLOSE: gettext_lazy("After the run closes"),
         },
         QUIZ_WIDE,
         "It depends on how the whole attempt is walked through.",

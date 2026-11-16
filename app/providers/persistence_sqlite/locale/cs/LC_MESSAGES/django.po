@@ -1,0 +1,8 @@
+#: manifest.py
+msgid "Database"
+msgstr "Databáze"
+
+#: manifest.py
+msgid "Stores everything in SQLite."
+msgstr "Ukládá vše do SQLite."
+

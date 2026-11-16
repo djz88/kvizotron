@@ -38,6 +38,8 @@ Rules:
 * Failed codes are limited per client IP in process memory, 10 per minute by default (`KVZ_CODE_ATTEMPTS_PER_MINUTE`). The IP is the first `X-Forwarded-For` value, which Caddy overwrites from the real client, else `REMOTE_ADDR`.
 * Pages that echo a typed name or e-mail are `private, no-store`. A refused fill-in under `/v/<token>` answers 200, so the token never reaches a request log.
 
+* **An admin renames a nickname (addendum 2026-11-11).** In the table of attempts of a run an admin can change a participant's nickname, for a name that should not be on a scoreboard (AC-161). The rules hold as for the participant: no empty name, at most 40 characters, and no name another participant with a finished attempt holds where equal names are forbidden. The cached scoreboard is cleared and the audit entry `participant.renamed` carries neither name.
+
 ### Consequences
 
 * Good, because a run without these rules behaves exactly as before and stores nothing new
@@ -53,3 +55,5 @@ AC-70 to AC-76.
 ## More Information
 
 Refines [ADR-0011](0011-anonymous-cookie-participant-identity.md) and applies [ADR-0030](0030-rate-limit-thresholds.md).
+
+Refined by [ADR-0056](0056-retention-job-summary-held-runs.md): since D3 names and e-mails are deleted with the run's data or on an erasure request.

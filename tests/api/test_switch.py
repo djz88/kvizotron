@@ -3,7 +3,7 @@ import re
 import pytest
 
 from app.domain import authoring
-from app.domain.models import Attempt
+from app.domain.models import Attempt, QuizRevision
 from tests.api.test_play import HTMX, Play, hidden, text
 from tests.domain.helpers import ADMIN_ID, OPTION_A, OPTION_B, add_question, open_quiz_run
 
@@ -187,7 +187,7 @@ def test_flow_after_switch_submits_and_scores_on_new_revision(client, run):
     first, second = question_ids(run)
     publish(run, change=0)
     html = text(client.post(attempt_url(play, "switch"), play.fields, headers=HTMX))
-    action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+    action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
     fields = {
         "attempt_token": hidden(html, "attempt_token"),
         "submission_key": hidden(html, "submission_key"),
@@ -209,3 +209,16 @@ def test_revision_polling_stops_for_a_pending_attempt(client):
         run=run, revision=run.current_revision, status=Attempt.Status.PENDING_GRADING
     )
     assert client.get(f"/a/{attempt.id}/revision-status").status_code == 286
+
+
+def test_switch_to_a_revision_with_a_missing_module_answers_503_and_writes_nothing(client, run):
+    play = Play(client, run)
+    publish(run)
+    revision = run.current_revision
+    snapshot = revision.snapshot_json
+    snapshot["questions"][0]["type"] = "ghost"
+    QuizRevision.objects.filter(pk=revision.pk).update(snapshot_json=snapshot)
+    before = Attempt.objects.count()
+    response = client.post(attempt_url(play, "switch"), play.fields, headers=HTMX)
+    assert response.status_code == 503
+    assert Attempt.objects.count() == before

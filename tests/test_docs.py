@@ -18,20 +18,6 @@ STATUS = re.compile(r"accepted|proposed|deprecated|superseded by ADR-\d{4}")
 # The list only shrinks: a new criterion needs a test that names it.
 LAST_EXCUSED = 69
 AC_NOT_NAMED_BY_A_TEST = {
-    "AC-03",
-    "AC-04",
-    "AC-05",
-    "AC-06",
-    "AC-08",
-    "AC-09",
-    "AC-10",
-    "AC-11",
-    "AC-12",
-    "AC-14",
-    "AC-15",
-    "AC-16",
-    "AC-17",
-    "AC-18",
     "AC-19",
     "AC-20",
     "AC-21",
@@ -45,7 +31,6 @@ AC_NOT_NAMED_BY_A_TEST = {
     "AC-29",
     "AC-30",
     "AC-31",
-    "AC-32",
     "AC-33",
     "AC-34",
     "AC-35",
@@ -151,6 +136,32 @@ def test_the_readers_notice_a_duplicate_and_an_unknown_reference():
     }
 
 
+def named_by_tests() -> set[str]:
+    """Every AC-nn that a test file mentions, in a docstring, a name or a comment."""
+    found: set[str] = set()
+    for path in (ROOT / "tests").rglob("*.py"):
+        if path != Path(__file__).resolve():
+            found |= set(re.findall(r"\bAC-\d+\b", path.read_text()))
+    return found
+
+
+def test_the_readers_find_the_criteria_that_tests_name():
+    assert {"AC-01", "AC-15", "AC-72"} <= named_by_tests()
+
+
+def test_an_excused_criterion_is_one_no_test_names_yet():
+    named = AC_NOT_NAMED_BY_A_TEST & named_by_tests()
+    assert not named, f"remove from AC_NOT_NAMED_BY_A_TEST: {sorted(named)}"
+
+
+def test_every_other_criterion_is_named_by_a_test():
+    criteria = set(table_ids("AC", (ARCHITECTURE / "acceptance-criteria.md").read_text()))
+    assert AC_NOT_NAMED_BY_A_TEST <= criteria
+    assert all(int(item.split("-")[1]) <= LAST_EXCUSED for item in AC_NOT_NAMED_BY_A_TEST)
+    unnamed = criteria - AC_NOT_NAMED_BY_A_TEST - named_by_tests()
+    assert not unnamed, f"a test must name: {sorted(unnamed)}"
+
+
 def test_each_requirement_is_defined_once():
     ids = [fr for path in in_repository(documents()) for fr in fr_definitions(path.read_text())]
     assert not duplicates(ids)
@@ -253,3 +264,19 @@ def test_a_skill_of_this_repository_is_named_after_it(skill):
     name = re.search(r"^name: (.+)$", skill.read_text(), re.M)[1]
     assert name.startswith("kvizotron-")
     assert skill.parent.name == name
+
+
+# Machine traces: a home directory, an agent's scratch folder or a link to an agent session.
+LOCAL_TRACES = re.compile(r"/home/[\w.-]+|/Users/[\w.-]+|/tmp/claude-\d+|claude\.ai/code/session_")
+
+
+def test_documents_hold_no_local_paths_or_session_links():
+    """Documents and agent files are public: no home directories, scratch folders or sessions."""
+    texts = [*ROOT.glob("docs/**/*.md"), *ROOT.glob(".claude/**/*"), *ROOT.glob("**/CLAUDE.md")]
+    found = [
+        f"{path.relative_to(ROOT)}: {match.group(0)}"
+        for path in texts
+        if path.is_file() and ".venv" not in path.parts and ".worktrees" not in path.parts
+        for match in LOCAL_TRACES.finditer(path.read_text(encoding="utf-8", errors="ignore"))
+    ]
+    assert not found

@@ -1,11 +1,12 @@
 {% from "admin/_chips.html" import content_chips, run_status %}
+{% from "admin/_inline_name.html" import inline_name with context %}
 {% set tabs = [("edit", "admin_quiz_edit", _("Questions")), ("runs", "admin_run_open", _("Runs")), ("grading", "admin_quiz_grading", _("Grading")), ("settings", "admin_quiz_settings", _("Settings"))] %}
 {% set more_tabs = [("rewards", "admin_quiz_rewards", _("Rewards")), ("tests", "admin_quiz_tests", _("Test links")), ("revisions", "admin_revisions", _("Revisions"))] %}
 <div class="quiz-head">
   <details class="quiz-fold" open>
-    <summary><strong>{{ title }}</strong><span>{% for key, name, label in tabs + more_tabs %}{% if key == tab %}{{ label }}{% endif %}{% endfor %}</span></summary>
+    <summary><strong id="quiz-title-{{ quiz.id }}">{{ title }}</strong><span>{% for key, name, label in tabs + more_tabs %}{% if key == tab %}{{ label }}{% endif %}{% endfor %}</span></summary>
     <div class="quiz-title">
-      <h1>{{ title }}</h1>
+      {{ inline_name(name_field) }}
       <ul class="chips">{{ content_chips(state) }}</ul>
       {% include "admin/_actions.html" %}
     </div>
@@ -19,12 +20,13 @@
       <span>{{ _("Public address") }}: <a href="{{ url('quiz', args=[quiz.slug]) }}">/q/{{ quiz.slug }}</a> · {{ _("Languages") }}: {{ quiz.supported_locales|join(", ") }}</span>
       <span class="status-area">{{ run_status(state) }}</span>
       <a href="{{ url('admin_preview', args=[quiz.id]) }}">{{ _("Preview") }}</a>
+      {% if state.last_run %}<a href="{{ url('results_export_new') }}?quiz={{ quiz.id }}">{{ _("Export results") }}</a>{% endif %}
       {% set shown_run = state.open_run or state.last_run %}
       {% if shown_run and shown_run.status != "ARCHIVED" %}
       <span>{{ _("Run %(no)s", no=shown_run.run_no) }}:
         <a href="{{ url('admin_run', args=[shown_run.id]) }}#statistics">{{ _("Statistics") }}</a> ·
         <a href="{{ url('admin_run', args=[shown_run.id]) }}#scoreboard">{{ _("Scoreboard") }}</a> ·
-        <a href="{{ url('scoreboard', args=[quiz.slug, shown_run.id]) }}?view=projector">{{ _("Projector") }}</a>
+        <a href="{{ url('scoreboard', args=[quiz.slug, shown_run.id]) }}?view=projector" target="_blank" rel="noopener">{{ _("Projector") }}</a>
       </span>
       {% endif %}
     </div>

@@ -18,6 +18,7 @@ from app.domain import (
     clock,
     draws,
     participants,
+    retention,
     rewards,
     run_schedule,
     settings,
@@ -127,6 +128,7 @@ def test_open_run_shows_refusal(logged_in):
 
 
 def test_preview_then_draw(logged_in, admin_user):
+    """AC-12: the admin sees the eligible snapshot (count, fingerprint, people) before drawing."""
     run, rule = closed_with(["Alena", "Bohdan", "Cecílie"])
     snapshot = draws.preview(rule)
     html = text(page_of(logged_in, run))
@@ -150,6 +152,14 @@ def test_preview_then_draw(logged_in, admin_user):
     again = act(logged_in, run, rule, action="draw")
     assert again.status_code == 409 and "already been drawn" in text(again)
     assert Draw.objects.count() == 1
+
+
+def test_the_reason_fields_say_not_to_name_people(logged_in):
+    """AC-113: the reason stays in the draw history after the data are deleted."""
+    run, rule = closed_with(["Alena", "Bohdan", "Cecílie"])
+    act(logged_in, run, rule, action="draw")
+    html = text(page_of(logged_in, run))
+    assert html.count("Do not name people here") == 2
 
 
 def test_fewer_eligible_than_requested_is_said(logged_in):
@@ -209,6 +219,7 @@ def test_reason_missing_rejected(logged_in):
 
 
 def test_history_lists_every_record(logged_in):
+    """AC-12: the history of repeated draws lists every record with time, admin and reason."""
     run, rule = closed_with(["Alena", "Bohdan", "Cyril"])
     act(logged_in, run, rule, action="draw")
     act(logged_in, run, rule, action="redraw", reason="Chybná <b>pravidla</b>")
@@ -224,6 +235,7 @@ def test_history_lists_every_record(logged_in):
 
 
 def test_get_never_draws(logged_in):
+    """AC-12: a closed run with players never draws by itself; only a signed-in POST does."""
     run, rule = closed_with(["Alena", "Bohdan"])
     for _ in range(3):
         assert page_of(logged_in, run).status_code == 200
@@ -279,3 +291,36 @@ def test_draw_after_the_deadline_closes_the_run_lazily(logged_in, monkeypatch):
     assert NOT_CLOSED not in html and 'value="draw"' in html
     assert act(logged_in, run, rule, action="draw").status_code == 302
     assert Draw.objects.count() == 1
+
+
+def test_every_action_through_the_page_is_refused_after_the_data_were_deleted(logged_in):
+    """AC-12, AC-111: the draw page of a deleted run says why and no POST adds a record."""
+    run, rule = closed_with(["Alena", "Bohdan", "Cecílie"])
+    act(logged_in, run, rule, action="draw")
+    winner = draws.standing(rule).winners[0]
+    retention.purge_run(run, trigger="manual", admin_id=ADMIN_ID)
+    before = Draw.objects.count()
+
+    assert "keeps no scores" in text(page_of(logged_in, run))
+    for data in (
+        {"action": "draw"},
+        {"action": "redraw", "reason": "Znovu"},
+        {"action": "move_up", "entry": winner.id, "reason": "Nepřevzal"},
+        {"action": "substitute", "entry": winner.id, "reason": "Nepřevzal"},
+    ):
+        response = act(logged_in, run, rule, **data)
+        assert response.status_code == 409, data
+        assert "keeps no scores" in text(response)
+    assert Draw.objects.count() == before
+
+
+def test_history_names_a_deleted_admin_without_its_id(logged_in):
+    """AC-169: a draw made by an account deleted since then shows "a deleted admin"."""
+    run, rule = closed_with(["Alena", "Bohdan"])
+    act(logged_in, run, rule, action="draw")
+    gone = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
+    Draw.objects.update(admin_id=gone)
+    html = text(page_of(logged_in, run))
+    history = html[html.index('id="history-') :]
+    assert gone not in history
+    assert "a deleted admin" in history

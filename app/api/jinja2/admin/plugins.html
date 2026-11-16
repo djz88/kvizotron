@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Modules") }}</h1>
+<table class="stack">
+  <thead><tr><th>{{ _("Name") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Version") }}</th><th>{{ _("State") }}</th><th>{{ _("Change") }}</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td data-label="{{ _('Name') }}"><a href="{{ url('admin_plugin', args=[row.id]) }}">{{ row.name }}</a></td>
+      <td data-label="{{ _('Kind') }}">{{ row.kind }}</td>
+      <td data-label="{{ _('Version') }}">{{ row.version }}</td>
+      <td data-label="{{ _('State') }}">{% if row.enabled %}{{ _("Enabled") }}{% else %}{{ _("Disabled") }}{% endif %}</td>
+      <td data-label="{{ _('Change') }}">
+        {% if row.switchable %}
+        <form method="post" action="{{ url('admin_plugin_state', args=[row.id]) }}">
+          {{ csrf_input }}
+          <input type="hidden" name="enabled" value="{{ 'off' if row.enabled else 'on' }}">
+          <button type="submit" class="secondary">{% if row.enabled %}{{ _("Disable") }}{% else %}{{ _("Enable") }}{% endif %}</button>
+        </form>
+        {% elif row.reason %}{{ row.reason }}{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

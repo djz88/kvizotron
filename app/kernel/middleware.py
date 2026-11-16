@@ -11,6 +11,8 @@ UPLOAD_ROUTE = re.compile(
     r"/admin/(?:quizzes|banks)/[0-9a-fA-F-]{36}/questions/(?:new|[^/]+/edit)"
     r"|/admin/quizzes/[0-9a-fA-F-]{36}/preview/submit"
     r"|/admin/import/new"
+    r"|/admin/settings/branding"
+    r"|/admin/quizzes/[0-9a-fA-F-]{36}/branding"
 )
 # Set by the API: whether a public request may carry a file. Must not read the body.
 public_upload_check: Callable[[Any], bool] | None = None

@@ -1,16 +1,24 @@
-#: manifest.py:25
+#: manifest.py
+msgid "Quiz flow"
+msgstr "Průchod kvízem"
+
+#: manifest.py
+msgid "How a participant moves through the questions."
+msgstr "Jak účastník prochází otázkami."
+
+#: manifest.py
 msgid "Resume in this browser"
 msgstr "Pokračování v tomto prohlížeči"
 
-#: manifest.py:27
+#: manifest.py
 msgid "Keep unsent answers on this device"
 msgstr "Nechat neodeslané odpovědi v tomto zařízení"
 
-#: manifest.py:28
+#: manifest.py
 msgid "Do not keep unsent answers"
 msgstr "Neukládat neodeslané odpovědi"
 
-#: manifest.py:31
+#: manifest.py
 msgid "Answers stay on this device until the attempt ends, at most 24 hours; a shared device can show them to the next person."
 msgstr "Odpovědi zůstanou v tomto zařízení do konce pokusu, nejvýše 24 hodin; na sdíleném zařízení je může vidět další člověk."
 

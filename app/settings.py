@@ -15,7 +15,14 @@ def _required(name: str) -> str:
     return value
 
 
-SECRET_KEY = _required("KVZ_SECRET_KEY")
+def _secret(name: str, minimum: int = 32) -> str:
+    value = _required(name)
+    if len(value) < minimum:
+        raise ImproperlyConfigured(f"{name} must have at least {minimum} characters")
+    return value
+
+
+SECRET_KEY = _secret("KVZ_SECRET_KEY")
 _DOMAIN = _required("KVZ_DOMAIN")
 
 DEBUG = os.environ.get("KVZ_DEBUG") == "1"
@@ -40,8 +47,17 @@ def _positive_int(name: str, default: int) -> int:
     return int(raw)
 
 
-# ADR-0030: failed access codes per client address and minute.
+# ADR-0030: request limits per client address and minute.
+KVZ_LOGIN_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_LOGIN_ATTEMPTS_PER_MINUTE", 5)
 KVZ_CODE_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_CODE_ATTEMPTS_PER_MINUTE", 10)
+KVZ_SUBMITS_PER_MINUTE = _positive_int("KVZ_SUBMITS_PER_MINUTE", 120)
+KVZ_STARTS_PER_MINUTE = _positive_int("KVZ_STARTS_PER_MINUTE", 300)
+# Wrong logins from one address across all names; above the per-name limit on purpose.
+KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE = _positive_int("KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE", 30)
+
+# D5: the daily backup of the database and the media, made by the `jobs` service.
+KVZ_BACKUP_PATH = os.environ.get("KVZ_BACKUP_PATH", "/data/backups")
+KVZ_BACKUP_RETENTION_DAYS = _positive_int("KVZ_BACKUP_RETENTION_DAYS", 30)
 
 KVZ_MODULES = load_modules()
 KVZ_PERSISTENCE = load_persistence(KVZ_MODULES)
@@ -82,12 +98,16 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "app.kernel.middleware.ModuleGateMiddleware",
     "app.api.run_clock.RunClockMiddleware",
+    # Last: it must not run before the work of the others, and a failure in it changes nothing.
+    "app.api.heartbeat.HeartbeatMiddleware",
 ]
 # data: only for images, which Pico CSS uses for its icons. https: for images a quiz loads from
 # their own server (ADR-0043).
 SECURE_CSP = {
     "default-src": [CSP.SELF],
     "img-src": [CSP.SELF, "data:", "https:"],
+    # The nonce is added only to a page that asks for it: the block of custom colours (ADR-0054).
+    "style-src": [CSP.SELF, CSP.NONCE],
     "object-src": [CSP.NONE],
     "base-uri": [CSP.SELF],
     "form-action": [CSP.SELF],

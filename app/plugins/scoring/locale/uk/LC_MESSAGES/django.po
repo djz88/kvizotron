@@ -1,8 +1,16 @@
-#: strategies.py:27
+#: manifest.py
+msgid "Scoring"
+msgstr "Оцінювання"
+
+#: manifest.py
+msgid "Counts points for an answer."
+msgstr "Підраховує бали за відповідь."
+
+#: strategies.py
 msgid "All or nothing"
 msgstr "Усе або нічого"
 
-#: strategies.py:48
+#: strategies.py
 msgid "Part by part"
 msgstr "Частина за частиною"
 

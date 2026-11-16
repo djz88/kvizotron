@@ -4,10 +4,13 @@ import re
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
+from django.utils import translation
 from PIL import Image
 
-from app.domain import authoring, settings
-from app.domain.models import Quiz, QuizRevision
+from app.api.admin_forms import conflict_messages, result_messages
+from app.contracts import SCOREBOARD_VISIBILITY
+from app.domain import authoring, data_policy, results, rewards, settings
+from app.domain.models import Quiz, QuizRevision, QuizRun
 from app.kernel.models import PluginInstallation
 from tests.domain.helpers import (
     ADMIN_ID,
@@ -18,6 +21,7 @@ from tests.domain.helpers import (
     published_quiz,
 )
 from tests.support.client import FormClient
+from tests.support.requirements import REASON
 
 pytestmark = pytest.mark.django_db
 QUESTION = {"prompt_cs": "Otázka", "option_0_cs": "A", "option_1_cs": "B", "correct_1": "on"}
@@ -49,7 +53,7 @@ def test_create_quiz_opens_editor(logged_in):
     assert quiz.featured is True
 
 
-@pytest.mark.parametrize("slug", ["", "s mezerou", "háček", "x" * 81])
+@pytest.mark.parametrize("slug", ["s mezerou", "háček", "x" * 81])
 def test_create_quiz_with_invalid_slug_shows_error(logged_in, slug):
     response = create(logged_in, slug=slug)
     assert response.status_code == 200
@@ -645,3 +649,197 @@ def test_several_correct_without_several_answers_keeps_the_form_with_a_message(l
     assert 'name="correct_0" checked' in text(response)
     assert "více odpovědí" in text(response)
     assert not quiz.revisions.exists()
+
+
+def _refuse_open(monkeypatch, error):
+    def refuse(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(authoring, "open_run", refuse)
+
+
+def _refuse_start(monkeypatch, error):
+    def refuse(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(authoring, "publish_and_open", refuse)
+
+
+def test_start_from_publish_page_refuses_an_unmet_requirement(logged_in, monkeypatch):
+    # Not reachable with a natural setup: publication validation checks the same requirement
+    # first and refuses before the run opens, so the refusal is raised by a stub here.
+    quiz = make_quiz()
+    add_question(quiz)
+    _refuse_start(monkeypatch, authoring.RequirementUnmet([REASON]))
+    response = publish_via_page(logged_in, quiz, start="1")
+    assert response.status_code == 200
+    assert REASON in text(response)
+    assert not QuizRun.objects.exists()
+
+
+def test_start_from_publish_page_refuses_a_reward_conflict(logged_in, monkeypatch):
+    quiz = make_quiz()
+    add_question(quiz)
+    _refuse_start(monkeypatch, rewards.RewardConflict(["profile"]))
+    response = publish_via_page(logged_in, quiz, start="1")
+    assert response.status_code == 200
+    with translation.override("cs"):
+        assert rewards.messages(["profile"])[0] in text(response)
+    assert not QuizRun.objects.exists()
+
+
+def test_start_from_publish_page_refuses_a_stateless_conflict(logged_in, monkeypatch):
+    quiz = make_quiz()
+    add_question(quiz)
+    _refuse_start(monkeypatch, data_policy.StatelessConflict(["photo_question"]))
+    response = publish_via_page(logged_in, quiz, start="1")
+    assert response.status_code == 200
+    with translation.override("cs"):
+        assert conflict_messages(["photo_question"])[0] in text(response)
+    assert not QuizRun.objects.exists()
+
+
+def test_two_starts_open_one_run(logged_in):
+    quiz = make_quiz()
+    add_question(quiz)
+    first = publish_via_page(logged_in, quiz, start="1")
+    assert first.status_code == 302
+    second = logged_in.post(f"/admin/quizzes/{quiz.id}/runs")
+    assert second.status_code == 200
+    assert "Tento kvíz už má probíhající běh." in text(second)
+    assert QuizRun.objects.count() == 1
+
+
+def scoreboard_quiz(published=False):
+    """Answers are not kept but the scoreboard is shown: opening refuses with ResultConflict."""
+    quiz = published_quiz() if published else make_quiz()
+    if not published:
+        add_question(quiz)
+    settings.set_override(settings.DATA_PROFILE, quiz, "none", admin_id=ADMIN_ID)
+    settings.set_override(SCOREBOARD_VISIBILITY, quiz, "live", admin_id=ADMIN_ID)
+    return quiz
+
+
+def test_start_from_publish_page_refuses_a_real_result_conflict(logged_in):
+    quiz = scoreboard_quiz()
+    response = publish_via_page(logged_in, quiz, start="1")
+    assert response.status_code == 200
+    with translation.override("cs"):
+        assert result_messages([results.STATELESS])[0] in text(response)
+    assert not QuizRun.objects.exists()
+    assert not quiz.revisions.filter(published_at__isnull=False).exists()
+
+
+def test_open_run_refuses_a_real_result_conflict(logged_in):
+    quiz = scoreboard_quiz(published=True)
+    response = logged_in.post(f"/admin/quizzes/{quiz.id}/runs")
+    assert response.status_code == 200
+    with translation.override("cs"):
+        assert result_messages([results.STATELESS])[0] in text(response)
+    assert not QuizRun.objects.exists()
+
+
+def test_new_quiz_without_slug_derives_it_from_the_name(logged_in):
+    response = logged_in.post(
+        "/admin/quizzes/new",
+        {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": "Vánoční kvíz 2026"},
+    )
+    assert response.status_code == 302
+    assert Quiz.objects.get().slug == "vanocni-kviz-2026"
+
+
+def test_a_derived_slug_that_is_taken_gets_a_number(logged_in):
+    fields = {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": "Vánoční kvíz"}
+    for _ in range(3):
+        assert logged_in.post("/admin/quizzes/new", fields).status_code == 302
+    assert sorted(Quiz.objects.values_list("slug", flat=True)) == [
+        "vanocni-kviz",
+        "vanocni-kviz-2",
+        "vanocni-kviz-3",
+    ]
+
+
+def test_new_quiz_with_a_whitespace_name_shows_the_name_error(logged_in):
+    response = logged_in.post(
+        "/admin/quizzes/new",
+        {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": "   "},
+    )
+    assert response.status_code == 200
+    assert "Zadejte název" in response.content.decode()
+    assert not Quiz.objects.exists()
+
+
+def test_new_quiz_form_preselects_the_default_language(logged_in):
+    html = logged_in.get("/admin/quizzes/new").content.decode()
+    assert re.search(r'<input[^>]*value="cs"[^>]*checked|<input[^>]*checked[^>]*value="cs"', html)
+    assert not re.search(r'value="en"[^>]*checked|checked[^>]*value="en"', html)
+    assert "Čeština" in html and "English" in html and "Українська" in html
+
+
+def test_new_quiz_form_shows_the_quiz_type_open(logged_in):
+    html = logged_in.get("/admin/quizzes/new").content.decode()
+    assert '<details class="quiz-type-choice" open>' in html
+
+
+@pytest.mark.parametrize("title", ["Вікторина", "???"])
+def test_a_name_that_gives_no_address_asks_for_the_slug(logged_in, title):
+    response = logged_in.post(
+        "/admin/quizzes/new",
+        {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": title},
+    )
+    assert response.status_code == 200
+    html = response.content.decode()
+    message = "Z tohoto názvu nejde udělat adresa. Vyplňte identifikátor v adrese."
+    assert f"<li>{message}</li>" in html
+    after = html[html.index(message) :]
+    assert re.search(r'name="(\w+)"', after).group(1) == "slug"  # the next input is the slug's
+    assert "Zadejte název" not in html
+    assert not Quiz.objects.exists()
+
+
+def test_an_empty_name_asks_for_the_title_on_the_title_field(logged_in):
+    response = logged_in.post(
+        "/admin/quizzes/new",
+        {"supported_locales": ["cs"], "default_locale": "cs", "title_cs": ""},
+    )
+    html = response.content.decode()
+    message = "Zadejte název, nebo místo něj adresu (identifikátor v URL)."
+    assert f"<li>{message}</li>" in html
+    after = html[html.index(message) :]
+    assert re.search(r'name="(\w+)"', after).group(1) == "title_cs"
+    assert "nejde udělat adresa" not in html
+    assert not Quiz.objects.exists()
+
+
+def test_first_publication_shows_a_summary_not_a_diff(logged_in):
+    quiz = make_quiz(locales=("cs", "uk"))
+    for _ in range(3):
+        add_question(quiz)
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/publish?lang=en"))
+    assert "3 questions · 3 points · cs, uk" in html
+    assert "snapshot_hash" in html
+    before = html.split("<details>")[0]
+    assert "Before" not in before and "Before" in html
+
+
+def test_later_publication_still_shows_the_diff(logged_in):
+    quiz = published_quiz()
+    add_question(quiz, OPTION_B, question_id=authoring.editable_questions(quiz)[0]["id"])
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/publish?lang=en"))
+    assert "Before" in html and "questions ·" not in html
+
+
+@pytest.mark.parametrize(("count", "word"), [(1, "otázka"), (2, "otázky"), (5, "otázek")])
+def test_first_publication_summary_inflects_in_czech(logged_in, count, word):
+    quiz = make_quiz()
+    for _ in range(count):
+        add_question(quiz)
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/publish?lang=cs"))
+    assert f"{count} {word} ·" in html
+
+
+def test_the_new_quiz_form_shows_the_quiz_type_label_once(logged_in):
+    html = text(logged_in.get("/admin/quizzes/new"))
+    block = html.split('class="quiz-type-choice"')[1].split("</details>")[0]
+    assert block.count("<summary>") == 1
+    assert "<legend" not in block

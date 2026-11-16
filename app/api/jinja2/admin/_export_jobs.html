@@ -1,0 +1,33 @@
+{# This admin's export jobs. While one waits or runs, the list asks for itself again every 2 s. #}
+<div id="export-jobs"{% if jobs_active %} hx-get="{{ url('results_export_jobs') }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <h2>{{ _("Your exports") }}</h2>
+  {% if jobs %}
+  <table class="stack">
+    <thead><tr><th>{{ _("Export") }}</th><th>{{ _("Created") }}</th><th>{{ _("Status") }}</th><th>{{ _("Files") }}</th></tr></thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <td data-label="{{ _('Export') }}">{{ job.choices.name or job.id }}</td>
+        <td data-label="{{ _('Created') }}">{{ job.created_at|when }}</td>
+        <td data-label="{{ _('Status') }}"><span class="chip{% if job.status in active_statuses %} chip-live{% endif %}">{{ job_status.get(job.status, job.status) }}</span></td>
+        <td data-label="{{ _('Files') }}">
+          {% if job.status == "done" %}
+          <ul class="export-files">
+            {% for name in job.files %}<li><a href="{{ url('results_export_download', args=[job.id, name]) }}" download>{{ name }}</a></li>{% endfor %}
+          </ul>
+          {% elif job.status in ("failed", "interrupted") %}
+          <form method="post" action="{{ url('results_export_restart', args=[job.id]) }}">
+            {{ csrf_input }}
+            <button type="submit" class="secondary outline">{{ _("Start again") }}</button>
+          </form>
+          {% else %}–{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><small>{{ _("Files can be downloaded for 24 hours, then they are deleted.") }}</small></p>
+  {% else %}
+  <p>{{ _("No exports in the last 24 hours.") }}</p>
+  {% endif %}
+</div>

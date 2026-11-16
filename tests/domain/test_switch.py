@@ -283,3 +283,20 @@ def test_a_question_with_its_own_shuffle_keeps_its_order_after_a_switch():
         started = attempts.switch(started.attempt.id, started.token, {}).started
         same = [q for q in attempts.questions_of(started.attempt) if q["id"] == question_id]
         assert attempts.option_seed_for(started.attempt, same[0]) == before
+
+
+def test_switch_to_a_revision_with_a_missing_module_writes_nothing(run, started):
+    """`_require_modules` refuses an unknown port (a disabled one still serves old revisions)."""
+    publish(run)
+    revision = run.current_revision
+    snapshot = revision.snapshot_json
+    snapshot["questions"][0]["type"] = "ghost"
+    QuizRevision.objects.filter(pk=revision.pk).update(snapshot_json=snapshot)
+    run.refresh_from_db()
+    before = Attempt.objects.count()
+    with pytest.raises(attempts.AttemptError) as error:
+        attempts.switch(started.attempt.id, started.token, {})
+    assert code_of(error) == "revision_unavailable"
+    assert Attempt.objects.count() == before
+    started.attempt.refresh_from_db()
+    assert started.attempt.status == Attempt.Status.IN_PROGRESS

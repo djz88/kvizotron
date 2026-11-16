@@ -34,7 +34,7 @@ Related documents outside this directory:
 | **LATER** | Explicitly out of v1.0. |
 
 Identifiers are stable anchors: functional requirements `FR-01`…`FR-54`, acceptance criteria
-`AC-01`…`AC-93`, decisions `ADR-NNNN`, open questions `OQ-NN`,
+`AC-01`…`AC-177`, decisions `ADR-NNNN`, open questions `OQ-NN`,
 technical debt `TD-NNN`. Each `FR-xx` is **defined in exactly
 one file** (see the index below); other files only reference it.
 

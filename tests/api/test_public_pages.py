@@ -1,6 +1,8 @@
+import re
+
 import pytest
 
-from app.domain import authoring, settings
+from app.domain import authoring, branding, run_schedule, settings
 from tests.domain.helpers import (
     ADMIN_ID,
     add_question,
@@ -15,6 +17,16 @@ pytestmark = pytest.mark.django_db
 
 def text(response):
     return response.content.decode()
+
+
+def png_bytes():
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, "PNG")
+    return buffer.getvalue()
 
 
 def test_landing_lists_quizzes_with_open_run_only(client):
@@ -49,8 +61,8 @@ def test_quiz_page_shows_title_in_selected_language_and_start_form(client):
     html = text(client.get("/q/kviz?lang=uk"))
     assert '<html lang="uk"' in html
     assert "Název uk" in html
-    assert f'action="/r/{run.id}/start"' in html
-    assert f'hx-post="/r/{run.id}/start"' in html
+    assert f'action="/r/{run.id}/start?lang=uk"' in html
+    assert f'hx-post="/r/{run.id}/start?lang=uk"' in html
     assert 'name="lang" value="uk"' in html
     assert "Otázka" not in html
 
@@ -79,22 +91,41 @@ def test_unknown_slug_is_themed_404(client):
 
 
 def test_quiz_without_open_run_says_not_running(client):
+    """A quiz that exists is a page, not an error: shared links and monitoring see it as 200."""
     published_quiz()
     response = client.get("/q/kviz")
-    assert response.status_code == 404
+    assert response.status_code == 200
     assert "Tento kvíz teď neběží." in text(response)
 
 
 def test_quiz_never_published_says_not_running(client):
     make_quiz()
-    assert "Tento kvíz teď neběží." in text(client.get("/q/kviz"))
+    response = client.get("/q/kviz")
+    assert response.status_code == 200
+    assert "Tento kvíz teď neběží." in text(response)
+
+
+def test_quiz_with_a_closed_run_answers_200(client):
+    authoring.close_run(open_quiz_run(), admin_id=ADMIN_ID)
+    response = client.get("/q/kviz")
+    assert response.status_code == 200
+    assert "Tento kvíz teď neběží." in text(response)
+
+
+def test_quiz_with_an_archived_run_answers_200(client):
+    run = open_quiz_run()
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    run_schedule.archive(run, admin_id=ADMIN_ID)
+    response = client.get("/q/kviz")
+    assert response.status_code == 200
+    assert "Tento kvíz teď neběží." in text(response)
 
 
 def test_specific_run_page_of_open_run_works(client):
     run = open_quiz_run()
     response = client.get(f"/q/kviz/r/{run.id}")
     assert response.status_code == 200
-    assert f'action="/r/{run.id}/start"' in text(response)
+    assert f'action="/r/{run.id}/start?lang=cs"' in text(response)
 
 
 def test_run_of_other_quiz_is_404(client):
@@ -189,3 +220,21 @@ def test_landing_links_to_the_administration(client):
     html = text(client.get("/?lang=uk"))
     assert '<a href="/admin/quizzes?lang=uk">Адміністрування</a>' in html
     assert "/admin/" not in text(client.get("/about?lang=uk"))
+
+
+def test_a_tile_shows_the_own_organisation_of_a_quiz(client):
+    """AC-151."""
+    run = open_quiz_run("skola")
+    branding.set_texts(run.quiz, "name", {"cs": "Škola <b>Jedna</b>"}, admin_id=ADMIN_ID)
+    branding.set_logo(run.quiz, png_bytes(), admin_id=ADMIN_ID)
+    html = text(client.get("/"))
+    tile = html[html.index('class="quiz-org"') :]
+    assert "&lt;b&gt;Jedna&lt;/b&gt;" in tile and "<b>Jedna</b>" not in html
+    assert re.search(r'<small class="quiz-org"><img src="/media/[^"]+" alt="" width="20"', html)
+    assert '<span class="quiz-org-name">Škola &lt;b&gt;Jedna' in html
+
+
+def test_a_tile_without_its_own_organisation_is_unchanged(client):
+    open_quiz_run("bez")
+    branding.set_texts(None, "name", {"cs": "Globální"}, admin_id=ADMIN_ID)
+    assert "quiz-org" not in text(client.get("/"))

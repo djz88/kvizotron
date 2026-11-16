@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% from "admin/_move_options.html" import options as move_options %}
+{% block content %}
+<p class="crumb"><a href="{{ cancel_url }}">{{ _("Back to the bank") }}</a></p>
+<h1>{{ _("Move the folder") }}</h1>
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+<p>{{ _("Folder: %(path)s", path=path) }}</p>
+<form method="post" action="{{ url('admin_bank_folder_move', args=[bank.id, folder.id]) }}">
+  {{ csrf_input }}
+  <label for="move-parent">{{ _("Move it to") }}</label>
+  <select id="move-parent" name="parent">
+    {{ move_options(destinations, other_banks, folder.name, selected) }}
+  </select>
+  <button type="submit">{{ _("Move") }}</button>
+  <a href="{{ cancel_url }}" role="button" class="secondary outline">{{ _("Cancel") }}</a>
+</form>
+{% endblock %}

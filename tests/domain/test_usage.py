@@ -1,9 +1,14 @@
-import pytest
+from datetime import timedelta
+from unittest.mock import MagicMock
 
-from app.domain import authoring, usage
+import pytest
+from django.conf import settings as django_settings
+from django.utils import timezone, translation
+
+from app.domain import authoring, run_schedule, usage
 from app.domain.models import QuizRevision
 from app.kernel import lifecycle
-from tests.domain.helpers import ADMIN_ID, open_quiz_run
+from tests.domain.helpers import ADMIN_ID, open_quiz_run, published_quiz
 
 pytestmark = pytest.mark.django_db
 
@@ -113,3 +118,61 @@ def test_reward_modules_can_be_disabled_once_the_run_is_archived():
     run_schedule.archive(run, admin_id=ADMIN_ID)
     set_enabled("rewards.threshold", False)
     set_enabled("rewards.threshold", True)
+
+
+@pytest.mark.parametrize(
+    "module", ["flow.basic", "participants.basic", "results.local", "scoring.basic"]
+)
+def test_essential_plugin_is_locked(module):
+    with pytest.raises(lifecycle.ModuleLocked):
+        set_enabled(module, False)
+
+
+def planned():
+    quiz = published_quiz()
+    start = timezone.now() + timedelta(days=1)
+    return run_schedule.plan(
+        quiz,
+        starts_at=start,
+        deadline_at=start + timedelta(days=1),
+        limit_sec=None,
+        admin_id=ADMIN_ID,
+    )
+
+
+def test_a_scheduled_run_blocks_disabling_its_question_type():
+    run = planned()
+    assert any(
+        b.kind == "in_use" and b.target == ("run", str(run.pk))
+        for b in lifecycle.blockers("question.choice", False)
+    )
+    with pytest.raises(lifecycle.ModuleInUse, match="kviz"):
+        set_enabled("question.choice", False)
+
+
+def test_a_planned_run_is_no_problem_at_startup_when_its_type_is_missing(monkeypatch):
+    planned()
+    monkeypatch.setattr(
+        usage.registry, "get", MagicMock(side_effect=usage.registry.UnknownPort("gone"))
+    )
+    assert usage.missing_plugin_problems() == []
+
+
+def test_reason_follows_the_active_language():
+    open_quiz_run()
+    with translation.override("cs"):
+        text = lifecycle.blockers("question.choice", False)[0].text
+    assert "běh" in text
+    with translation.override("en"):
+        assert "open run" in lifecycle.blockers("question.choice", False)[0].text
+
+
+def test_every_module_in_the_repository_has_a_name_and_description():
+    assert all(m.name and m.description for m in django_settings.KVZ_MODULES)
+
+
+def test_the_last_theme_has_a_translated_reason():
+    with translation.override("cs"):
+        reason = lifecycle.blockers("theme.default", False)[0]
+    assert reason.kind == "in_use"
+    assert "téma" in reason.text

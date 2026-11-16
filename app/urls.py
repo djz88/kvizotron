@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import include, path
 
-from app.api import play, public, scoreboard
+from app.api import play, play_switch, public, scoreboard
 from app.api.health import health
 
 urlpatterns = [
@@ -28,15 +28,20 @@ urlpatterns = [
     path("t/<str:token>", public.test_link, name="test_link"),
     path("v/<str:token>", public.result, name="result"),
     path("v/<str:token>/identity", public.result_identity, name="result_identity"),
-    path("v/<str:token>/photo/<uuid:answer_id>", public.result_photo, name="result_photo"),
+    # Anything after photo/ reaches the view, which answers 204 for what is not an id:
+    # a 404 would log the path, and the token is in it.
+    path("v/<str:token>/photo/<path:answer_id>", public.result_photo, name="result_photo"),
+    path("v/<str:token>/photo/", public.result_photo, name="result_photo"),
     path("r/<uuid:run_id>/start", play.start, name="start"),
     path("r/<uuid:run_id>/resume", play.resume, name="resume"),
     path("r/<uuid:run_id>/code", play.enter_code, name="run_code"),
     path("a/<uuid:attempt_id>/submit", play.submit, name="submit"),
-    path("a/<uuid:attempt_id>/check", play.check, name="check"),
+    path("a/<uuid:attempt_id>/check", play_switch.check, name="check"),
     path("a/<uuid:attempt_id>/time", play.attempt_time, name="attempt_time"),
-    path("a/<uuid:attempt_id>/switch", play.switch, name="switch"),
-    path("a/<uuid:attempt_id>/revision-status", play.revision_status, name="revision_status"),
+    path("a/<uuid:attempt_id>/switch", play_switch.switch, name="switch"),
+    path(
+        "a/<uuid:attempt_id>/revision-status", play_switch.revision_status, name="revision_status"
+    ),
     path("assets/<str:name>", public.asset, name="asset"),
     path("media/<uuid:asset_id>", public.media, name="media"),
     *[

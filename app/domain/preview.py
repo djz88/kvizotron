@@ -63,9 +63,12 @@ def start(quiz: Quiz, revision: QuizRevision | None, *, timed: bool = False) -> 
         "seed": secrets.token_urlsafe(8) if flow.shuffle_options else None,
         "question_seed": secrets.token_urlsafe(8),
     }
+    after_close = flow.moment == settings.RevealMoment.AFTER_CLOSE
     behaviour = {
         "navigation": flow.navigation,
-        "moment": flow.moment,
+        # It shows answers at the end, as a test run does; the note still says what a run does.
+        "moment": settings.RevealMoment.AT_END.value if after_close else flow.moment,
+        "after_close": after_close,
         "level": flow.level,
         "shuffle_questions": flow.shuffle_questions,
         "page_size": flow.page_size,
@@ -122,7 +125,7 @@ def unusable(attempt: Attempt, locale: str) -> dict[str, str]:
             plugin = cast(QuestionTypePlugin, registry.get("question_type", question["type"]))
             registry.get("scoring_strategy", question["scoring"])
             plugin.validate_definition(question["definition"], locale)
-        except (ValueError, registry.UnknownPort) as exc:
+        except (ValueError, LookupError) as exc:
             found[question["id"]] = str(exc)
     return found
 

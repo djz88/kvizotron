@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0065
 date: 2026-11-04
 ---
 
@@ -45,3 +45,5 @@ metric" of the original spec.
 FR-30; [../modules/domain.md](../modules/domain.md), [../plugins/results.md](../plugins/results.md).
 
 Source: Consolidated spec v1.0 (rounds 1–5, clarifications 45–47)
+
+Superseded by [ADR-0065](0065-scoreboard-by-percent-and-shared-boards.md): one table by percent is the default, the equal-maximum merge and its page are removed.

@@ -8,6 +8,7 @@ from django.core import signing
 from django.db import transaction
 from django.utils.crypto import salted_hmac
 
+from app.domain import authoring
 from app.domain.models import QuizRun
 from app.kernel import audit
 
@@ -39,6 +40,7 @@ def cookie_name(run: QuizRun) -> str:
 
 def set_code(run: QuizRun, code: str | None, *, admin_id: str) -> None:
     """`None` or an empty code removes it. Nothing about the code reaches the audit trail."""
+    authoring.ensure_editable(run.quiz)
     code = _normal(code or "")
     with transaction.atomic():
         changed = QuizRun.objects.filter(

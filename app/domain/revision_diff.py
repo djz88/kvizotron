@@ -8,6 +8,7 @@ from typing import Any, cast
 from django.utils.translation import gettext as _
 
 from app.contracts import JSON, DefinitionRow, QuestionTypePlugin, ScoringStrategyPlugin
+from app.domain import banks
 from app.domain import settings as app_settings
 from app.kernel import registry
 
@@ -104,7 +105,9 @@ def _draw_text(row: Mapping[str, Any]) -> str:
         "count": row["count"],
         "points": row["points"],
     }
-    return f"{text}, {row['tag']}" if row.get("tag") else text
+    level = banks.level_label(row.get("difficulty", ""))
+    parts = [part for part in (row.get("folder_path"), row.get("tag"), level) if part]
+    return ", ".join([text, *parts])
 
 
 def _draw_changes(old: JSON | None, new: JSON) -> list[FieldChange]:

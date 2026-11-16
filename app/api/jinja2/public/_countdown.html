@@ -3,5 +3,6 @@
 <div class="countdown" id="countdown" data-remaining="{{ time_left }}"{% if time_url is defined and time_url %} data-time-url="{{ time_url }}"{% endif %} data-five="{{ _('Five minutes left.') }}" data-one="{{ _('One minute left.') }}" data-sending="{{ _('Time is up. Sending your answers.') }}">
   <span>{{ _("Time left") }}:</span> <strong role="timer" aria-live="off" data-countdown-value>{{ time_left // 60 }} min</strong>
   <span class="visually-hidden" role="status" data-countdown-announce></span>
+  <p class="countdown-note" data-countdown-retry role="status" data-text="{{ _('Sending your answers again.') }}"></p>
 </div>
 {% endif %}

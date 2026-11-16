@@ -71,6 +71,7 @@ def test_unknown_value_is_a_startup_error(fields):
 
 
 def test_unmet_blocks_publication_with_the_reason():
+    """AC-17: a conflicting setting blocks publication and the problem carries the reason."""
     quiz = needing_quiz()
     with needs_reveal_at_end():
         problems = authoring.validate_for_publication(quiz)
@@ -81,9 +82,11 @@ def test_unmet_blocks_publication_with_the_reason():
 
 
 def test_met_allows_publication():
+    """AC-17: once the required setting is satisfied, the quiz publishes."""
     quiz = needing_quiz("at_end")
     with needs_reveal_at_end():
         assert authoring.validate_for_publication(quiz) == []
+        assert authoring.publish(quiz, admin_id=ADMIN_ID).status == "PUBLISHED"
 
 
 def test_unmet_blocks_opening_a_run():

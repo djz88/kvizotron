@@ -4,9 +4,10 @@ from pathlib import Path
 
 import pytest
 from django.test import Client
+from django.utils import timezone
 
 from app.domain import authoring, grading, run_links, settings
-from app.domain.models import Attempt, AttemptAnswer
+from app.domain.models import Attempt, AttemptAnswer, Quiz
 from app.kernel.models import AuditEvent
 from app.providers.media_local.models import MediaAsset
 from tests.domain.helpers import ADMIN_ID, OPTION_A, published_quiz
@@ -281,3 +282,26 @@ def test_fields_have_labels(logged_in):
     html = page(logged_in, quiz)
     assert "<label" in html and 'for="' not in html.split('name="points"')[0][-10:]
     assert 'alt="' in html.split("/photo")[1].split(">")[0] or 'alt="' in html
+
+
+def test_grading_an_archived_quiz_answers_409_and_keeps_the_page(logged_in):
+    quiz, run = graded_run(level="public")
+    played(run)
+    row = AttemptAnswer.objects.get()
+    authoring.close_run(run, admin_id=ADMIN_ID)
+    Quiz.objects.filter(pk=quiz.pk).update(archived_at=timezone.now())
+    archived = "This quiz is archived. Restore it to change it."
+    for address, data in (
+        (f"/admin/answers/{row.id}/points?lang=en", {"points": "5"}),
+        (f"/admin/answers/{row.id}/delete?lang=en", {}),
+        (f"/admin/answers/{row.id}/approve?lang=en", {"approved": "1"}),
+    ):
+        response = logged_in.post(address, data)
+        assert response.status_code == 409 and archived in text(response)
+    htmx = logged_in.post(
+        f"/admin/answers/{row.id}/points?lang=en", {"points": "5"}, headers={"HX-Request": "true"}
+    )
+    assert archived in text(htmx)
+    row.refresh_from_db()
+    assert row.manual_points is None and not row.removed
+    assert logged_in.get(f"/admin/quizzes/{quiz.id}/grading?lang=en").status_code == 200

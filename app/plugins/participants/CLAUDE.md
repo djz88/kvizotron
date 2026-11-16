@@ -4,11 +4,11 @@ Plugin `participants.basic`, port `participant_policy`: čistá pravidla pro ú�
 
 ## Co modul obsahuje
 
-`policy.py` (`BasicParticipantPolicy`), `manifest.py` se šesti nastaveními (`repeat_attempts`, `unfinished_attempt`, `ask_name`, `ask_email`, `ask_when`, `duplicate_names`), `apps.py`. Rozsah nastavení je global a kvíz, protože platí pro celý pokus.
+`policy.py` (`BasicParticipantPolicy`), `manifest.py` s osmi nastaveními (`repeat_attempts`, `unfinished_attempt`, `max_attempts`, `after_pass`, `ask_name`, `ask_email`, `ask_when`, `duplicate_names`), `apps.py`. Rozsah nastavení je global a kvíz, protože platí pro celý pokus.
 
 ## Co modul není
 
-Nesahá do databáze ani do požadavku. Nezná pokusy, běhy ani cookies: stav mu předá API (`finished`, `open_attempt`) a on vrátí rozhodnutí. Nastavení nečte, dostane `rules`.
+Nesahá do databáze ani do požadavku. Nezná pokusy, běhy ani cookies: stav mu předá API (`finished`, `used`, `passed`, `open_attempt`; kontrakt 1.1, AC-173) a on vrátí rozhodnutí. Nastavení nečte, dostane `rules`.
 
 ## Zakázáno
 

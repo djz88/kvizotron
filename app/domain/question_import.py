@@ -10,14 +10,15 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 
 from django.conf import settings as django_settings
+from django.core.exceptions import ValidationError
 from django.core.validators import slug_re
 from django.db import transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
 from app.contracts import CsvRowError, ImageAddressInvalid, ParsedFile, QuestionTypePlugin
-from app.domain import authoring, banks, questions, settings
-from app.domain.models import QuestionBank, Quiz
+from app.domain import authoring, bank_folders, banks, questions, settings
+from app.domain.models import BankFolder, QuestionBank, Quiz
 from app.kernel import audit, registry
 
 SCHEMA_VERSION = "1"
@@ -33,6 +34,7 @@ PLAIN_COLUMNS = (
     "scoring",
     "sources",
     "tags",
+    "folder",
     "slug",
     "locales",
     "default_locale",
@@ -59,6 +61,7 @@ class PlannedQuestion:
     explanation: dict[str, str]
     setting_values: dict[str, str]
     tags: list[str]
+    folder: str = ""
 
 
 @dataclass
@@ -86,6 +89,7 @@ class Target:
     kind: str  # new_quiz, draft or bank
     quiz: Quiz | None
     bank: QuestionBank | None
+    replace: bool = False  # a bank: the file's questions take the place of the bank's own
 
 
 @dataclass(frozen=True)
@@ -94,6 +98,29 @@ class Outcome:
     bank: QuestionBank | None
     added: int
     issues: list[Issue]
+    removed: int = 0
+
+
+class ReplaceRefused(Exception):
+    """A replace that could not save every row: nothing was changed."""
+
+    def __init__(self, issues: list[Issue]) -> None:
+        super().__init__("replace refused")
+        self.issues = issues
+
+
+@dataclass(frozen=True)
+class Placement:
+    """Where a bank import puts the file's folders. Keys are the file's top folders, casefolded."""
+
+    under: BankFolder | None = None
+    added: str = ""
+    names: Mapping[str, str] = field(default_factory=dict)
+    dropped: frozenset[str] = frozenset()
+
+
+class PlacementInvalid(Exception):
+    pass
 
 
 class _RowProblem(Exception):
@@ -240,6 +267,13 @@ def _question(
     values, problems = _setting_values(cells, "question", allowed)
     if problems:
         raise _RowProblem(*problems[0])
+    tags = [tag.strip() for tag in cells.get("tags", "").split(",") if tag.strip()]
+    try:
+        banks.check_one_level(tags)
+    except banks.MoreThanOneLevel as exc:
+        raise _RowProblem(
+            "tags", _("A question can have only one of the tags easy, normal and hard.")
+        ) from exc
     return PlannedQuestion(
         row=number,
         type_id=type_id,
@@ -249,7 +283,8 @@ def _question(
         sources=_sources(cells),
         explanation=_texts(cells, "explanation", locales),
         setting_values=values,
-        tags=[tag.strip() for tag in cells.get("tags", "").split(",") if tag.strip()],
+        tags=tags,
+        folder=cells.get("folder", "").strip(),
     )
 
 
@@ -324,6 +359,8 @@ def _unused(
 
     if target.kind != "bank" and has_value("tags"):
         unused.append("tags")
+    if target.kind != "bank" and has_value("folder"):
+        unused.append("folder")
     if target.kind == "bank" and has_value("points"):
         unused.append("points")
     return unused
@@ -345,11 +382,99 @@ def _dropped_languages(rows: Sequence[Mapping[str, str]], locales: Sequence[str]
     return sorted(issues, key=lambda issue: issue.message)
 
 
+def _folder_cell(cells: Mapping[str, str]) -> str:
+    return cells.get("folder", "").strip()
+
+
+def top_folders(parsed: ParsedFile, mapping: Mapping[str, str]) -> list[str]:
+    """The first level of the folder paths of the question rows, first spelling kept."""
+    seen: dict[str, str] = {}
+    for row in parsed.rows:
+        cells = _mapped(row.cells, mapping)
+        if cells.get("row_type", "").strip() == QUIZ_ROW:
+            continue
+        top = _folder_cell(cells).split(bank_folders.SEPARATOR)[0].strip()
+        if top:
+            seen.setdefault(top.casefold(), top)
+    return sorted(seen.values(), key=str.casefold)
+
+
+def _checked_name(value: str) -> str:
+    try:
+        return bank_folders.clean_name(value)
+    except bank_folders.FolderError as error:
+        raise PlacementInvalid(str(error)) from error
+
+
+def placement_of(bank: QuestionBank, values: Mapping[str, str], tops: Sequence[str]) -> Placement:
+    """Form values `under`, `added`, `name_<i>` and `drop_<i>`; `i` indexes `tops`."""
+    under = None
+    if values.get("under", "").strip():
+        try:
+            under = BankFolder.objects.filter(bank=bank, pk=values["under"].strip()).first()
+        except ValidationError:
+            under = None
+        if under is None:
+            raise PlacementInvalid(_("The chosen folder is not a folder of this bank."))
+    added = values.get("added", "").strip()
+    names: dict[str, str] = {}
+    dropped: set[str] = set()
+    for index, top in enumerate(tops):
+        name = values.get(f"name_{index}", "").strip()
+        if name and name != top:
+            names[top.casefold()] = _checked_name(name)
+        if values.get(f"drop_{index}") == "1":
+            dropped.add(top.casefold())
+    return Placement(under, _checked_name(added) if added else "", names, frozenset(dropped))
+
+
+def place(path: str, placement: Placement, under_path: str) -> str:
+    """The path below the bank's top level that a file path gets."""
+    parts = [part.strip() for part in path.split(bank_folders.SEPARATOR)] if path else []
+    if parts:
+        key = parts[0].casefold()
+        if key in placement.dropped:
+            parts = parts[1:]
+        else:
+            parts[0] = placement.names.get(key, parts[0])
+    prefix = [part for part in (under_path, placement.added) if part]
+    return bank_folders.SEPARATOR.join([*prefix, *parts])  # an empty part stays, to be refused
+
+
+def _placed(plan: ImportPlan, placement: Placement) -> None:
+    under_path = bank_folders.path_of(placement.under) if placement.under else ""
+    kept = []
+    for question in plan.questions:
+        question.folder = place(question.folder, placement, under_path)
+        names = question.folder.split(bank_folders.SEPARATOR) if question.folder else []
+        try:
+            for name in names:
+                bank_folders.clean_name(name)
+        except bank_folders.FolderError as error:
+            plan.issues.append(Issue(question.row, "folder", str(error), True))
+            continue
+        if len(names) > bank_folders.MAX_DEPTH:
+            message = _("The folder %(path)s would be deeper than %(count)s levels.")
+            plan.issues.append(
+                Issue(
+                    question.row,
+                    "folder",
+                    message % {"path": question.folder, "count": bank_folders.MAX_DEPTH},
+                    True,
+                )
+            )
+        else:
+            kept.append(question)
+    plan.questions = kept
+
+
 def interpret(
     parsed: ParsedFile,
     target: Target,
     mapping: Mapping[str, str],
     check_address: Callable[[str], None] | None,
+    *,
+    placement: Placement | None = None,
 ) -> ImportPlan:
     plan = ImportPlan()
     rows = [(row, _mapped(row.cells, mapping)) for row in parsed.rows]
@@ -399,6 +524,13 @@ def interpret(
         plan.questions.append(question)
         plan.issues += _gaps(question, locales)
         plan.issues += _blank_correct(question, cells, locales)
+    if target.bank is not None and placement is not None:
+        _placed(plan, placement)
+    if target.replace and any(issue.is_error for issue in plan.issues):
+        plan.refused = _(
+            "Replacing needs every row to be usable. Fix the rows listed, in the file or in the "
+            "folder structure, and check again; nothing was changed."
+        )
     return plan
 
 
@@ -426,6 +558,7 @@ def _created_quiz(planned: PlannedQuiz, admin_id: str) -> tuple[Quiz, list[Issue
         description=planned.description,
         default_locale=planned.default_locale,
         supported_locales=planned.locales,
+        created_by=admin_id,
     )
     for key, value in planned.setting_values.items():
         settings.set_override(key, quiz, value, admin_id=admin_id)
@@ -435,6 +568,11 @@ def _created_quiz(planned: PlannedQuiz, admin_id: str) -> tuple[Quiz, list[Issue
 def _save_to_bank(question: PlannedQuestion, bank: QuestionBank, admin_id: str) -> Issue | None:
     try:
         with transaction.atomic():
+            folder = (
+                bank_folders.ensure_path(bank, question.folder, admin_id=admin_id)
+                if question.folder
+                else None
+            )
             banks.save_question(
                 bank,
                 None,
@@ -447,7 +585,10 @@ def _save_to_bank(question: PlannedQuestion, bank: QuestionBank, admin_id: str) 
                 explanation=question.explanation,
                 admin_id=admin_id,
                 setting_values=question.setting_values,
+                folder=folder,
             )
+    except bank_folders.FolderError as error:
+        return Issue(question.row, "folder", str(error), True)
     except banks.NoCompleteLanguage:
         message = _("A bank question must be complete in at least one language.")
         return Issue(question.row, None, message, True)
@@ -457,9 +598,13 @@ def _save_to_bank(question: PlannedQuestion, bank: QuestionBank, admin_id: str) 
 def apply(plan: ImportPlan, target: Target, *, admin_id: str) -> Outcome:
     """One transaction. A plan with no question creates nothing. A bank can still refuse a row."""
     issues = list(plan.issues)
-    if not plan.questions:
+    if plan.refused or not plan.questions:
         return Outcome(target.quiz, target.bank, 0, issues)
+    if target.replace and any(issue.is_error for issue in plan.issues):
+        # a row dropped after the check (an image that failed) must not cost its old question
+        raise ReplaceRefused([issue for issue in plan.issues if issue.is_error])
     added = 0
+    removed = 0
     with transaction.atomic():
         quiz = target.quiz
         if target.kind == "draft" and quiz is not None:
@@ -468,12 +613,17 @@ def apply(plan: ImportPlan, target: Target, *, admin_id: str) -> Outcome:
             quiz, created = _created_quiz(plan.quiz, admin_id)
             issues += created
         if target.bank is not None:
+            old_ids = list(target.bank.questions.values_list("pk", flat=True))
             for question in plan.questions:
                 problem = _save_to_bank(question, target.bank, admin_id)
                 if problem is None:
                     added += 1
                 else:
                     issues.append(problem)
+            if target.replace:
+                if len(issues) > len(plan.issues):  # a save failed: roll everything back
+                    raise ReplaceRefused(issues[len(plan.issues) :])
+                removed = target.bank.questions.filter(pk__in=old_ids).delete()[0]
         elif quiz is not None:
             authoring.add_questions(
                 quiz,
@@ -500,8 +650,9 @@ def apply(plan: ImportPlan, target: Target, *, admin_id: str) -> Outcome:
             details={
                 "target": target.kind,
                 "added": added,
+                **({"replaced": True, "removed": removed} if target.replace else {}),
                 "errors": sum(issue.is_error for issue in issues),
                 "warnings": sum(not issue.is_error for issue in issues),
             },
         )
-    return Outcome(quiz, target.bank, added, issues)
+    return Outcome(quiz, target.bank, added, issues, removed)

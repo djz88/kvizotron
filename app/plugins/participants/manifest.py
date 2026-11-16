@@ -1,8 +1,10 @@
 from app.contracts import (
+    AFTER_PASS,
     ASK_EMAIL,
     ASK_NAME,
     ASK_WHEN,
     DUPLICATE_NAMES,
+    MAX_ATTEMPTS,
     REPEAT_ATTEMPTS,
     UNFINISHED_ATTEMPT,
 )
@@ -23,6 +25,9 @@ _ASK_LABELS = {
 
 MANIFEST = {
     "id": "participants.basic",
+    "name": _("Participants"),
+    "description": _("Decides who may take part and how names and e-mails are asked for."),
+    "always_on": True,
     "kind": "plugin",
     "version": "1.0.0",
     "app": "app.plugins.participants.apps.ParticipantsConfig",
@@ -62,7 +67,31 @@ MANIFEST = {
                 "used": _("It counts as the one attempt"),
                 "submitted": _("It is closed and a new one may start"),
             },
-            "help": _("Only matters when an attempt may not be repeated."),
+            "help": _(
+                "Matters when an attempt may not be repeated or the number of attempts is limited."
+            ),
+        },
+        {
+            "key": MAX_ATTEMPTS,
+            "group": "participants",
+            "choices": [str(n) for n in range(21)],
+            "default": "0",
+            "scopes": _SCOPES,
+            "scope_reason": _REASON,
+            "label": _("At most attempts"),
+            "value_labels": {"0": _("No limit"), **{str(n): str(n) for n in range(1, 21)}},
+            "help": _("Counted from the attempts a browser has sent in this run."),
+        },
+        {
+            "key": AFTER_PASS,
+            "group": "participants",
+            "choices": ["more", "stop"],
+            "default": "more",
+            "scopes": _SCOPES,
+            "scope_reason": _REASON,
+            "label": _("More attempts after passing"),
+            "value_labels": {"more": _("Allowed"), "stop": _("Not after passing")},
+            "help": _("Needs a pass mark."),
         },
         {
             "key": ASK_NAME,

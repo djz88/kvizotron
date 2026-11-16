@@ -1,400 +1,763 @@
-#: question_import.py:165
+#: authoring.py
+msgid "The folder is not in this bank."
+msgstr "Složka není v této bance."
+
+#: authoring.py
+#, python-format
+msgid "Question %(number)s needs a module that is disabled."
+msgstr "Otázka %(number)s potřebuje modul, který je vypnutý."
+
+#: bank_folders.py
+#, python-format
+msgid "This folder is used by these quizzes: %(quizzes)s"
+msgstr "Tuto složku používají tyto kvízy: %(quizzes)s"
+
+#: bank_folders.py
+#, python-format
+msgid "A folder name has 1 to %(count)s characters and no slash."
+msgstr "Název složky má 1 až %(count)s znaků a neobsahuje lomítko."
+
+#: bank_folders.py
+msgid "There is a folder with this name already."
+msgstr "Složka s tímto názvem už existuje."
+
+#: bank_folders.py
+#, python-format
+msgid "Folders can be at most %(count)s levels deep."
+msgstr "Složky mohou mít nejvýš %(count)s úrovně."
+
+#: bank_folders.py banks.py
+msgid "The folder is in another bank."
+msgstr "Složka je v jiné bance."
+
+#: bank_folders.py
+msgid "A folder cannot be moved into itself or into one of its subfolders."
+msgstr "Složku nelze přesunout do sebe ani do některé z jejích podsložek."
+
+#: bank_folders.py
+msgid "Move or delete the questions and subfolders first."
+msgstr "Nejdřív přesuň nebo smaž otázky a podsložky."
+
+#: bank_folders.py
+msgid "A chosen question is not in this bank."
+msgstr "Vybraná otázka není v této bance."
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Easy"
+msgstr "Snadná"
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Normal"
+msgstr "Normální"
+
+#: banks.py
+msgctxt "difficulty"
+msgid "Hard"
+msgstr "Těžká"
+
+#: banks.py
+msgid "Random mix"
+msgstr "Náhodný mix"
+
+#: branding.py
+msgid "Turn on your brain. Start Kvízotron."
+msgstr "Zapni mozek. Spusť Kvízotron."
+
+#: question_import.py
 msgid "This setting cannot be set here."
 msgstr "Toto nastavení tady nejde použít."
 
-#: question_import.py:167
+#: question_import.py
 msgid "This value is not offered for this setting."
 msgstr "Tuto hodnotu nastavení nenabízí."
 
-#: question_import.py:178
+#: question_import.py
 msgid "Points must be a positive whole number."
 msgstr "Body musí být kladné celé číslo."
 
-#: question_import.py:185
+#: question_import.py
 #, python-format
 msgid "At most %(count)s sources are allowed."
 msgstr "Povoleno je nejvýš %(count)s zdrojů."
 
-#: question_import.py:189
+#: question_import.py
 #, python-format
 msgid "A source can have at most %(count)s characters."
 msgstr "Zdroj může mít nejvýš %(count)s znaků."
 
-#: question_import.py:208
+#: question_import.py
 msgid "Images cannot be stored on this installation."
 msgstr "Tato instalace neumí ukládat obrázky."
 
-#: question_import.py:215
+#: question_import.py
 #, python-format
 msgid "The file %(name)s is not in the upload."
 msgstr "Soubor %(name)s v nahrávce není."
 
-#: question_import.py:229
+#: question_import.py
 msgid "This question type is not known."
 msgstr "Tento typ otázky aplikace nezná."
 
-#: question_import.py:232
+#: question_import.py
 msgid "This scoring is not offered for this question type."
 msgstr "Toto bodování tento typ otázky nenabízí."
 
-#: question_import.py:264
+#: question_import.py
+msgid "A question can have only one of the tags easy, normal and hard."
+msgstr "Otázka může mít jen jeden ze štítků easy, normal a hard."
+
+#: question_import.py
 #, python-format
 msgid "Language %(locale)s: %(detail)s"
 msgstr "Jazyk %(locale)s: %(detail)s"
 
-#: question_import.py:277
+#: question_import.py
 msgid "No answer is marked as correct."
 msgstr "Žádná odpověď není označená jako správná."
 
-#: question_import.py:284
+#: question_import.py
 msgid "The quiz row needs a title."
 msgstr "Řádek kvízu potřebuje název."
 
-#: question_import.py:289
+#: question_import.py
 msgid "The quiz row lists a language this application does not have."
 msgstr "Řádek kvízu uvádí jazyk, který aplikace nemá."
 
-#: question_import.py:293
+#: question_import.py
 msgid "The default language must be among the listed ones."
 msgstr "Výchozí jazyk musí být mezi uvedenými."
 
-#: question_import.py:343
+#: question_import.py
 #, python-format
 msgid "Text in language %(locale)s was left out: the target does not use it."
 msgstr "Text v jazyce %(locale)s se nepoužil: cíl tento jazyk nemá."
 
-#: question_import.py:358
+#: question_import.py
+msgid "The chosen folder is not a folder of this bank."
+msgstr "Vybraná složka nepatří do této banky."
+
+#: question_import.py
+#, python-format
+msgid "The folder %(path)s would be deeper than %(count)s levels."
+msgstr "Složka %(path)s by měla víc než %(count)s úrovně."
+
+#: question_import.py
 msgid "This file uses a format version this application does not know."
 msgstr "Soubor používá verzi formátu, kterou aplikace nezná."
 
-#: question_import.py:365
+#: question_import.py
 msgid "A new quiz needs a row with row_type quiz."
 msgstr "Nový kvíz potřebuje řádek s row_type quiz."
 
-#: question_import.py:371
+#: question_import.py
 msgid "A file can hold only one quiz row."
 msgstr "Soubor může mít jen jeden řádek kvízu."
 
-#: question_import.py:377
+#: question_import.py
 msgid "The quiz row was ignored: the target already exists."
 msgstr "Řádek kvízu se nepoužil: cíl už existuje."
 
-#: question_import.py:389
+#: question_import.py
 msgid "Unknown row type."
 msgstr "Neznámý typ řádku."
 
-#: question_import.py:421
+#: question_import.py
+msgid "Replacing needs every row to be usable. Fix the rows listed, in the file or in the folder structure, and check again; nothing was changed."
+msgstr "Nahrazení potřebuje, aby šly použít všechny řádky. Opravte uvedené řádky v souboru nebo ve struktuře složek a zkontrolujte znovu; nic se nezměnilo."
+
+#: question_import.py
 #, python-format
 msgid "The address %(wanted)s is taken, so the quiz got %(slug)s."
 msgstr "Adresa %(wanted)s je obsazená, kvíz dostal %(slug)s."
 
-#: question_import.py:452
+#: question_import.py
 msgid "A bank question must be complete in at least one language."
 msgstr "Otázka v bance musí být úplná aspoň v jednom jazyce."
 
-#: results.py:202
+#: results.py
 msgid "Player NN"
 msgstr "Hráč NN"
 
-#: revision_diff.py:103
+#: results.py
+#, python-format
+msgid "Run %(no)s · %(label)s"
+msgstr "Běh %(no)s · %(label)s"
+
+#: results_export.py
+msgid "Run"
+msgstr "Běh"
+
+#: results_export.py
+msgid "Revision"
+msgstr "Revize"
+
+#: results_export.py
+msgid "Attempt ID"
+msgstr "ID pokusu"
+
+#: results_export.py
+msgid "Participant ID"
+msgstr "ID účastníka"
+
+#: results_export.py
+msgid "Name"
+msgstr "Jméno"
+
+#: results_export.py
+msgid "E-mail address"
+msgstr "E-mailová adresa"
+
+#: results_export.py
+msgid "Status"
+msgstr "Stav"
+
+#: results_export.py
+msgid "Score"
+msgstr "Skóre"
+
+#: results_export.py
+msgid "Maximum"
+msgstr "Maximum"
+
+#: results_export.py
+msgid "Percent"
+msgstr "Procenta"
+
+#: results_export.py
+msgid "Submitted at"
+msgstr "Odesláno"
+
+#: results_export.py
+msgid "Official"
+msgstr "Oficiální"
+
+#: results_export.py
+msgid "Place"
+msgstr "Místo"
+
+#: results_export.py
+msgid "Duration (s)"
+msgstr "Doba (s)"
+
+#: results_export.py
+msgid "Attempts"
+msgstr "Pokusy"
+
+#: results_export.py
+msgid "Best score"
+msgstr "Nejlepší skóre"
+
+#: results_export.py
+msgid "Kept score (%)"
+msgstr "Platné skóre (%)"
+
+#: results_export.py
+msgid "Passed"
+msgstr "Splnil"
+
+#: results_export.py
+msgid "Submitted attempts"
+msgstr "Odeslané pokusy"
+
+#: results_export.py
+msgid "Question no."
+msgstr "Č. otázky"
+
+#: results_export.py
+msgid "Question"
+msgstr "Otázka"
+
+#: results_export.py
+msgid "Type"
+msgstr "Typ"
+
+#: results_export.py
+msgid "Answered"
+msgstr "Odpovědělo"
+
+#: results_export.py
+msgid "Full points (%)"
+msgstr "Plný počet bodů (%)"
+
+#: results_export.py
+msgid "Average points"
+msgstr "Průměr bodů"
+
+#: results_export.py
+msgid "Answer"
+msgstr "Odpověď"
+
+#: results_export.py revision_diff.py
+msgid "Points"
+msgstr "Body"
+
+#: results_export.py
+msgid "Graded by"
+msgstr "Hodnotil"
+
+#: results_export.py
+msgid "Rule"
+msgstr "Pravidlo"
+
+#: results_export.py
+msgid "Reward"
+msgstr "Odměna"
+
+#: results_export.py
+msgid "Reason"
+msgstr "Důvod"
+
+#: results_export.py
+msgid "State"
+msgstr "Stav"
+
+#: results_export.py
+msgid "Handed over at"
+msgstr "Předáno"
+
+#: results_export.py
+msgid "Cancel reason"
+msgstr "Důvod zrušení"
+
+#: results_export.py
+msgid "Draw no."
+msgstr "Č. losování"
+
+#: results_export.py
+msgid "Kind"
+msgstr "Druh"
+
+#: results_export.py
+msgid "At"
+msgstr "Čas"
+
+#: results_export.py
+msgid "Admin"
+msgstr "Správce"
+
+#: results_export.py
+msgid "Eligible"
+msgstr "Způsobilých"
+
+#: results_export.py
+msgid "Fingerprint"
+msgstr "Otisk"
+
+#: results_export.py
+msgid "Winners"
+msgstr "Výherci"
+
+#: results_export.py
+msgid "Alternates"
+msgstr "Náhradníci"
+
+#: results_export.py
+msgid "submitted"
+msgstr "odesláno"
+
+#: results_export.py
+msgid "waiting for grading"
+msgstr "čeká na hodnocení"
+
+#: results_export.py
+msgid "yes"
+msgstr "ano"
+
+#: results_export.py
+msgid "no"
+msgstr "ne"
+
+#: results_export.py
+msgid "automatic"
+msgstr "automaticky"
+
+#: results_export.py
+msgid "admin"
+msgstr "správce"
+
+#: results_export.py
+msgid "photo"
+msgstr "fotka"
+
+#: results_export.py
+msgid "removed"
+msgstr "odebráno"
+
+#: results_export.py
+msgid "threshold"
+msgstr "práh"
+
+#: results_export.py
+msgid "participation"
+msgstr "účast"
+
+#: results_export.py
+msgid "manual"
+msgstr "ručně"
+
+#: results_export.py
+msgid "draw"
+msgstr "losování"
+
+#: results_export.py
+msgid "granted"
+msgstr "udělena"
+
+#: results_export.py
+msgid "handed over"
+msgstr "předána"
+
+#: results_export.py
+msgid "cancelled"
+msgstr "zrušena"
+
+#: results_export.py
+msgid "redraw"
+msgstr "nové losování"
+
+#: results_export.py
+msgid "move up"
+msgstr "posun náhradníka"
+
+#: results_export.py
+msgid "substitute"
+msgstr "náhradní výherce"
+
+#: reveal.py
+msgid "You will see the correct answers at this link after the run closes."
+msgstr "Správné odpovědi uvidíte na tomto odkazu po uzavření běhu."
+
+#: reveal.py
+#, python-format
+msgid "You will see the correct answers at this link after the run closes (from %(when)s)."
+msgstr "Správné odpovědi uvidíte na tomto odkazu po uzavření běhu (od %(when)s)."
+
+#: reveal.py
+#, python-format
+msgid "You will see the correct answers at this link after the run closes (at the earliest from %(when)s)."
+msgstr "Správné odpovědi uvidíte na tomto odkazu po uzavření běhu (nejdříve od %(when)s)."
+
+#: reveal.py
+msgid "In a real run, the correct answers are shown only after the run closes."
+msgstr "V ostrém běhu se správné odpovědi ukážou až po uzavření běhu."
+
+#: revision_diff.py
 #, python-format
 msgid "%(count)s questions, %(points)s points each"
 msgstr "%(count)s otázek, po %(points)s bodech"
 
-#: revision_diff.py:116
+#: revision_diff.py
 #, python-format
 msgid "Draw from %(bank)s"
 msgstr "Los z banky %(bank)s"
 
-#: revision_diff.py:153
+#: revision_diff.py
 msgid "Title"
 msgstr "Název"
 
-#: revision_diff.py:159
+#: revision_diff.py
 msgid "Description"
 msgstr "Popis"
 
-#: revision_diff.py:163
+#: revision_diff.py
 msgid "Languages"
 msgstr "Jazyky"
 
-#: revision_diff.py:166
+#: revision_diff.py
 msgid "Default language"
 msgstr "Výchozí jazyk"
 
-#: revision_diff.py:183
-msgid "Points"
-msgstr "Body"
-
-#: revision_diff.py:194
+#: revision_diff.py
 msgid "Scoring"
 msgstr "Bodování"
 
-#: revision_diff.py:195
+#: revision_diff.py
 msgid "Sources"
 msgstr "Zdroje"
 
-#: revision_diff.py:199
+#: revision_diff.py
 msgid "Explanation"
 msgstr "Vysvětlení"
 
-#: revision_diff.py:207
+#: revision_diff.py
 msgid "Question type version"
 msgstr "Verze typu otázky"
 
-#: revision_diff.py:220
+#: revision_diff.py
 msgid "Question type"
 msgstr "Typ otázky"
 
-#: revision_diff.py:223
+#: revision_diff.py
 msgid "Definition"
 msgstr "Definice"
 
-#: rewards.py:75
+#: rewards.py
 msgid "Rewards need a data profile that keeps scores."
 msgstr "Odměny potřebují profil dat, který uchovává skóre."
 
-#: rewards.py:76
+#: rewards.py
 msgid "Answers after each question cannot go with rewards."
 msgstr "Odpovědi po každé otázce nejdou dohromady s odměnami."
 
-#: rewards.py:77
+#: rewards.py
 msgid "A draw needs a required e-mail under the chosen contact setting."
 msgstr "Při zvoleném kontaktování výherců potřebuje losování povinný e-mail."
 
-#: settings.py:165
+#: run_links.py
+msgid "Type only the start of the address, such as https://host:8443."
+msgstr "Napište jen začátek adresy, například https://host:8443."
+
+#: run_links.py
+msgid "The port must be a number from 1 to 65535."
+msgstr "Port musí být číslo od 1 do 65535."
+
+#: run_links.py
+msgid "Type a host name or an IP address."
+msgstr "Napište název serveru nebo IP adresu."
+
+#: run_links.py
+msgid "The address is too long."
+msgstr "Adresa je příliš dlouhá."
+
+#: settings.py
 msgid "No"
 msgstr "Ne"
 
-#: settings.py:165
+#: settings.py
 msgid "Yes"
 msgstr "Ano"
 
-#: settings.py:171
+#: settings.py
 msgid "When a new version is published during a run"
 msgstr "Když se během běhu publikuje nová verze"
 
-#: settings.py:173
+#: settings.py
 msgid "Ask at publication"
 msgstr "Zeptat se při publikaci"
 
-#: settings.py:174
+#: settings.py
 msgid "Notify participants and let them switch"
 msgstr "Upozornit hráče a nabídnout přepnutí"
 
-#: settings.py:175
+#: settings.py
 msgid "Let participants finish on the old version"
 msgstr "Nechat hráče dokončit na staré verzi"
 
-#: settings.py:185
-msgid "Colours"
-msgstr "Barvy"
-
-#: settings.py:187
-msgid "Blue and teal"
-msgstr "Modrá a tyrkysová"
-
-#: settings.py:188
-msgid "Indigo and pink"
-msgstr "Indigo a růžová"
-
-#: settings.py:189
-msgid "Violet and white"
-msgstr "Fialová a bílá"
-
-#: settings.py:190
-msgid "Green and blue"
-msgstr "Zelená a modrá"
-
-#: settings.py:191
-msgid "Red and plum"
-msgstr "Červená a vínová"
-
-#: settings.py:202
+#: settings.py
 msgid "Answer \"None of the answers\""
 msgstr "Odpověď „Žádná z odpovědí“"
 
-#: settings.py:205
+#: settings.py
 msgid "On every question, which hides trick questions"
 msgstr "U každé otázky, takže chyták nejde poznat"
 
-#: settings.py:207
+#: settings.py
 msgid "Only on trick questions"
 msgstr "Jen u chytáků"
 
-#: settings.py:215
+#: settings.py
 msgid "What a run keeps"
 msgstr "Co běh ukládá"
 
-#: settings.py:217
+#: settings.py
 msgid "Nothing: only counts"
 msgstr "Nic: jen počty"
 
-#: settings.py:218
+#: settings.py
 msgid "Score and photos"
 msgstr "Skóre a fotky"
 
-#: settings.py:219
+#: settings.py
 msgid "Score and all answers"
 msgstr "Skóre a všechny odpovědi"
 
-#: settings.py:220
+#: settings.py
 msgid "Score, all answers and times"
 msgstr "Skóre, všechny odpovědi a časy"
 
-#: settings.py:231
+#: settings.py
 msgid "How long a run keeps its data"
 msgstr "Jak dlouho běh uchovává data"
 
-#: settings.py:233
+#: settings.py
 msgid "30 days"
 msgstr "30 dní"
 
-#: settings.py:234
+#: settings.py
 msgid "90 days"
 msgstr "90 dní"
 
-#: settings.py:235
+#: settings.py
 msgid "180 days"
 msgstr "180 dní"
 
-#: settings.py:236
+#: settings.py
 msgid "1 year"
 msgstr "1 rok"
 
-#: settings.py:237
+#: settings.py
 msgid "3 years"
 msgstr "3 roky"
 
-#: settings.py:238
+#: settings.py
 msgid "Permanently"
 msgstr "Trvale"
 
-#: settings.py:248
+#: settings.py
 msgid "Who sees stored answers"
 msgstr "Kdo vidí uložené odpovědi"
 
-#: settings.py:250
+#: settings.py
 msgid "Admins"
 msgstr "Správci"
 
-#: settings.py:251
+#: settings.py
 msgid "Admins and the participant"
 msgstr "Admini a účastník"
 
-#: settings.py:252
+#: settings.py
 msgid "Everyone, after the run ends"
 msgstr "Všichni, po skončení běhu"
 
-#: settings.py:257
+#: settings.py
 msgid "Needs a profile that keeps all answers. Free text can say anything: in a public walkthrough a value is shown until an admin hides it."
 msgstr "Potřebuje profil, který ukládá všechny odpovědi. Volný text může obsahovat cokoli: ve veřejném průchodu se hodnota zobrazí, dokud ji admin neskryje."
 
-#: settings.py:266
+#: settings.py
 msgid "Grading page"
 msgstr "Stránka hodnocení"
 
-#: settings.py:268
+#: settings.py
 msgid "By question"
 msgstr "Po otázkách"
 
-#: settings.py:269
+#: settings.py
 msgid "By attempt"
 msgstr "Po pokusech"
 
-#: settings.py:279
+#: settings.py
 msgid "Sources on the result"
 msgstr "Zdroje u výsledku"
 
-#: settings.py:281
+#: settings.py
 msgid "Show"
 msgstr "Zobrazit"
 
-#: settings.py:282
+#: settings.py
 msgid "Hide"
 msgstr "Skrýt"
 
-#: settings.py:290
+#: settings.py
+msgid "Large logo on the home and About pages"
+msgstr "Velké logo na úvodní stránce a stránce O aplikaci"
+
+#: settings.py
 msgid "Moving through the questions"
 msgstr "Průchod otázkami"
 
-#: settings.py:292
+#: settings.py
 msgid "All questions at once"
 msgstr "Všechny otázky najednou"
 
-#: settings.py:293
+#: settings.py
 msgid "One by one, with going back"
 msgstr "Po jedné, s návratem"
 
-#: settings.py:294
+#: settings.py
 msgid "One by one, without going back"
 msgstr "Po jedné, bez návratu"
 
-#: settings.py:295
+#: settings.py
 msgid "Pages of questions"
 msgstr "Po stránkách"
 
-#: settings.py:306
+#: settings.py
 msgid "Questions per page"
 msgstr "Otázek na stránku"
 
-#: settings.py:310
+#: settings.py
 msgid "Only for pages of questions."
 msgstr "Jen pro průchod po stránkách."
 
-#: settings.py:318
+#: settings.py
 msgid "When to show the answers"
 msgstr "Kdy ukázat odpovědi"
 
-#: settings.py:320
+#: settings.py
 msgid "Never"
 msgstr "Nikdy"
 
-#: settings.py:321
+#: settings.py
 msgid "At the end"
 msgstr "Na konci"
 
-#: settings.py:322
+#: settings.py
 msgid "After each question"
 msgstr "Po každé otázce"
 
-#: settings.py:333
+#: settings.py
+msgid "After the run closes"
+msgstr "Po uzavření běhu"
+
+#: settings.py
 msgid "What to show"
 msgstr "Co ukázat"
 
-#: settings.py:335
+#: settings.py
 msgid "Whether each answer is right"
 msgstr "Jen zda je odpověď správně"
 
-#: settings.py:336
+#: settings.py
 msgid "And the correct answers"
 msgstr "Navíc správné odpovědi"
 
-#: settings.py:337
+#: settings.py
 msgid "And the correct answers and explanations"
 msgstr "Navíc správné odpovědi a vysvětlení"
 
-#: settings.py:347
+#: settings.py
 msgid "Shuffle the questions"
 msgstr "Míchat otázky"
 
-#: settings.py:357
+#: settings.py
 msgid "Shuffle the options"
 msgstr "Míchat možnosti"
 
-#: settings.py:365
+#: settings.py
 msgid "Time limit for an attempt (minutes)"
 msgstr "Časový limit pokusu (minuty)"
 
-#: settings.py:367
+#: settings.py
 msgid "No limit"
 msgstr "Bez limitu"
 
-#: settings.py:379
+#: settings.py
 msgid "Show a planned quiz under \"Coming up\" on the public list"
 msgstr "Ukázat naplánovaný kvíz v sekci Chystá se na veřejném seznamu"
 
-#: settings.py:389
+#: settings.py
 msgid "Time zone"
 msgstr "Časové pásmo"
+
+#: usage.py
+#, python-format
+msgid "test link of quiz %(quiz)s"
+msgstr "testovací odkaz kvízu %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "planned run %(number)s of quiz %(quiz)s"
+msgstr "plánovaný běh %(number)s kvízu %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "open run %(number)s of quiz %(quiz)s"
+msgstr "otevřený běh %(number)s kvízu %(quiz)s"
+
+#: usage.py
+#, python-format
+msgid "run %(number)s of quiz %(quiz)s"
+msgstr "běh %(number)s kvízu %(quiz)s"
 

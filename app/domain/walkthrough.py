@@ -62,11 +62,11 @@ def available(run: QuizRun) -> bool:
         run.status != QuizRun.Status.CLOSED
         or run.kind != QuizRun.Kind.NORMAL
         or run.quiz.archived_at is not None
+        or run.data_deleted_at is not None
     ):
         return False
     return shows_answers(run) or any(
-        visibility.photo_level(run.quiz, question) == PHOTO_PUBLIC
-        and _plugin(question).file_fields(question["definition"])
+        visibility.photo_level(run.quiz, question) == PHOTO_PUBLIC and _has_files(question)
         for question in _questions(run, _answered_rows(run))
     )
 
@@ -75,6 +75,14 @@ def _plugin(question: Mapping[str, Any]) -> QuestionTypePlugin:
     return cast(
         QuestionTypePlugin, registry.get("question_type", question["type"], include_disabled=True)
     )
+
+
+def _has_files(question: Mapping[str, Any]) -> bool:
+    """A question whose module was uninstalled (TD-017) shows nothing, here as on the result."""
+    try:
+        return bool(_plugin(question).file_fields(question["definition"]))
+    except registry.UnknownPort:
+        return False
 
 
 def of_run(run: QuizRun, locale: str) -> list[WalkthroughQuestion]:
@@ -89,7 +97,10 @@ def of_run(run: QuizRun, locale: str) -> list[WalkthroughQuestion]:
     }
     found = []
     for question in _questions(run, rows):
-        plugin = _plugin(question)
+        try:
+            plugin = _plugin(question)
+        except registry.UnknownPort:
+            continue
         is_photo = bool(plugin.file_fields(question["definition"]))
         public_photos = is_photo and visibility.photo_level(run.quiz, question) == PHOTO_PUBLIC
         if not answers and not public_photos:

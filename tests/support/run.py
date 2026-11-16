@@ -14,7 +14,7 @@ def _environment(db: Path, sites: list[Path], env: dict[str, str]) -> dict[str, 
     clean = {k: v for k, v in os.environ.items() if not k.startswith("KVZ_")}
     return clean | {
         "DJANGO_SETTINGS_MODULE": "app.settings",
-        "KVZ_SECRET_KEY": "test-only-not-a-secret",
+        "KVZ_SECRET_KEY": "test-only-not-a-real-secret-key-0123456789",
         "KVZ_DOMAIN": "testserver",
         "KVZ_DB_PATH": str(db),
         "PYTHONPATH": os.pathsep.join([str(REPO), *map(str, sites)]),

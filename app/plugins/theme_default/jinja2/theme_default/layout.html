@@ -1,29 +1,48 @@
 <!doctype html>
-<html lang="{{ locale }}" data-palette="{{ palette }}">
+<html lang="{{ locale }}" data-palette="{{ branding.palette }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   {% if htmx_config %}<meta name="htmx-config" content="{{ htmx_config }}">{% endif %}
-  <title>{% block title %}Kvízotron{% endblock %}</title>
-  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <title>{% block title %}{{ branding.name }}{% endblock %}</title>
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   {% for url in theme.stylesheet_urls() %}
   <link rel="stylesheet" href="{{ url }}">
   {% endfor %}
+  {% if branding.custom %}
+  {# Only validated colours and fixed token names reach the style; the nonce lets the CSP allow just this block. #}
+  <style nonce="{{ csp_nonce }}">
+    :root[data-palette="custom"] {
+    {%- for token, colour in branding.custom.light.items() %}
+      --kvz-{{ token }}: {{ colour }};
+    {%- endfor %}
+    }
+    @media (prefers-color-scheme: dark) {
+      :root[data-palette="custom"] {
+      {%- for token, colour in branding.custom.dark.items() %}
+        --kvz-{{ token }}: {{ colour }};
+      {%- endfor %}
+      }
+    }
+  </style>
+  {% endif %}
   {% for url in scripts|default([]) %}
   <script src="{{ url }}" defer></script>
   {% endfor %}
 </head>
 <body class="{% block body_class %}public{% endblock %}">
+  {% block header %}
   <a class="skip-link" href="#content">{{ _("Skip to content") }}</a>
   <header class="site-bar">
-    <a class="site-name" href="/"><img class="site-logo" src="/assets/logo.svg" alt="" width="32" height="32"> Kvízotron</a>
+    <a class="site-name" href="/?lang={{ locale }}"><img class="site-logo" src="{{ branding.logo_url }}" alt="" width="32" height="32"> {{ branding.name }}</a>
     {% block bar %}{% endblock %}
   </header>
+  {% endblock %}
   <main id="content" class="{% block main_class %}page{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+  {% block footer %}{% endblock %}
 </body>
 </html>

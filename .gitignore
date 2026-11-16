@@ -33,3 +33,6 @@ build/
 
 # Skripty a uložené přihlášení z průchodů v prohlížeči.
 .playwright-mcp/
+
+# Pracovní prostory agentů.
+.superpowers/

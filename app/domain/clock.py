@@ -2,7 +2,7 @@
 
 import os
 import time
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from django.utils import timezone
@@ -38,6 +38,16 @@ def parse_local(value: str) -> datetime:
 
 def shown(value: datetime | None) -> str:
     return value.astimezone(settings.zone()).strftime(SHOWN_FORMAT) if value else "–"
+
+
+def iso(value: datetime | None) -> str:
+    """ISO 8601 with the offset of the configured zone, for files a machine reads."""
+    return value.astimezone(settings.zone()).isoformat(timespec="seconds") if value else ""
+
+
+def local_date(value: datetime) -> date:
+    """The calendar date of a moment in the configured zone (the name of a day's backup)."""
+    return value.astimezone(settings.zone()).date()
 
 
 def form_value(value: datetime | None) -> str:

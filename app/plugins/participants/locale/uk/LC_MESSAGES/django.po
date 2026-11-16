@@ -1,96 +1,132 @@
-#: manifest.py:19
+#: manifest.py
 msgid "Do not ask"
 msgstr "Не питати"
 
-#: manifest.py:20
+#: manifest.py
 msgid "Ask, may be left empty"
 msgstr "Питати, можна залишити порожнім"
 
-#: manifest.py:21
+#: manifest.py
 msgid "Require"
 msgstr "Вимагати"
 
-#: manifest.py:40
+#: manifest.py
+msgid "Participants"
+msgstr "Учасники"
+
+#: manifest.py
+msgid "Decides who may take part and how names and e-mails are asked for."
+msgstr "Визначає, хто може брати участь і як запитувати ім’я та e-mail."
+
+#: manifest.py
 msgid "Attempt repeats"
 msgstr "Повторення спроби"
 
-#: manifest.py:42
+#: manifest.py
 msgid "Anyone may play again"
 msgstr "Кожен може грати знову"
 
-#: manifest.py:43
+#: manifest.py
 msgid "One attempt per browser"
 msgstr "Одна спроба на браузер"
 
-#: manifest.py:46
+#: manifest.py
 msgid "The browser is recognised by a cookie, so another browser or a cleared cookie starts a new attempt."
 msgstr "Браузер розпізнається за cookie, тож інший браузер або видалені cookie починають нову спробу."
 
-#: manifest.py:56
+#: manifest.py
 msgid "An unfinished attempt"
 msgstr "Незавершена спроба"
 
-#: manifest.py:58
+#: manifest.py
 msgid "The participant continues it"
 msgstr "Учасник продовжує її"
 
-#: manifest.py:59
+#: manifest.py
 msgid "It counts as the one attempt"
 msgstr "Вона вважається єдиною спробою"
 
-#: manifest.py:60
+#: manifest.py
 msgid "It is closed and a new one may start"
 msgstr "Її закривають, і може початися нова"
 
-#: manifest.py:62
-msgid "Only matters when an attempt may not be repeated."
-msgstr "Має значення лише тоді, коли спробу не можна повторювати."
+#: manifest.py
+msgid "Matters when an attempt may not be repeated or the number of attempts is limited."
+msgstr "Має значення, коли спробу не можна повторювати або кількість спроб обмежена."
 
-#: manifest.py:70
+#: manifest.py
+msgid "At most attempts"
+msgstr "Не більше спроб"
+
+#: manifest.py
+msgid "No limit"
+msgstr "Без обмеження"
+
+#: manifest.py
+msgid "Counted from the attempts a browser has sent in this run."
+msgstr "Рахується зі спроб, які браузер надіслав у цьому запуску."
+
+#: manifest.py
+msgid "More attempts after passing"
+msgstr "Подальші спроби після складання"
+
+#: manifest.py
+msgid "Allowed"
+msgstr "Дозволені"
+
+#: manifest.py
+msgid "Not after passing"
+msgstr "Після складання вже ні"
+
+#: manifest.py
+msgid "Needs a pass mark."
+msgstr "Потрібен поріг складання."
+
+#: manifest.py
 msgid "Nickname"
 msgstr "Псевдонім"
 
-#: manifest.py:73
+#: manifest.py
 msgid "The administration of this run shows it, and so does the run's public scoreboard when the admin turns it on."
 msgstr "Його показує адміністрація цього запуску, а також публічна таблиця результатів, коли адміністратор її ввімкне."
 
-#: manifest.py:83
+#: manifest.py
 msgid "E-mail"
 msgstr "Електронна пошта"
 
-#: manifest.py:85
+#: manifest.py
 msgid "An e-mail is shown only to logged-in administrators, never publicly."
 msgstr "Електронну пошту бачать лише адміністратори після входу, ніколи публіка."
 
-#: manifest.py:93
+#: manifest.py
 msgid "When to ask"
 msgstr "Коли питати"
 
-#: manifest.py:95
+#: manifest.py
 msgid "After the last question"
 msgstr "Після останнього питання"
 
-#: manifest.py:96
+#: manifest.py
 msgid "Before the first question"
 msgstr "Перед першим питанням"
 
-#: manifest.py:98
+#: manifest.py
 msgid "Applies to the nickname and the e-mail."
 msgstr "Стосується псевдоніма й електронної пошти."
 
-#: manifest.py:106
+#: manifest.py
 msgid "Same nickname twice"
 msgstr "Той самий псевдонім двічі"
 
-#: manifest.py:107
+#: manifest.py
 msgid "Allow"
 msgstr "Дозволити"
 
-#: manifest.py:107
+#: manifest.py
 msgid "Refuse within one run"
 msgstr "Відмовити в межах одного запуску"
 
-#: manifest.py:108
+#: manifest.py
 msgid "Names differing only by case or inner spaces count as the same."
 msgstr "Імена, що відрізняються лише регістром або пробілами всередині, вважаються однаковими."
 

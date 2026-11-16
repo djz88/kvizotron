@@ -6,7 +6,7 @@ may see what (ADR-0026, ADR-0031, ADR-0051).
 
 import heapq
 import secrets
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
@@ -14,12 +14,14 @@ from typing import Literal, cast
 
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import Exists, OuterRef, Q
 from django.utils import translation
 from django.utils.translation import gettext
 
 from app.contracts import (
     ARCHIVED_RESULTS,
     OFFICIAL_ATTEMPT,
+    PASS_MARK,
     RESULT_DISPLAY_KEYS,
     RESULT_KEYS,
     REVISION_MODE,
@@ -31,11 +33,12 @@ from app.contracts import (
     SCOREBOARD_SHOW_TIME,
     SCOREBOARD_UNNAMED,
     SCOREBOARD_VISIBILITY,
+    AttemptFigures,
     RankedRow,
     ResultViewPlugin,
     ScoreEntry,
 )
-from app.domain import data_policy, settings
+from app.domain import attempts, authoring, data_policy, settings
 from app.domain.models import Attempt, Participant, Quiz, QuizRun, RunRevision
 from app.kernel import audit, registry
 
@@ -43,30 +46,34 @@ __all__ = [
     "BOARD_CACHE_SECONDS",
     "Board",
     "BoardRow",
-    "MergeRefused",
     "ResultConflict",
+    "ShareRefused",
     "Table",
     "board",
     "is_public",
-    "merge",
     "place_of",
-    "unmerge",
     "anonymous_label",
     "conflicts",
     "ensure_run_allowed",
     "needs_participant",
     "reasons",
     "of",
+    "Kept",
+    "kept",
     "official_attempt",
     "participant_numbers",
     "revision_mode",
     "rules_for_quiz",
     "set_display",
+    "share_board",
+    "shared_runs",
     "snapshot",
+    "split_board",
 ]
 
 SEED = "seed"
-MERGED = "merged"
+PERCENT = "percent"
+LATEST = "latest"
 MAX_LABEL = 40
 
 
@@ -108,8 +115,7 @@ def of(run: QuizRun) -> dict[str, str]:
 
 
 def revision_mode(run: QuizRun) -> str:
-    if (run.results_json or {}).get(MERGED) == "on":
-        return MERGED
+    """percent, separate or latest; only what the board shows, never rewards or draws."""
     return of(run)[REVISION_MODE]
 
 
@@ -162,6 +168,7 @@ def ensure_run_allowed(quiz: Quiz, chosen: Mapping[str, str], profile: str) -> N
 
 def set_display(run: QuizRun, chosen: Mapping[str, str], *, admin_id: str) -> None:
     """Only what changes what is shown; the rest decides the order and stays as opened."""
+    authoring.ensure_editable(run.quiz)
     if run.kind == QuizRun.Kind.TEST:
         raise ResultConflict([SCOREBOARD_VISIBILITY], [TEST_RUN])
     given = {
@@ -234,19 +241,21 @@ class BoardRow:
     duration_ms: int | None
     mine: bool
     key: str  # marks "mine" only; a template never shows it
+    attempt_id: str = ""  # which attempt the row ranks, for the admin export; never shown
+    passed: bool | None = None  # against the run's pass mark; None without one
 
 
 @dataclass(frozen=True)
 class Table:
-    revision_no: int | None
-    max_score: Decimal
+    revision_no: int | None  # None for one table over all revisions
+    max_score: Decimal | None  # None by percent: each row has its own maximum
     rows: list[BoardRow]
 
 
 @dataclass(frozen=True)
 class Board:
     tables: list[Table]
-    hidden: str | None  # "hidden", "after_end", "pending", "archived"
+    hidden: str | None  # "hidden", "after_end", "pending", "archived", "data_deleted"
     columns: tuple[str, ...]
     final: bool  # nothing on it can change any more
 
@@ -255,14 +264,14 @@ class Board:
 class _Ranked:
     revision_id: object | None  # None for one table over all revisions
     revision_no: int | None
-    max_score: Decimal
+    max_score: Decimal | None  # None by percent
     rows: list[RankedRow]
-
-
-class MergeRefused(Exception):
-    def __init__(self, code: str) -> None:
-        super().__init__(code)
-        self.code = code
+    # By percent the ranked entries hold percents (`by_percent`), and `shown` holds the points
+    # shown, by attempt id; by points both are left out.
+    by_percent: bool = False
+    shown: Mapping[str, ScoreEntry] | None = None
+    # On a shared board: the run number of each row's run, by row key.
+    run_of: Mapping[str, int] | None = None
 
 
 def _cache_key(run: QuizRun, locale: str) -> str:
@@ -270,11 +279,29 @@ def _cache_key(run: QuizRun, locale: str) -> str:
 
 
 def _forget(run: QuizRun) -> None:
-    """A changed board is shown at once, so a hidden one does not stay public for seconds."""
+    """A changed board is shown at once, so a hidden one does not stay public for seconds.
+
+    A member of a shared board also drops the board of its main run, which shows its rows.
+    """
     locales = set(run.quiz.supported_locales) | set(
         run.current_revision.snapshot_json.get("locales", [])
     )
     cache.delete_many([_cache_key(run, locale) for locale in locales])
+    if run.board_main_id is not None:
+        main = (
+            QuizRun.all_kinds.select_related("quiz", "current_revision")
+            .filter(pk=run.board_main_id)
+            .first()
+        )
+        if main is not None and main.board_main_id is None:  # a main is never a member
+            _forget(main)
+
+
+def clear_board_cache(run_id: object) -> None:
+    """For callers outside this module that changed who is on a board, such as an erasure."""
+    run = QuizRun.all_kinds.select_related("quiz", "current_revision").filter(pk=run_id).first()
+    if run is not None:
+        _forget(run)
 
 
 def _view() -> ResultViewPlugin:
@@ -286,6 +313,8 @@ def _pending(run: QuizRun) -> bool:
 
 
 def _hidden(run: QuizRun, values: Mapping[str, str], pending: bool) -> str | None:
+    if run.data_deleted_at is not None:  # first: no setting can bring deleted data back
+        return "data_deleted"
     visibility = values[SCOREBOARD_VISIBILITY]
     if visibility == "hidden":
         return "hidden"
@@ -298,8 +327,33 @@ def _hidden(run: QuizRun, values: Mapping[str, str], pending: bool) -> str | Non
     return None
 
 
+def _pending_any(run: QuizRun) -> bool:
+    """Pending grading in the run or, for a main run, in any run of its shared board."""
+    return any(_pending(linked) for linked in shared_runs(run))
+
+
 def is_public(run: QuizRun) -> bool:
-    return _hidden(run, of(run), _pending(run)) is None
+    return _hidden(run, of(run), _pending_any(run)) is None
+
+
+def public_runs(quiz: Quiz, *, besides: QuizRun | None = None) -> list[QuizRun]:
+    """The quiz's normal runs whose board is public now, newest first, in one query (AC-176).
+
+    Pending grading in a member of a main run's shared board holds the main board too.
+    """
+    waiting = Attempt.objects.filter(
+        Q(run=OuterRef("pk")) | Q(run__board_main=OuterRef("pk")),
+        status=Attempt.Status.PENDING_GRADING,
+    )
+    runs = (
+        QuizRun.objects.filter(quiz=quiz, opened_at__isnull=False, data_deleted_at__isnull=True)
+        .exclude(status=QuizRun.Status.SCHEDULED)
+        .annotate(waiting=Exists(waiting))
+        .order_by("-run_no")
+    )
+    if besides is not None:
+        runs = runs.exclude(pk=besides.pk)
+    return [run for run in runs if _hidden(run, of(run), run.waiting) is None]
 
 
 def _columns(run: QuizRun, values: Mapping[str, str]) -> tuple[str, ...]:
@@ -316,19 +370,27 @@ def _key(attempt: Attempt) -> str:
 
 
 def _numbers(run: QuizRun) -> dict[str, int]:
-    """Every browser and every attempt without one, in the order they came, so a number stays."""
-    people = (
-        (who.created_at, str(who.id), str(who.id))
-        for who in Participant.objects.filter(run=run).order_by("created_at", "id")
-    )
+    """Each browser's stored number (`Participant.number`), so an erasure shifts no label.
+
+    An attempt without a browser, and a browser row without a number, follow the highest stored
+    number in the order they came; a later browser can move them, a stored number never moves.
+    """
+    stored: dict[str, int] = {}
+    unnumbered: list[tuple[datetime, str, str]] = []
+    for who in Participant.objects.filter(run=run).order_by("created_at", "id"):
+        if who.number is None:
+            unnumbered.append((who.created_at, str(who.id), str(who.id)))
+        else:
+            stored[str(who.id)] = who.number
     loose = (
         (attempt.started_at, str(attempt.id), f"a:{attempt.id}")
         for attempt in Attempt.objects.filter(run=run, participant__isnull=True).order_by(
             "started_at", "id"
         )
     )
-    merged: Iterator[tuple[datetime, str, str]] = heapq.merge(people, loose)
-    return {key: number for number, (_when, _id, key) in enumerate(merged, start=1)}
+    merged: Iterator[tuple[datetime, str, str]] = heapq.merge(unnumbered, loose)
+    after = max(stored.values(), default=0)
+    return stored | {key: number for number, (_when, _id, key) in enumerate(merged, after + 1)}
 
 
 def participant_numbers(run: QuizRun) -> dict[str, int]:
@@ -347,28 +409,108 @@ def _candidates(run: QuizRun) -> list[Attempt]:
     )
 
 
-def official_attempt(participant: Participant) -> Attempt | None:
-    """The attempt that counts for the participant, by the run's rule (best or first).
+@dataclass(frozen=True)
+class Kept:
+    """What counts for one participant under the run's rule (ADR-0063)."""
 
-    Only submitted attempts with a score: switched, abandoned, unsent and waiting ones never count.
-    Each attempt is measured against its own maximum, as rewards measure it.
+    attempt: Attempt  # the chosen one; under average the last submitted
+    figures: AttemptFigures  # what counts: rewards, draws, pass mark, scoreboard
+    count: int  # submitted attempts it comes from
+    rule: str  # first, best, last or average
+    waiting: bool  # an attempt it depends on waits for grading
+
+
+def _figures_of(attempt: Attempt) -> AttemptFigures:
+    return AttemptFigures(
+        score=attempt.score if attempt.score is not None else Decimal(0),
+        max_score=attempt.max_score if attempt.max_score is not None else Decimal(0),
+        correct=attempt.correct_count or 0,
+        questions=len(attempts.items_of(attempt)),
+    )
+
+
+def _average_figures(found: list[Attempt], entry: ScoreEntry) -> AttemptFigures:
+    count = len(found)
+    questions = sum(len(attempts.items_of(a)) for a in found)
+    return AttemptFigures(
+        score=entry.score,
+        max_score=entry.max_score,
+        correct=sum(a.correct_count or 0 for a in found) // count,
+        questions=int((Decimal(questions) / count).quantize(Decimal(1), ROUND_HALF_UP)),
+    )
+
+
+def _waits(rule: str, finished: list[Attempt]) -> bool:
+    pending = [a.status == Attempt.Status.PENDING_GRADING for a in finished]
+    if rule == "first":
+        return pending[0]
+    if rule == "last":
+        return pending[-1]
+    return any(pending)
+
+
+def kept(participant: Participant) -> Kept | None:
+    """The attempt and the figures that count for the participant, by the run's rule.
+
+    Only submitted attempts with a score count; switched, abandoned, unsent and waiting ones
+    never do. `waiting` only says that the rule depends on an attempt that waits for grading;
+    the pass mark uses it, nothing that grants or ranks does (ADR-0063). None when the
+    participant has no submitted, scored attempt.
     """
-    found = list(
+    finished = list(
         Attempt.objects.filter(
             participant=participant,
-            status=Attempt.Status.SUBMITTED,
+            status__in=Attempt.FINISHED,
             submitted_at__isnull=False,
-            score__isnull=False,
         )
     )
+    for attempt in finished:
+        attempt.participant = participant  # one query, not one per attempt
+    # the same order as `_entry` gives `pick_official` (`attempt_id` is `str(id)`)
+    finished.sort(key=lambda a: (cast(datetime, a.submitted_at), str(a.id)))
+    found = [a for a in finished if a.status == Attempt.Status.SUBMITTED and a.score is not None]
     if not found:
         return None
-    for attempt in found:
-        attempt.participant = participant  # one query, not one per attempt
+    rule = of(participant.run)[OFFICIAL_ATTEMPT]
     by_id = {str(attempt.id): attempt for attempt in found}
     entries = [_entry(attempt, attempt.max_score or Decimal(0)) for attempt in found]
-    chosen = _view().pick_official(entries, of(participant.run)[OFFICIAL_ATTEMPT])
-    return by_id[chosen.attempt_id]
+    chosen = _view().pick_official(entries, rule)
+    attempt = by_id[chosen.attempt_id]
+    figures = _average_figures(found, chosen) if rule == "average" else _figures_of(attempt)
+    return Kept(attempt, figures, len(found), rule, _waits(rule, finished))
+
+
+def pass_mark(run: QuizRun) -> Decimal | None:
+    """The run's pass mark in percent, None when there is none."""
+    mark = Decimal(of(run)[PASS_MARK])
+    return mark if mark > 0 else None
+
+
+def judge(score: Decimal, max_score: Decimal, mark: Decimal | None) -> bool | None:
+    """Passed when the exact percent reaches the mark; None without a mark or a maximum."""
+    if mark is None or max_score <= 0:
+        return None
+    return score / max_score * _HUNDRED >= mark
+
+
+def attempt_passed(attempt: Attempt) -> bool | None:
+    """Computed from the run's mark each time, never stored. None while unjudged."""
+    if attempt.status != Attempt.Status.SUBMITTED or attempt.score is None:
+        return None
+    return judge(attempt.score, attempt.max_score or Decimal(0), pass_mark(attempt.run))
+
+
+def kept_passed(found: Kept | None, run: QuizRun) -> bool | None:
+    """The kept figures against the mark; None when nothing is kept or it waits for grading."""
+    if found is None or found.waiting:
+        return None
+    return judge(found.figures.score, found.figures.max_score, pass_mark(run))
+
+
+def official_attempt(participant: Participant) -> Attempt | None:
+    """The attempt that counts for the participant; waiting attempts are ignored."""
+    found = kept(participant)
+    return None if found is None else found.attempt
 
 
 def _entry(attempt: Attempt, max_score: Decimal) -> ScoreEntry:
@@ -395,18 +537,95 @@ def _rank(
     return view.rank(official, values, values[SEED])
 
 
+_SHARE = Decimal("0.000001")
+
+
+def _share(entry: ScoreEntry) -> ScoreEntry:
+    """The entry with its score as the percent of its own maximum, to rank and pick by."""
+    score = (
+        Decimal(0)
+        if entry.max_score <= 0
+        else (entry.score / entry.max_score * _HUNDRED).quantize(_SHARE, ROUND_HALF_UP)
+    )
+    return replace(entry, score=score, max_score=_HUNDRED)
+
+
+def _pick_by_percent(
+    attempts: list[Attempt], maxima: Mapping[object, Decimal], rule: str
+) -> tuple[list[ScoreEntry], dict[str, ScoreEntry]]:
+    """Each participant's counted entry as a percent, and the points it shows, by attempt id."""
+    view = _view()
+    groups: dict[str, list[ScoreEntry]] = {}
+    for attempt in attempts:
+        top = maxima.get(attempt.revision_id, attempt.max_score or Decimal(0))
+        groups.setdefault(_key(attempt), []).append(_entry(attempt, top))
+    official = []
+    shown: dict[str, ScoreEntry] = {}
+    for found in groups.values():
+        chosen = view.pick_official([_share(entry) for entry in found], rule)
+        official.append(chosen)
+        if rule == "average":
+            shown[chosen.attempt_id] = view.pick_official(found, rule)
+        else:
+            shown[chosen.attempt_id] = next(e for e in found if e.attempt_id == chosen.attempt_id)
+    return official, shown
+
+
+def _rank_by_percent(
+    attempts: list[Attempt], maxima: Mapping[object, Decimal], values: Mapping[str, str]
+) -> _Ranked:
+    """All revisions in one table, each attempt measured against its own revision (ADR-0065)."""
+    official, shown = _pick_by_percent(attempts, maxima, values[OFFICIAL_ATTEMPT])
+    rows = _view().rank(official, values, values[SEED])
+    return _Ranked(None, None, None, rows, by_percent=True, shown=shown)
+
+
+def _maxima(run: QuizRun, used: list[RunRevision] | None = None) -> dict[object, Decimal]:
+    """The maximum of each revision the run used, the newest row first."""
+    if used is None:
+        used = list(RunRevision.objects.filter(run=run).order_by("-active_from"))
+    maxima: dict[object, Decimal] = {}
+    for row in used:
+        maxima.setdefault(row.revision_id, row.max_score)
+    return maxima
+
+
+def _shown_candidates(run: QuizRun) -> list[Attempt]:
+    """The run's candidates its own revision mode shows: `latest` keeps its current revision."""
+    attempts = _candidates(run)
+    if revision_mode(run) == LATEST:
+        return [a for a in attempts if a.revision_id == run.current_revision_id]
+    return attempts
+
+
+def _rank_shared(runs: list[QuizRun], values: Mapping[str, str]) -> _Ranked:
+    """The runs of a shared board in one table by percent, with the main run's tie rules.
+
+    Each run keeps its own revision mode and its own rule for the counted attempt; a participant
+    belongs to one run, so the row keys never meet across runs.
+    """
+    official: list[ScoreEntry] = []
+    shown: dict[str, ScoreEntry] = {}
+    run_of: dict[str, int] = {}
+    for run in runs:
+        attempts = _shown_candidates(run)
+        picked, points = _pick_by_percent(attempts, _maxima(run), of(run)[OFFICIAL_ATTEMPT])
+        official += picked
+        shown |= points
+        run_of |= {entry.key: run.run_no or 0 for entry in picked}
+    rows = _view().rank(official, values, values[SEED])
+    return _Ranked(None, None, None, rows, by_percent=True, shown=shown, run_of=run_of)
+
+
 def _ranked_tables(run: QuizRun, values: Mapping[str, str]) -> list[_Ranked]:
     attempts = _candidates(run)
     used = list(
         RunRevision.objects.filter(run=run).select_related("revision").order_by("-active_from")
     )
     mode = revision_mode(run)
-    if mode == MERGED and len({row.max_score for row in used}) > 1:
-        mode = "separate"  # a later revision changed the maximum, so one table would mislead
-    if mode == MERGED:
-        top = used[0].max_score if used else run.current_revision.max_score
-        return [_Ranked(None, None, top, _rank(attempts, top, values))]
-    if mode == "latest":
+    if mode == PERCENT:
+        return [_rank_by_percent(attempts, _maxima(run, used), values)]
+    if mode == LATEST:
         current = next((row for row in used if row.revision_id == run.current_revision_id), None)
         top = current.max_score if current else run.current_revision.max_score
         mine = [a for a in attempts if a.revision_id == run.current_revision_id]
@@ -442,45 +661,88 @@ def _percent(score: Decimal, max_score: Decimal) -> int:
     return int((score / max_score * _HUNDRED).quantize(Decimal(1), ROUND_HALF_UP))
 
 
-def _build(run: QuizRun, audience: Literal["public", "admin"], locale: str) -> Board:
+def _run_label(locale: str, run_no: int, label: str) -> str:
+    with translation.override(locale):
+        return gettext("Run %(no)s · %(label)s") % {"no": run_no, "label": label}
+
+
+def _build(
+    run: QuizRun, audience: Literal["public", "admin"], locale: str, *, own_run: bool = False
+) -> Board:
+    """The run's board; a main run shows the rows of its whole shared board (ADR-0065).
+
+    `own_run` leaves the shared board out, for what is the run's own data, such as its export.
+
+    Visibility, columns, live names and unnamed rows follow the main run; pending grading in
+    any linked run holds the board, and it is final only when every linked run ended. Publicly,
+    a member whose own board is hidden as archived or deleted adds no rows; the admin sees them.
+    """
     values = of(run)
-    pending = _pending(run)
+    linked_runs = [run] if own_run else shared_runs(run)
+    runs = linked_runs
+    pending = any(_pending(linked) for linked in runs)
     columns = _columns(run, values)
+    ended = all(linked.status in _ENDED for linked in runs)
     # A hidden board may still be turned on after the end, so pages keep asking.
-    final = run.status in _ENDED and not pending and values[SCOREBOARD_VISIBILITY] != "hidden"
+    final = ended and not pending and values[SCOREBOARD_VISIBILITY] != "hidden"
     hidden = None if audience == "admin" else _hidden(run, values, pending)
     if hidden is not None:
         return Board([], hidden, columns, final)
-    numbers = _numbers(run)
     public = audience == "public"
+    if public:  # a member whose own board is archived or deleted keeps its rows to itself
+        runs = [
+            linked
+            for linked in runs
+            if linked == run
+            or _hidden(linked, of(linked), False) not in ("archived", "data_deleted")
+        ]
+    numbers: dict[str, int] = {}
+    for linked in runs:
+        numbers |= _numbers(linked)  # keys are participant or attempt ids, never shared by runs
+    mark = pass_mark(run)
     anonymise = (
         public
-        and run.status == QuizRun.Status.OPEN
+        and any(linked.status == QuizRun.Status.OPEN for linked in runs)
         and values[SCOREBOARD_LIVE_NAMES] == "anonymised"
     )
     unlisted = public and values[SCOREBOARD_UNNAMED] == "unlisted"
     tables = []
-    for ranked in _ranked_tables(run, values):
+    # Still one table by percent when only the main run is left to show publicly.
+    shared = len(linked_runs) > 1
+    rankings = [_rank_shared(runs, values)] if shared else _ranked_tables(run, values)
+    for ranked in rankings:
         rows = []
         for item in ranked.rows:
             entry = item.entry
-            if entry.name and not anonymise:
+            if ranked.by_percent:  # the entry holds the percent, `shown` the points
+                points = cast(Mapping[str, ScoreEntry], ranked.shown)[entry.attempt_id]
+                percent = int(entry.score.quantize(Decimal(1), ROUND_HALF_UP))
+            else:
+                points = entry
+                percent = _percent(entry.score, entry.max_score)
+            named = bool(entry.name) and not anonymise
+            if named:
                 label = entry.name
             elif unlisted and not entry.name:
                 continue
             else:
                 label = anonymous_label(run.quiz, locale, numbers.get(entry.key, 0))
+            # Anonymous labels repeat across runs; the admin also sees the run of a named row.
+            if ranked.run_of is not None and (not named or not public):
+                label = _run_label(locale, ranked.run_of[entry.key], label)
             rows.append(
                 BoardRow(
                     rank=item.rank,
                     label=label,
-                    score=entry.score,
-                    max_score=ranked.max_score,
-                    percent=_percent(entry.score, ranked.max_score),
+                    score=points.score,
+                    max_score=points.max_score,
+                    percent=percent,
                     submitted_at=entry.submitted_at,
                     duration_ms=entry.duration_ms,
                     mine=False,
                     key=entry.key,
+                    attempt_id=entry.attempt_id,
+                    passed=judge(points.score, points.max_score, mark),
                 )
             )
         tables.append(Table(ranked.revision_no, ranked.max_score, rows))
@@ -493,10 +755,14 @@ def board(
     audience: Literal["public", "admin"],
     locale: str,
     viewer: Participant | None = None,
+    own_run: bool = False,
 ) -> Board:
-    """The admin sees every board with names. A public one is cached for a few seconds."""
-    if audience == "admin":
-        found = _build(run, audience, locale)
+    """The admin sees every board with names. A public one is cached for a few seconds.
+
+    `own_run` ranks only the run's own rows even on a shared main run; never cached.
+    """
+    if audience == "admin" or own_run:
+        found = _build(run, audience, locale, own_run=own_run)
     else:
         cache_key = _cache_key(run, locale)
         found = cache.get(cache_key)
@@ -515,6 +781,114 @@ def board(
     )
 
 
+# Shared board of several runs (ADR-0065) ---------------------------------------------------
+
+TOO_FEW = "too_few"
+OTHER_QUIZ = "other_quiz"
+ALREADY_SHARED = "already_shared"
+MAIN_IS_MEMBER = "main_is_member"
+
+
+class ShareRefused(Exception):
+    """Runs that cannot share a board; `code` says why (the codes above, or `test_run`)."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+def shared_runs(main: QuizRun) -> list[QuizRun]:
+    """The main run and the runs it shows on its board, by run number; `[main]` when none."""
+    if main.kind == QuizRun.Kind.TEST:
+        return [main]
+    members = list(
+        QuizRun.objects.filter(board_main=main).select_related("quiz", "current_revision")
+    )
+    if not members:
+        return [main]
+    return sorted([main, *members], key=lambda linked: linked.run_no or 0)
+
+
+def shared_numbers(run: QuizRun) -> list[int]:
+    """The run numbers on a main run's shared board; empty for a run that shows only itself."""
+    if run.board_main_id is not None:
+        return []
+    linked = shared_runs(run)
+    return [r.run_no or 0 for r in linked] if len(linked) > 1 else []
+
+
+def _refusal(main: QuizRun, members: list[QuizRun]) -> str | None:
+    if main.kind == QuizRun.Kind.TEST or any(m.kind == QuizRun.Kind.TEST for m in members):
+        return TEST_RUN
+    if any(m.quiz_id != main.quiz_id for m in members):
+        return OTHER_QUIZ
+    if not members:
+        return TOO_FEW
+    if main.board_main_id is not None:
+        return MAIN_IS_MEMBER
+    if any(m.board_main_id not in (None, main.pk) for m in members):
+        return ALREADY_SHARED
+    if QuizRun.all_kinds.filter(board_main__in=members).exists():
+        return ALREADY_SHARED
+    return None
+
+
+def _forget_all(run_ids: set[object]) -> None:
+    for found in QuizRun.all_kinds.select_related("quiz", "current_revision").filter(
+        pk__in=run_ids
+    ):
+        _forget(found)
+
+
+def share_board(main: QuizRun, members: Sequence[QuizRun], *, admin_id: str) -> None:
+    """Shows the members' rows on the main run's public board; nothing else moves.
+
+    The given members replace the main run's earlier ones; a run left out is on its own again.
+    Raises `ShareRefused`, or `authoring.QuizArchived` for an archived quiz.
+    """
+    authoring.ensure_editable(main.quiz)
+    with transaction.atomic():
+        current = QuizRun.all_kinds.select_for_update().filter(pk=main.pk).first()
+        if current is None:
+            raise ShareRefused(TOO_FEW)
+        wanted = {m.pk for m in members} - {current.pk}
+        found = list(QuizRun.all_kinds.filter(pk__in=wanted).order_by("run_no"))
+        code = _refusal(current, found) if len(found) == len(wanted) else TOO_FEW
+        if code is not None:
+            raise ShareRefused(code)
+        before = set(QuizRun.all_kinds.filter(board_main=current).values_list("pk", flat=True))
+        QuizRun.all_kinds.filter(board_main=current).exclude(pk__in=wanted).update(board_main=None)
+        QuizRun.all_kinds.filter(pk__in=wanted).update(board_main=current)
+        audit.record(
+            actor_type="admin",
+            actor_id=admin_id,
+            action="run.board_combined",
+            entity_type="run",
+            entity_id=str(current.id),
+            details={"main": current.run_no, "members": [m.run_no for m in found]},
+        )
+    _forget_all({current.pk} | before | wanted)
+
+
+def split_board(main: QuizRun, *, admin_id: str) -> None:
+    """Every run of the main run's shared board shows only its own board again."""
+    authoring.ensure_editable(main.quiz)
+    with transaction.atomic():
+        members = list(QuizRun.all_kinds.filter(board_main=main).order_by("run_no"))
+        if not members:
+            return
+        QuizRun.all_kinds.filter(board_main=main).update(board_main=None)
+        audit.record(
+            actor_type="admin",
+            actor_id=admin_id,
+            action="run.board_split",
+            entity_type="run",
+            entity_id=str(main.id),
+            details={"main": main.run_no, "members": [m.run_no for m in members]},
+        )
+    _forget_all({main.pk} | {m.pk for m in members})
+
+
 def place_of(attempt: Attempt) -> tuple[int, int] | None:
     """The place of the attempt's participant and of how many, uncached, counting the unlisted."""
     run = attempt.run
@@ -529,38 +903,3 @@ def place_of(attempt: Attempt) -> tuple[int, int] | None:
             if item.entry.key == key:
                 return item.rank, len(ranked.rows)
     return None
-
-
-def _set_merged(run: QuizRun, value: str | None, action: str, admin_id: str) -> None:
-    with transaction.atomic():
-        current = QuizRun.objects.select_for_update().get(pk=run.pk)
-        stored = dict(current.results_json or {})
-        if value is None:
-            stored.pop(MERGED, None)
-        else:
-            stored[MERGED] = value
-        current.results_json = stored
-        current.save(update_fields=["results_json"])
-        _forget(current)  # a rollback only costs a rebuilt board
-        audit.record(
-            actor_type="admin",
-            actor_id=admin_id,
-            action=action,
-            entity_type="run",
-            entity_id=str(run.id),
-        )
-    run.results_json = current.results_json
-
-
-def merge(run: QuizRun, *, admin_id: str) -> None:
-    """One table for all revisions, only with equal maximum points (AC-06, ADR-0008)."""
-    used = RunRevision.objects.filter(run=run)
-    if used.values("revision_id").distinct().count() < 2:
-        raise MergeRefused("one_revision")
-    if used.values("max_score").distinct().count() > 1:
-        raise MergeRefused("max_differs")
-    _set_merged(run, "on", "run.revisions_merged", admin_id)
-
-
-def unmerge(run: QuizRun, *, admin_id: str) -> None:
-    _set_merged(run, None, "run.revisions_unmerged", admin_id)

@@ -44,4 +44,8 @@ Chosen option: "A run of kind `test`, hidden by the default manager", because th
 
 ## More Information
 
-Refines [ADR-0017](0017-preview-vs-isolated-test-mode.md). Limits on playing a link come with the rest of the public pages (D5).
+Refines [ADR-0017](0017-preview-vs-isolated-test-mode.md). Playing a link needs no limit of its own: a test link only reads and starts an attempt through the limited `start` route ([ADR-0058](0058-rate-limit-buckets.md)).
+
+### Addendum 2026-11-12: the shown address of a link
+
+The address of a test link was built from the address the admin uses. An admin who reaches the server one way and sends testers another (a forwarded port, a public name) can now set, per link, the scheme, host and port the link is shown and copied with (`test_link.shown_origin`, empty means the admin's own address). Only the display changes: the app serves the link on whatever address reaches it, and the admin is responsible for the new address leading to this server. The value is checked to be an origin only (http or https, host name, IPv4 or bracketed IPv6, port 1–65535) and the audit `test_link.address_changed` holds neither the address nor the token. [AC-167](../acceptance-criteria.md).

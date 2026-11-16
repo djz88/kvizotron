@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "admin/_inline_name.html" import inline_name with context %}
 {# The quiz's template of rewards, or a run's own rewards and entitlements when `run` is set. #}
 {% block content %}
 {% include "admin/_quiz_header.html" %}
@@ -20,8 +21,9 @@
   <h2>{{ _("Rewards") }}</h2>
   {% if not rules %}<p>{{ _("No rewards yet.") }}</p>{% endif %}
   {% for row in rules %}
+  <div class="reward-row" id="reward-{{ row.rule.id }}">
   <details{% if row.form.errors %} open{% endif %}>
-    <summary><strong>{{ row.name }}</strong> · {{ row.kind }}</summary>
+    <summary><strong id="reward-name-{{ row.rule.id }}">{{ row.name }}</strong> · {{ row.kind }}</summary>
     {% if row.description %}<p>{{ row.description }}</p>{% endif %}
     {% if row.claim %}<p><small>{{ _("How to claim it") }}: {{ row.claim }}</small></p>{% endif %}
     {% set form = row.form %}
@@ -29,6 +31,8 @@
     {% set can_delete = editable|default(true) and (not run or planned) %}
     {% include "admin/_reward_rule_form.html" %}
   </details>
+  {{ inline_name(row.name_field) }}
+  </div>
   {% endfor %}
   {% if new_form and editable|default(true) %}
   <details{% if new_form.errors %} open{% endif %}>

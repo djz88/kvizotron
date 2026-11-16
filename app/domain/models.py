@@ -22,6 +22,8 @@ class Quiz(models.Model):
     supported_locales = models.JSONField(default=list)
     featured = models.BooleanField(default=False)
     archived_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.CharField(max_length=64, blank=True)  # admin id, like QuestionBank
+    quiz_type = models.CharField(max_length=64, blank=True, default="")  # id of the applied type
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -45,6 +47,32 @@ class AppSetting(models.Model):
                 fields=["key", "quiz"],
                 condition=Q(quiz__isnull=False),
                 name="one_override_per_key_and_quiz",
+            ),
+        ]
+
+
+class BrandingConfiguration(models.Model):
+    """The identity of the pages: global when `quiz` is empty, otherwise that quiz's override."""
+
+    quiz = models.ForeignKey(Quiz, null=True, blank=True, on_delete=models.PROTECT)
+    theme_id = models.CharField(max_length=80)
+    texts_json = models.JSONField(default=dict)  # {"name": {"cs": "…"}, "motto": …}
+    tokens_json = models.JSONField(default=dict)  # {"main": "#rrggbb", "accent": "#rrggbb"}
+    # {"logo": {"asset": "<id>", "source": "<address>" | None}}; an older value is the id alone
+    assets_json = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "branding_configuration"
+        constraints = [
+            models.UniqueConstraint(
+                models.Value(1),
+                condition=Q(quiz__isnull=True),
+                name="one_global_branding",
+            ),
+            models.UniqueConstraint(
+                fields=["quiz"],
+                condition=Q(quiz__isnull=False),
+                name="one_branding_override_per_quiz",
             ),
         ]
 
@@ -106,11 +134,29 @@ class QuestionBank(models.Model):
         db_table = "question_bank"
 
 
+class BankFolder(models.Model):
+    """A folder of one bank, at most four levels deep (`app/domain/bank_folders.py`)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    bank = models.ForeignKey(QuestionBank, on_delete=models.PROTECT, related_name="folders")
+    parent = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="children"
+    )
+    name = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "bank_folder"
+
+
 class BankQuestion(models.Model):
     """`question_json` has the shape of a quiz question in a draft."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
     bank = models.ForeignKey(QuestionBank, on_delete=models.PROTECT, related_name="questions")
+    folder = models.ForeignKey(
+        BankFolder, null=True, blank=True, on_delete=models.PROTECT, related_name="questions"
+    )
     question_json = models.JSONField(default=dict)
     tags = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -154,10 +200,19 @@ class QuizRun(models.Model):
     participant_rules_json = models.JSONField(default=dict)
     # What the run keeps and for how long, copied from the settings when planned or opened.
     retention_json = models.JSONField(default=dict)
+    data_deleted_at = models.DateTimeField(null=True, blank=True)  # the run keeps only a summary
+    retention_held_at = models.DateTimeField(null=True, blank=True)  # waits for an admin to confirm
+    retention_summary_json = models.JSONField(default=dict)  # read instead of the deleted rows
     results_json = models.JSONField(default=dict)  # scoreboard settings and tie seed (ADR-0051)
     rewards_json = models.JSONField(default=dict)  # reward settings fixed when planned or opened
     stateless_submitted = models.PositiveIntegerField(default=0)
+    # The last anonymous number given to a participant; never goes down, so no number comes back
+    participant_seq = models.PositiveIntegerField(default=0)
     access_code_hash = models.CharField(max_length=128, blank=True)
+    # The run whose public board also shows this run's rows; only the display is shared (ADR-0065)
+    board_main = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="board_members"
+    )
 
     # The default also serves `quiz.runs`, so results and statistics never meet a test run.
     objects = _NormalRuns()
@@ -215,14 +270,22 @@ class Participant(models.Model):
     name_key = models.CharField(max_length=80, blank=True)  # casefold() can lengthen a name
     name_dropped = models.BooleanField(default=False)  # a taken name was left out of a submission
     email = models.CharField(max_length=254, null=True, blank=True)
+    # The address stripped and casefolded, so an erasure search is one indexed query.
+    # Personal data like `email`: it goes with the row.
+    # casefold() can lengthen an address up to three times (a ligature becomes three letters)
+    email_key = models.CharField(max_length=762, null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # The anonymous label's number in the run, stored so an erasure shifts no other label.
+    # `participants.find_or_create` gives the next one; a row made elsewhere may lack it.
+    number = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         db_table = "participant"
         constraints = [
             models.UniqueConstraint(
                 fields=["run", "anonymous_key_hash"], name="participant_key_per_run"
-            )
+            ),
+            models.UniqueConstraint(fields=["run", "number"], name="participant_number_per_run"),
         ]
         indexes = [models.Index(fields=["run", "name_key"], name="participant_run_name")]
 
@@ -320,6 +383,8 @@ class RunTestLink(models.Model):
     expires_at = models.DateTimeField(null=True, blank=True)
     created_by = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Scheme, host and port the admin wants this link shown with; empty: the admin's own address.
+    shown_origin = models.CharField(max_length=200, blank=True, default="")
 
     class Meta:
         db_table = "test_link"

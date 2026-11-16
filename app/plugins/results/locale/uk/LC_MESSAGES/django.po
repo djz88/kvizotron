@@ -1,148 +1,200 @@
-#: manifest.py:24
+#: manifest.py
 msgid "Show"
 msgstr "Показувати"
 
-#: manifest.py:24
+#: manifest.py
 msgid "Hide"
 msgstr "Приховати"
 
-#: manifest.py:25
+#: manifest.py
 msgid "Needs the data profile that keeps times."
 msgstr "Потрібен профіль даних, що зберігає час."
 
-#: manifest.py:55
+#: manifest.py
+msgid "Results"
+msgstr "Результати"
+
+#: manifest.py
+msgid "Scoreboard, statistics and the comparison of runs."
+msgstr "Таблиця результатів, статистика та порівняння запусків."
+
+#: manifest.py
 msgid "Public scoreboard"
 msgstr "Публічна таблиця результатів"
 
-#: manifest.py:57
+#: manifest.py
 msgid "Hidden"
 msgstr "Прихована"
 
-#: manifest.py:58
+#: manifest.py
 msgid "Visible during the run"
 msgstr "Видима під час запуску"
 
-#: manifest.py:59
+#: manifest.py
 msgid "Visible after the run ends"
 msgstr "Видима після завершення запуску"
 
-#: manifest.py:62
+#: manifest.py
 msgid "A visible scoreboard remembers each browser with a cookie, so one person is one row."
 msgstr "Видима таблиця запам'ятовує кожен браузер за допомогою cookie, щоб одна людина була одним рядком."
 
-#: manifest.py:70
+#: manifest.py
 msgid "Names during the run"
 msgstr "Імена під час запуску"
 
-#: manifest.py:71
+#: manifest.py
 msgid "Show nicknames"
 msgstr "Показувати псевдоніми"
 
-#: manifest.py:71
+#: manifest.py
 msgid "Show anonymous labels"
 msgstr "Показувати анонімні позначки"
 
-#: manifest.py:72
+#: manifest.py
 msgid "After the run ends, nicknames are shown."
 msgstr "Після завершення запуску показуються псевдоніми."
 
-#: manifest.py:78
+#: manifest.py
 msgid "Participant without a nickname"
 msgstr "Учасник без псевдоніма"
 
-#: manifest.py:79
+#: manifest.py
 msgid "Show with the anonymous label"
 msgstr "Показувати з анонімною позначкою"
 
-#: manifest.py:79
+#: manifest.py
 msgid "Leave out"
 msgstr "Не показувати"
 
-#: manifest.py:85
+#: manifest.py
 msgid "Attempt that counts"
 msgstr "Спроба, що зараховується"
 
-#: manifest.py:86
+#: manifest.py
 msgid "Best valid attempt"
 msgstr "Найкраща дійсна спроба"
 
-#: manifest.py:86
+#: manifest.py
 msgid "First valid attempt"
 msgstr "Перша дійсна спроба"
 
-#: manifest.py:87
+#: manifest.py
+msgid "The last attempt"
+msgstr "Остання спроба"
+
+#: manifest.py
+msgid "The average of the attempts"
+msgstr "Середнє зі спроб"
+
+#: manifest.py
 msgid "Of equal scores of one participant the earlier counts."
 msgstr "З однакових результатів одного учасника зараховується раніший."
 
-#: manifest.py:89
+#: manifest.py
+msgid "Pass mark (%)"
+msgstr "Поріг складання (%)"
+
+#: manifest.py
+msgid "No pass mark"
+msgstr "Без порогу"
+
+#: manifest.py
+msgid "Percent of the maximum score an attempt needs to pass."
+msgstr "Відсоток максимального балу, потрібний для складання."
+
+#: manifest.py
 msgid "Column: score"
 msgstr "Стовпець: бали"
 
-#: manifest.py:90
+#: manifest.py
 msgid "Column: percent"
 msgstr "Стовпець: відсотки"
 
-#: manifest.py:91
+#: manifest.py
 msgid "Column: submission time"
 msgstr "Стовпець: час надсилання"
 
-#: manifest.py:96
+#: manifest.py
 msgid "Column: duration"
 msgstr "Стовпець: тривалість"
 
-#: manifest.py:104
+#: manifest.py
 msgid "Equal scores ordered by"
 msgstr "Однакові бали впорядкувати за"
 
-#: manifest.py:105
+#: manifest.py
 msgid "Earlier submission"
 msgstr "Ранішим надсиланням"
 
-#: manifest.py:105
+#: manifest.py
 msgid "Shorter duration"
 msgstr "Коротшою тривалістю"
 
-#: manifest.py:112
+#: manifest.py
 msgid "Remaining ties"
 msgstr "Решта рівних результатів"
 
-#: manifest.py:114
+#: manifest.py
 msgid "Shared place"
 msgstr "Спільне місце"
 
-#: manifest.py:115
+#: manifest.py
 msgid "Earlier submission first"
 msgstr "Раніше надіслане вище"
 
-#: manifest.py:116
+#: manifest.py
 msgid "Random order, the same on every load"
 msgstr "Випадковий порядок, однаковий при кожному завантаженні"
 
-#: manifest.py:123
+#: manifest.py
 msgid "Runs with more revisions"
 msgstr "Запуски з кількома редакціями"
 
-#: manifest.py:124
+#: manifest.py
+msgid "One table by percent"
+msgstr "Одна таблиця за відсотками"
+
+#: manifest.py
 msgid "One table per revision"
 msgstr "Окрема таблиця для кожної редакції"
 
-#: manifest.py:124
+#: manifest.py
 msgid "Only the latest revision"
 msgstr "Лише остання редакція"
 
-#: manifest.py:125
-msgid "Revisions with equal maximum points can be merged on the run page."
-msgstr "Редакції з однаковим максимумом балів можна об'єднати на сторінці запуску."
+#: manifest.py
+msgid "One table ranks each attempt by the percent of its own revision's maximum."
+msgstr "Одна таблиця впорядковує кожну спробу за відсотком від максимуму її власної редакції."
 
-#: manifest.py:131
+#: manifest.py
+msgid "Scoreboards on the quiz page"
+msgstr "Таблиці результатів на сторінці вікторини"
+
+#: manifest.py
+msgid "Only the current run"
+msgstr "Лише поточний запуск"
+
+#: manifest.py
+msgid "All runs"
+msgstr "Усі запуски"
+
+#: manifest.py
+msgid "Each run shows its board only while its own visibility allows it."
+msgstr "Кожен запуск показує свою таблицю, лише коли це дозволяє його власна видимість."
+
+#: manifest.py
+msgid "Applies to the quiz page, not to one question."
+msgstr "Стосується сторінки вікторини, а не одного питання."
+
+#: manifest.py
 msgid "Public results of an archived run"
 msgstr "Публічні результати архівованого запуску"
 
-#: manifest.py:132
+#: manifest.py
 msgid "Not public"
 msgstr "Не публічні"
 
-#: manifest.py:132
+#: manifest.py
 msgid "Public"
 msgstr "Публічні"
 

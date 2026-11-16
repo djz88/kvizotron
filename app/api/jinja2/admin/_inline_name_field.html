@@ -1,0 +1,2 @@
+{% from "admin/_inline_name.html" import inline_name with context %}{{ inline_name(field) }}
+{%- if field.mirror and not field.editing %}<span hidden hx-swap-oob="innerHTML:#{{ field.mirror }}">{{ field.value }}</span>{% endif %}

@@ -14,13 +14,30 @@ from typing import Any, Literal, cast
 from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
+from django.utils.translation import gettext
 
 from app.contracts import IMAGE_MODE_COPY, JSON, QuestionTypePlugin, ScoringStrategyPlugin
-from app.domain import banks, data_policy, participants, requirements, selection, settings
+from app.domain import (
+    bank_folders,
+    banks,
+    data_policy,
+    participants,
+    requirements,
+    selection,
+    settings,
+)
 from app.domain import questions as question_rules
 from app.domain import results as run_results
 from app.domain import rewards as run_rewards
-from app.domain.models import QuestionBank, Quiz, QuizRevision, QuizRun, RunRevision
+from app.domain.models import (
+    AppSetting,
+    BankFolder,
+    QuestionBank,
+    Quiz,
+    QuizRevision,
+    QuizRun,
+    RunRevision,
+)
 from app.kernel import audit, events, registry
 
 
@@ -179,8 +196,17 @@ def save_draw(
     count: int,
     points: int,
     position: int,
+    folder_id: str = "",
+    difficulty: str = "",
 ) -> str:
+    if difficulty and difficulty not in banks.LEVELS:
+        raise ValueError(difficulty)
     bank = QuestionBank.objects.get(pk=bank_id)
+    folder = None
+    if folder_id:
+        folder = BankFolder.objects.filter(pk=folder_id, bank=bank).first()
+        if folder is None:
+            raise bank_folders.WrongBank(gettext("The folder is not in this bank."))
     with transaction.atomic():
         draft = get_draft(quiz)
         draws = draft.snapshot_json.setdefault("draws", [])
@@ -193,6 +219,9 @@ def save_draw(
             bank_id=str(bank.id),
             bank_name=bank.name,
             tag=tag.strip(),
+            folder_id=str(folder.pk) if folder else "",
+            folder_path=bank_folders.path_of(folder),
+            difficulty=difficulty,
             count=count,
             points=points,
             position=position,
@@ -379,7 +408,16 @@ def _requirement_problems(quiz: Quiz) -> list[Problem]:
 
 
 def _row_label(row: Mapping[str, Any]) -> str:
-    return f"{row['bank_name']} ({row['tag']})" if row.get("tag") else row["bank_name"]
+    parts = [
+        part
+        for part in (
+            row.get("folder_path"),
+            row.get("tag"),
+            banks.level_label(row.get("difficulty", "")),
+        )
+        if part
+    ]
+    return f"{row['bank_name']} ({' · '.join(parts)})" if parts else row["bank_name"]
 
 
 def _shows_a_missing_copy(quiz: Quiz, question: Mapping[str, Any]) -> bool:
@@ -496,6 +534,24 @@ def future_snapshot(quiz: Quiz) -> dict[str, Any]:
             {**row, "pool": banks.pool(row, quiz.supported_locales)} for row in editable_draws(quiz)
         ],
     }
+
+
+def future_summary(quiz: Quiz) -> dict[str, Any]:
+    """Counts for a first publication: questions (draws count as their `count`), points."""
+    snapshot = future_snapshot(quiz)
+    points = Decimal(0)
+    for question in snapshot["questions"]:
+        points += _scoring(question["scoring"], include_disabled=True).max_score(
+            question["settings"]
+        )
+    count = len(snapshot["questions"])
+    for row in snapshot["draws"]:
+        count += row["count"]
+        if row["pool"]:
+            first = row["pool"][0]
+            strategy = _scoring(first["scoring"], include_disabled=True)
+            points += strategy.max_score(first["settings"]) * row["count"]
+    return {"questions": count, "points": points.normalize(), "locales": snapshot["locales"]}
 
 
 def _canonical_hash(snapshot: Mapping[str, Any]) -> str:
@@ -619,7 +675,7 @@ def _restore_quiz_fields(quiz: Quiz, snapshot: Mapping[str, Any]) -> None:
     quiz.description = snapshot.get("description", {})  # older revisions have none
     quiz.supported_locales = snapshot["locales"]
     quiz.default_locale = snapshot["default_locale"]
-    quiz.save()
+    quiz.save(update_fields=["title", "description", "supported_locales", "default_locale"])
 
 
 def use_as_draft(quiz: Quiz, revision: QuizRevision, *, admin_id: str) -> QuizRevision:
@@ -651,6 +707,19 @@ def discard_draft(quiz: Quiz, *, admin_id: str) -> None:
         _audit_quiz("quiz.draft_discarded", quiz, admin_id, {"revision_no": draft.revision_no})
 
 
+def ensure_modules_enabled(snapshot: Mapping[str, Any]) -> None:
+    """A run must not start on a revision that needs a disabled module (ADR-0057)."""
+    types = registry.keys("question_type")
+    strategies = registry.keys("scoring_strategy")
+    problems = [
+        gettext("Question %(number)s needs a module that is disabled.") % {"number": number}
+        for number, question in enumerate(snapshot.get("questions", []), start=1)
+        if question["type"] not in types or question["scoring"] not in strategies
+    ]
+    if problems:
+        raise RequirementUnmet(problems)
+
+
 def open_run(
     quiz: Quiz,
     *,
@@ -666,6 +735,7 @@ def open_run(
     revision = latest_published(quiz)
     if revision is None:
         raise NothingPublished(str(quiz.id))
+    ensure_modules_enabled(revision.snapshot_json)
     missing = requirements.unmet(quiz, requirements.of_snapshot(revision.snapshot_json, quiz))
     if missing:
         raise RequirementUnmet([item.text for item in missing])
@@ -721,6 +791,14 @@ def duplicate_quiz(quiz: Quiz, slug: str, *, admin_id: str) -> Quiz:
                 description=copy.deepcopy(quiz.description),
                 default_locale=quiz.default_locale,
                 supported_locales=list(quiz.supported_locales),
+                created_by=admin_id,
+                quiz_type=quiz.quiz_type,
+            )
+            # Every quiz setting override goes along, the colour palette among them; the branding
+            # texts, logos and custom colours (BrandingConfiguration) do not.
+            AppSetting.objects.bulk_create(
+                AppSetting(key=row.key, value_json=row.value_json, quiz=copied)
+                for row in AppSetting.objects.filter(quiz=quiz)
             )
             QuizRevision.objects.create(
                 quiz=copied,

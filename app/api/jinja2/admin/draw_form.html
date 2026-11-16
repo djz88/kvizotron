@@ -4,6 +4,7 @@
 <h1>{{ _("Draw from a bank") }}</h1>
 {% if has_banks %}
 <p>{{ _("Each participant gets this many questions at random. Only questions complete in all languages of the quiz are drawn.") }}</p>
+{% if gone_folder %}<p class="notice" role="alert">{{ _("The folder %(path)s no longer exists. Saving draws from the whole bank.", path=gone_folder) }}</p>{% endif %}
 <form method="post" class="watch-changes">
   {{ csrf_input }}
   {{ form.as_div() }}

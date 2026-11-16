@@ -100,7 +100,7 @@ def test_duplicate_module_id_rejected(site):
 
 def test_incompatible_contract_version_rejected(site):
     make_module(site, "old.mod", api_compatibility=">=9.0")
-    with pytest.raises(StartupError, match=r"old\.mod.*1\.0"):
+    with pytest.raises(StartupError, match=r"old\.mod.*1\.1"):
         load_modules({})
 
 

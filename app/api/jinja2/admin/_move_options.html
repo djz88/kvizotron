@@ -1,0 +1,11 @@
+{% macro options(destinations, other_banks, folder_name, selected="") %}
+<option value=""{% if not selected %} selected{% endif %}>{{ _("Top level") }}</option>
+{% for id, label in destinations %}<option value="{{ id }}"{% if id == selected %} selected{% endif %}>{{ label }}</option>{% endfor %}
+{% for other in other_banks %}
+<optgroup label="{{ _('Bank %(name)s', name=other.bank.name) }}">
+  <option value="bank:{{ other.bank.id }}">{{ _("%(name)s (top level)", name=other.bank.name) }}</option>
+  {% for id, label in other.folders %}<option value="{{ id }}">{{ other.bank.name }} / {{ label }}</option>{% endfor %}
+</optgroup>
+{% endfor %}
+<option value="newbank">{{ _("A new bank named %(name)s, with its content", name=folder_name) }}</option>
+{% endmacro %}

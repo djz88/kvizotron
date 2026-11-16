@@ -3,17 +3,17 @@
 „Zapni mozek. Spusť Kvízotron.“
 
 Self-hosted platforma pro vícejazyčné kvízy (cs/en/uk) a soutěže. Veřejnost hraje bez registrace přes
-URL nebo QR kód. Lokální admini tvoří kvízy, spouštějí soutěžní kola se žebříčkem a odměnami a
+URL nebo QR kód. Lokální admini tvoří kvízy, spouštějí soutěžní běhy se žebříčkem a odměnami a
 provádějí auditovatelné losování.
 
-**Stav:** hotová etapa A a milník B1. Admin napíše kvíz s jednou správnou odpovědí v cs/en/uk, publikuje ho a otevře kolo s QR kódem; účastník odehraje kvíz a skóre spočítá server. Běžící kvíz jde bezpečně změnit: před zveřejněním je vidět přehled změn a nastavení určí, co se stane s rozehranými pokusy. Žebříčky, odměny a další typy otázek přijdou v dalších etapách. Na veřejné nasazení zatím není určeno, chybí limity požadavků (D5).
+**Stav:** hotové jsou všechny etapy A až D. Admin napíše kvíz v cs/en/uk (typy otázek Výběr, Přiřazení, Číslo, Text a Fotka), publikuje ho a otevře běh s QR kódem; účastník hraje bez registrace a skóre spočítá server. Běžící kvíz jde bezpečně změnit. K tomu patří žebříčky, odměny a losování, export výsledků, mazání dat po uplynutí doby uchování, správa modulů, limity požadavků, denní záloha s ruční obnovou a zátěžový test 50 účastníků. Aplikace je určena i na veřejné nasazení, ale jen v topologii Compose s Caddy a jedním procesem aplikace ([nasazení](docs/deployment.md)). Před verzí 1.0 zbývají kontroly vydání a třídění technického dluhu.
 
 ## Dokumentace
 
 - [Architektura](docs/_architecture/README.md) — začni tady
 - [Roadmapa](docs/_architecture/roadmap.md)
 - [Rozhodnutí (ADR)](docs/_architecture/adr/README.md)
-- [Plugin API](docs/plugin-api.md), [nasazení](docs/deployment.md), [soukromí](docs/privacy.md)
+- [Plugin API](docs/plugin-api.md), [nasazení](docs/deployment.md), [konfigurace](docs/configuration.md), [soukromí](docs/privacy.md)
 
 ## Instalace a použití
 
@@ -32,11 +32,13 @@ Ostré nasazení popisuje [docs/deployment.md](docs/deployment.md).
 ## Vývoj
 
 - `make help` — seznam cílů
-- `make setup` — nainstaluje závislosti (vyžaduje uv 0.13 nebo novější)
+- `make env-update` — nainstaluje verze nástrojů, které projekt deklaruje (uv, Python a balíčky, pre-commit s hooky, Docker image)
+- `make setup` — nainstaluje závislosti (vyžaduje uv z `pyproject.toml`, viz `make env-update`)
 - `make hooks` — nainstaluje git hooky (gitleaks)
 - `make lint`, `make test`, `make secrets` — jednotlivé kontroly
 - `make quality` — všechny kontroly; totéž běží v CI
 - `make smoke` — ověří celé nasazení v Dockeru
+- `make load` — zátěž v Dockeru: 50 účastníků s fotkami, záloha, obnova a zkouška adres
 - `make messages` — vytáhne texty k překladu a zkompiluje katalogy
 
 ## Licence

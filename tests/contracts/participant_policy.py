@@ -3,6 +3,8 @@
 import pytest
 
 from app.contracts import (
+    AFTER_PASS,
+    MAX_ATTEMPTS,
     REPEAT_ATTEMPTS,
     UNFINISHED_ATTEMPT,
     ParticipantPolicyPlugin,
@@ -31,6 +33,25 @@ START_TABLE = [
         ("forbid", unfinished, False, "none", "new")
         for unfinished in ("continue", "used", "submitted")
     ],
+]
+
+# (max attempts, after pass, passed, unfinished, used, open attempt, decision); repeat is allow
+LIMIT_TABLE = [
+    ("2", "more", False, "continue", 0, "none", "new"),
+    ("2", "more", False, "continue", 2, "none", "played"),
+    ("2", "more", False, "continue", 1, "running", "resume"),
+    ("2", "more", False, "continue", 1, "expired", "played"),
+    ("3", "more", False, "continue", 1, "expired", "replace"),
+    ("2", "more", False, "submitted", 0, "running", "replace"),
+    ("2", "more", False, "submitted", 1, "running", "played"),
+    ("2", "more", False, "used", 0, "running", "replace"),
+    ("2", "more", False, "used", 1, "expired", "played"),
+    ("3", "stop", True, "continue", 1, "none", "played"),
+    ("3", "stop", True, "continue", 1, "running", "played"),
+    ("3", "stop", False, "continue", 1, "none", "new"),
+    ("3", "more", True, "continue", 1, "none", "new"),
+    ("0", "stop", True, "continue", 1, "none", "played"),
+    ("0", "more", True, "continue", 9, "none", "new"),
 ]
 
 
@@ -64,4 +85,43 @@ class ParticipantPolicyContract:
     )
     def test_on_start_table(self, repeat, unfinished, finished, open_attempt, decision):
         rules = {REPEAT_ATTEMPTS: repeat, UNFINISHED_ATTEMPT: unfinished}
-        assert self.policy.on_start(rules, finished=finished, open_attempt=open_attempt) == decision
+        assert (
+            self.policy.on_start(
+                rules, finished=finished, used=0, passed=False, open_attempt=open_attempt
+            )
+            == decision
+        )
+
+    @pytest.mark.parametrize(
+        ("limit", "after_pass", "passed", "unfinished", "used", "open_attempt", "decision"),
+        LIMIT_TABLE,
+    )
+    def test_on_start_limit_table(
+        self, limit, after_pass, passed, unfinished, used, open_attempt, decision
+    ):
+        rules = {
+            REPEAT_ATTEMPTS: "allow",
+            UNFINISHED_ATTEMPT: unfinished,
+            MAX_ATTEMPTS: limit,
+            AFTER_PASS: after_pass,
+        }
+        assert (
+            self.policy.on_start(
+                rules, finished=used > 0, used=used, passed=passed, open_attempt=open_attempt
+            )
+            == decision
+        )
+
+    def test_forbid_submitted_still_restarts(self):
+        rules = {REPEAT_ATTEMPTS: "forbid", UNFINISHED_ATTEMPT: "submitted"}
+        decision = self.policy.on_start(
+            rules, finished=False, used=5, passed=False, open_attempt="running"
+        )
+        assert decision == "replace"
+
+    def test_forbid_ignores_limit_and_pass(self):
+        rules = {REPEAT_ATTEMPTS: "forbid", MAX_ATTEMPTS: "5", AFTER_PASS: "more"}
+        decision = self.policy.on_start(
+            rules, finished=True, used=1, passed=True, open_attempt="none"
+        )
+        assert decision == "played"

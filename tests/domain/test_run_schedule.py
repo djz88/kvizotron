@@ -6,7 +6,7 @@ import pytest
 from django.db import OperationalError
 from django.utils import timezone
 
-from app.domain import authoring, quiz_state, run_schedule, settings
+from app.domain import authoring, data_policy, quiz_state, run_schedule, settings
 from app.domain.models import QuizRun
 from app.kernel import events
 from app.kernel.models import AuditEvent
@@ -331,3 +331,74 @@ def test_a_health_check_does_not_settle(client, monkeypatch):
 
 def test_opened_at_of_a_normal_start_is_now():
     assert open_quiz_run().opened_at == timezone.now()
+
+
+def after_close_quiz(profile="score"):
+    quiz = published_quiz()
+    settings.set_override(settings.ANSWERS_VISIBILITY, quiz, "participant", admin_id=ADMIN_ID)
+    settings.set_override(settings.DATA_PROFILE, quiz, profile, admin_id=ADMIN_ID)
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    return quiz
+
+
+def test_plan_refuses_after_close_with_score_profile():
+    with pytest.raises(data_policy.StatelessConflict) as caught:
+        planned(after_close_quiz())
+    assert caught.value.keys == [settings.REVEAL_MOMENT]
+    assert not QuizRun.objects.exists()
+
+
+def test_plan_accepts_after_close_with_answers_profile():
+    assert planned(after_close_quiz("answers")).status == QuizRun.Status.SCHEDULED
+
+
+def test_plan_refuses_a_run_profile_of_score_even_when_the_quiz_keeps_answers():
+    quiz = after_close_quiz("answers")
+    with pytest.raises(data_policy.StatelessConflict):
+        run_schedule.plan(
+            quiz,
+            starts_at=START,
+            deadline_at=DEADLINE,
+            limit_sec=None,
+            data={"profile": "score"},
+            admin_id=ADMIN_ID,
+        )
+
+
+def test_update_plan_refuses_a_profile_that_keeps_no_answers():
+    run = planned(after_close_quiz("answers"))
+    with pytest.raises(data_policy.StatelessConflict):
+        run_schedule.update_plan(
+            run,
+            starts_at=START,
+            deadline_at=DEADLINE,
+            limit_sec=None,
+            data={"profile": "score"},
+            admin_id=ADMIN_ID,
+        )
+
+
+def test_open_run_refuses_after_close_with_score_profile():
+    with pytest.raises(data_policy.StatelessConflict):
+        authoring.open_run(after_close_quiz(), admin_id=ADMIN_ID)
+
+
+def test_start_now_refuses_when_the_moment_changed_to_after_close_under_score():
+    quiz = published_quiz()
+    run = planned(quiz)
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    with pytest.raises(data_policy.StatelessConflict) as caught:
+        run_schedule.start_now(run, admin_id=ADMIN_ID)
+    assert settings.REVEAL_MOMENT in caught.value.keys
+
+
+def test_automatic_opening_refuses_and_audits_when_the_moment_changed():
+    quiz = published_quiz()
+    run = planned(quiz)
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    run_schedule.settle(START)
+    run_schedule.settle(START)
+    assert stored(run).status == QuizRun.Status.SCHEDULED
+    refusals = AuditEvent.objects.filter(action="run.open_refused", entity_id=str(run.id))
+    assert refusals.count() == 1
+    assert refusals.get().details_json == {"keys": [settings.REVEAL_MOMENT]}

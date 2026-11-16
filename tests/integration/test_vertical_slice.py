@@ -59,7 +59,7 @@ def test_admin_to_participant_in_three_languages():
         assert f'<html lang="{code}"' in page and f"Hlavní města {code}" in page
         html = participant.post(f"/r/{run.id}/start", {"lang": code}).content.decode()
         assert f"Hlavní město {code}?" in html and f"Praha {code}" in html
-        action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+        action = re.search(r'action="(/a/[^"?]+/submit)(?:\?[^"]*)?"', html).group(1)
         fields = {
             "attempt_token": hidden(html, "attempt_token"),
             "submission_key": hidden(html, "submission_key"),

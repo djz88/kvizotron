@@ -104,6 +104,7 @@ def test_multipart_form_has_encoding_only_when_needed():
 
 
 def test_submit_with_photo_shows_two_of_ten_pending():
+    """AC-16: through the page, a submitted photo shows 2 of 10 and the attempt is pending."""
     player = Player(run_of(photo_quiz()))
     html = text(player.submit({f"{player.question('image_answer')}:image": upload()}))
     player.attempt.refresh_from_db()
@@ -256,6 +257,31 @@ def test_error_while_saving_removes_the_stored_file(monkeypatch):
     player.client.raise_request_exception = False
     assert player.submit({f"{player.question('image_answer')}:image": upload()}).status_code == 500
     assert MediaAsset.objects.count() == 0
+
+
+def test_a_failure_midway_through_the_photos_leaves_no_file_and_no_row(monkeypatch, media):
+    """AC-147: the second photo fails with a full disk, the first is removed at once."""
+    quiz = photo_quiz()
+    add_photo(quiz)
+    add_photo(quiz)
+    player = Player(run_of(quiz))
+    original = LocalMediaStorage.store_participant_image
+    calls = []
+
+    def disk_full(self, data, *, run_assets):
+        calls.append(1)
+        if len(calls) == 2:
+            raise OSError("no space left on device")
+        return original(self, data, run_assets=run_assets)
+
+    monkeypatch.setattr(LocalMediaStorage, "store_participant_image", disk_full)
+    player.client.raise_request_exception = False
+    files = {f"{q['id']}:image": upload() for q in player.questions}
+    assert len(files) == 3
+    assert player.submit(files).status_code == 500
+    assert len(calls) == 2
+    assert MediaAsset.objects.count() == 0
+    assert not [path for path in media.iterdir() if path.is_file()]
 
 
 def test_run_limit_is_a_message_keeping_the_form(monkeypatch):

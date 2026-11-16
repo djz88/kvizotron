@@ -1,0 +1,16 @@
+{% macro erasure_table(rows, tickable, ticked) %}
+<table class="stack">
+  <thead><tr>{% if tickable %}<th>{{ _("Select") }}</th>{% endif %}<th>{{ _("Quiz") }}</th><th>{{ _("Run") }}</th><th>{{ _("Nickname") }}</th><th>{{ _("E-mail") }}</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      {% if tickable %}<td data-label="{{ _('Select') }}"><input type="checkbox" name="participant" value="{{ row.found.participant_id }}" aria-label="{{ _('Select') }}"{% if ticked and row.found.participant_id in ticked %} checked{% endif %}></td>{% endif %}
+      <td data-label="{{ _('Quiz') }}">{{ row.quiz_title }}</td>
+      <td data-label="{{ _('Run') }}">{% if row.found.run_no %}{{ row.found.run_no }}{% else %}{{ _("test run") }}{% endif %}</td>
+      <td data-label="{{ _('Nickname') }}">{{ row.found.display_name }}</td>
+      <td data-label="{{ _('E-mail') }}">{{ row.found.email or "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}

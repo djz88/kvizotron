@@ -1,12 +1,18 @@
 """What every page needs: language, theme and the question markup."""
 
+import hashlib
 import json
 import re
 from collections.abc import Mapping, Sequence
+from datetime import datetime
+from functools import cache
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 from typing import Any, cast
 
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.template.context_processors import csp
 from django.urls import NoReverseMatch, reverse
 from django.utils import translation
 from django.utils.translation import gettext as _
@@ -26,9 +32,26 @@ from app.contracts import (
     QuizFlowPlugin,
     ThemePlugin,
 )
-from app.domain import participants, settings, tokens
+from app.domain import branding, participants, settings, tokens
 from app.domain.models import Attempt, Quiz, QuizRun
 from app.kernel import registry
+from app.kernel.lifecycle import Blocker
+
+ASSETS = Path(__file__).parent / "assets"
+
+
+@cache
+def _digest(path: Path, modified: int, size: int) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+
+
+def versioned(address: str, path: Path) -> str:
+    """`address?v=<fingerprint>`: files are served with `max-age`, so without the content in the
+    address a browser keeps an old copy that long after a deploy. Read again when the file changes.
+    """
+    found = path.stat()
+    return f"{address}?v={_digest(path, found.st_mtime_ns, found.st_size)}"
+
 
 SOURCE_LINK = re.compile(r"https://\S+")
 SCRIPTS = (
@@ -37,12 +60,14 @@ SCRIPTS = (
     "flow.js",
     "resume.js",
     "nav.js",
+    "sections.js",
     "sortable.js",
     "editor.js",
     "clock.js",
-    "scoreboard.js",
     "countdown.js",
     "planned.js",
+    "number.js",
+    "inline-edit.js",
 )
 # Eval and injected styles are off because of the CSP. 4xx responses carry a message to show.
 HTMX_CONFIG = json.dumps(
@@ -65,12 +90,12 @@ def current_theme() -> ThemePlugin:
     return cast(ThemePlugin, registry.get("theme", registry.keys("theme")[0]))
 
 
-def last_theme_usage(module_id: str) -> list[str]:
+def last_theme_usage(module_id: str) -> list[Blocker]:
     """A page cannot be drawn without a theme."""
     owned = registry.owned_by(module_id)
     themes = [("theme", key) for key in registry.keys("theme")]
     if any(theme in owned for theme in themes) and all(theme in owned for theme in themes):
-        return ["it is the last enabled theme"]
+        return [Blocker("in_use", _("it is the last enabled theme"))]
     return []
 
 
@@ -83,15 +108,32 @@ def page(
         template,
         {
             **context,
+            **csp(request),  # the nonce of the colours block; read only by a page that has one
             "theme": current_theme(),
             "locale": locale,
             "htmx_config": HTMX_CONFIG,
-            "scripts": [reverse("asset", args=[n]) for n in SCRIPTS],
-            # Only public pages of a quiz pass `palette_quiz`; the rest use the global colours.
-            "palette": settings.resolve(settings.COLOR_PALETTE, context.get("palette_quiz")),
+            "scripts": [versioned(reverse("asset", args=[n]), ASSETS / n) for n in SCRIPTS],
+            # Only public pages of a quiz pass `branding_quiz`; the rest use the global branding.
+            "app_version": APP_VERSION,
+            "footer_year": datetime.now(settings.zone()).year,
+            "footer_badges": footer_badges(),
+            "branding": branding.resolve(context.get("branding_quiz"), locale),
         },
         status=status,
     )
+
+
+try:
+    APP_VERSION = version("kvizotron")
+except PackageNotFoundError:  # not installed as a distribution
+    APP_VERSION = ""
+BADGES = ("python", "django", "htmx")
+
+
+def footer_badges() -> list[tuple[str, str]]:
+    """(technology, URL) of the footer badges, which the theme serves."""
+    names = {"python": "Python", "django": "Django", "htmx": "HTMX"}
+    return [(names[b], reverse("theme.default:asset", args=[f"badge-{b}.svg"])) for b in BADGES]
 
 
 def importer() -> ImporterProvider | None:

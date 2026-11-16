@@ -5,7 +5,7 @@ from unittest import mock
 from uuid import UUID, uuid7
 
 import pytest
-from django.db import OperationalError
+from django.db import IntegrityError, OperationalError
 from django.utils import timezone
 
 from app.domain import attempts, authoring, settings, tokens
@@ -95,6 +95,7 @@ def test_blank_answer_scores_zero(run, started):
 
 @pytest.mark.django_db
 def test_percentage_is_exact_before_rounding():
+    """AC-10: five equal questions with 4 correct are 80 %, below a 90 % threshold."""
     run = open_quiz_run(questions=5)
     result = submit(run, attempts.start(run), OPTION_A, OPTION_A, OPTION_A, OPTION_A, OPTION_B)
     assert result.percentage == 80
@@ -106,11 +107,20 @@ def test_percentage_is_exact_before_rounding():
 
 
 def test_attempt_stays_on_revision_after_new_publication(run, started):
+    """AC-04: started on revision 1, published as revision 2: graded on 1, kept in its history."""
     quiz = run.quiz
-    question_id = run.current_revision.snapshot_json["questions"][0]["id"]
+    first = run.current_revision
+    question_id = first.snapshot_json["questions"][0]["id"]
     add_question(quiz, OPTION_B, question_id=question_id)
-    authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    second = authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    assert second.revision_no == 2
+    # A is the answer of revision 1 only; revision 2 expects B.
     assert submit(run, started, OPTION_A).earned_points == 1
+    stored = Attempt.objects.get(pk=started.attempt.pk)
+    assert stored.status == Attempt.Status.SUBMITTED
+    assert stored.revision_id == first.id
+    assert list(Attempt.objects.filter(revision=first)) == [stored]
+    assert not Attempt.objects.filter(revision=second).exists()
 
 
 def test_repeated_submit_with_same_key_returns_same_result(run, started):
@@ -405,3 +415,45 @@ def test_an_attempt_from_before_b4_keeps_its_options_in_order(db):
     attempt.selection_json = {**attempt.selection_json, "seed": None}
     attempt.save()
     assert attempts.option_seed_for(attempt, attempts.questions_of(attempt)[0]) is None
+
+
+@pytest.mark.parametrize(
+    "message,expected",
+    [
+        ("UNIQUE constraint failed: attempt.submission_key", True),
+        ("UNIQUE constraint failed: attempt.id, attempt.submission_key", True),
+        ("UNIQUE constraint failed: other.submission_key", False),
+        ("UNIQUE constraint failed: attempt.id", False),
+        ("NOT NULL constraint failed: attempt.submission_key", False),
+    ],
+)
+def test_only_the_submission_key_constraint_means_a_used_key(message, expected):
+    assert attempts._is_submission_key_conflict(IntegrityError(message)) is expected
+
+
+def test_submitted_event_reaches_a_subscriber_once_when_the_store_is_retried(
+    run, started, monkeypatch, django_capture_on_commit_callbacks
+):
+    """Documents the existing guarantee (it passes on the base too): events.emit defers the
+    dispatch to the commit, so the callback of a rolled-back store is discarded and a retried
+    store announces the submission once."""
+    from app.kernel import events
+
+    handled = []
+    monkeypatch.setattr(events, "_handlers", {"attempt.submitted": [(handled.append, "test")]})
+    monkeypatch.setattr(events, "is_enabled", lambda owner: True)
+    real_emit = events.emit
+    calls = []
+
+    def emit_then_lose_the_lock(name, payload):
+        real_emit(name, payload)
+        calls.append(name)
+        if len(calls) == 1:
+            raise OperationalError("database is locked")
+
+    monkeypatch.setattr(attempts.events, "emit", emit_then_lose_the_lock)
+    monkeypatch.setattr(attempts.time, "sleep", lambda _: None)
+    with django_capture_on_commit_callbacks(execute=True):
+        submit(run, started, OPTION_A)
+    assert len(calls) == 2  # the store really ran twice
+    assert len(handled) == 1

@@ -41,6 +41,8 @@ Standard library only. 10 s and 15 MB per address, 25 s for all addresses of one
 
 **Any admin can turn the switch on, so a stolen admin account could use it to reach the internal network.** The settings page says so, and the change is audited.
 
+The branding logo and landing page logo take an address under these fetch rules, always as a copy and with no mode ([ADR-0054](0054-branding-owned-by-domain-and-theme.md), 2026-11-10).
+
 ### Consequences
 
 * Good, because a copy goes through the same checks as an upload

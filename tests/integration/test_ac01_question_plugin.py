@@ -29,7 +29,7 @@ qid = run.current_revision.snapshot_json["questions"][0]["id"]
 
 def play(value):
     html = client.post(f"/r/{run.id}/start", {"lang": "cs"}).content.decode()
-    action = re.search(r'action="(/a/[^"]+/submit)"', html).group(1)
+    action = re.search(r'action="(/a/[^"?]+/submit)(?:[?][^"]*)?"', html).group(1)
     fields = {
         name: re.search(rf'name="{name}" value="([^"]*)"', html).group(1)
         for name in ("attempt_token", "submission_key")

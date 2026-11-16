@@ -1,5 +1,6 @@
 """Login and logout pages (FR-07). The active auth provider decides through Django's backends."""
 
+import time
 from collections.abc import Callable
 from functools import wraps
 from urllib.parse import quote
@@ -13,6 +14,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from app.api import rate_limit
 from app.api.admin_forms import LoginForm
 from app.api.rendering import page
 
@@ -44,22 +46,38 @@ def login_page(request: HttpRequest) -> HttpResponse:
         return redirect("admin_quizzes")
     form = LoginForm(request.POST or None)
     error = None
+    status = 200
     if request.method == "POST" and form.is_valid():
-        user = authenticate(
-            request,
-            username=form.cleaned_data["login"],
-            password=form.cleaned_data["password"],
-        )
-        if user is not None:
-            login(request, user)
-            return redirect(_safe_next(request, request.POST.get("next", "")))
-        error = _("Wrong login or password.")
+        login_name = form.cleaned_data["login"]
+        now = time.monotonic()
+        address = rate_limit.client_ip(request)
+        name_key = f"{login_name.strip().lower()}|{address}"
+        if not rate_limit.try_acquire("login", name_key, now):
+            error = _("Too many attempts. Please try again in a minute.")
+            status = 429
+        elif not rate_limit.try_acquire("login_address", address, now):
+            rate_limit.release("login", name_key)  # the refusal must leave the name slot free
+            error = _("Too many attempts. Please try again in a minute.")
+            status = 429
+        else:
+            user = authenticate(
+                request, username=login_name, password=form.cleaned_data["password"]
+            )
+            if user is not None:
+                rate_limit.release("login", name_key)  # only wrong guesses keep their slots
+                rate_limit.release("login_address", address)
+                login(request, user)
+                return redirect(_safe_next(request, request.POST.get("next", "")))
+            error = _("Wrong login or password.")
     context = {
         "form": form,
         "error": error,
         "next": request.POST.get("next") or request.GET.get("next", ""),
     }
-    return page(request, "admin/login.html", context, request.locale)  # type: ignore[attr-defined]
+    response = page(request, "admin/login.html", context, request.locale, status)  # type: ignore[attr-defined]
+    if status == 429:
+        response["Retry-After"] = rate_limit.retry_after()
+    return response
 
 
 @require_POST

@@ -25,7 +25,7 @@ def test_healthz_ok(client, db):
 def test_healthz_unreadable_database_is_503_without_details():
     env = os.environ | {
         "DJANGO_SETTINGS_MODULE": "app.settings",
-        "KVZ_SECRET_KEY": "test-only-not-a-secret",
+        "KVZ_SECRET_KEY": "test-only-not-a-real-secret-key-0123456789",
         "KVZ_DOMAIN": "testserver",
         "KVZ_DB_PATH": "/nonexistent-secret-dir/db.sqlite3",
     }

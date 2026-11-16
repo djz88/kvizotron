@@ -1,0 +1,20 @@
+#: lifecycle.py
+#, python-format
+msgid "Provider %(module)s cannot be toggled, it changes on restart"
+msgstr "Постачальника %(module)s не можна перемкнути, він змінюється після перезапуску."
+
+#: lifecycle.py
+#, python-format
+msgid "Module %(module)s requires %(capability)s; enable one of: %(providers)s"
+msgstr "Модуль %(module)s потребує %(capability)s; увімкніть один із модулів: %(providers)s"
+
+#: lifecycle.py
+#, python-format
+msgid "The application cannot work without module %(module)s"
+msgstr "Застосунок не працює без модуля %(module)s."
+
+#: lifecycle.py
+#, python-format
+msgid "Module %(module)s provides %(capability)s required by %(other)s"
+msgstr "Модуль %(module)s надає %(capability)s, потрібне для %(other)s."
+

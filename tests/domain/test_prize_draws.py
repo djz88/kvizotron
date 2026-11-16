@@ -11,12 +11,13 @@ from decimal import Decimal
 import pytest
 from django.forms.models import model_to_dict
 
-from app.contracts import REWARD_SOURCE
+from app.contracts import OFFICIAL_ATTEMPT, REWARD_SOURCE
 from app.domain import (
     attempts,
     authoring,
     draws,
     participants,
+    retention,
     rewards,
     run_links,
     settings,
@@ -25,6 +26,7 @@ from app.domain.models import (
     Attempt,
     Draw,
     DrawEntry,
+    Quiz,
     QuizRun,
     RewardEntitlement,
     RewardRule,
@@ -115,6 +117,7 @@ def refused(reason, action, *args, **kwargs):
 
 
 def test_refused_while_open_stateless_or_pending(graded_type):
+    """AC-09, AC-16: no draw while open, on a run that keeps nothing, or with a photo waiting."""
     run, rule = open_with(draw_rule())
     play(run, 1)
     refused("run_not_closed", draws.draw, rule, admin_id=ADMIN_ID)
@@ -141,6 +144,7 @@ def test_refused_while_open_stateless_or_pending(graded_type):
 
 
 def test_test_attempts_never_eligible():
+    """AC-12: attempts made through a test link are excluded from the eligible snapshot."""
     quiz = published_quiz(questions=2)
     run, rule = open_with(draw_rule(), quiz=quiz)
     real = play(run, 1)
@@ -374,6 +378,7 @@ def test_draw_rows_never_updated():
 
 
 def test_audit_has_pseudonyms_not_names():
+    """AC-12: each draw is audited, with pseudonyms instead of names."""
     run, rule = open_with(draw_rule(winners=1, alternates=1))
     people = [play(run, number, name=f"hrac{number}") for number in range(3)]
     closed(run)
@@ -535,3 +540,88 @@ def test_draw_works_on_an_archived_run():
     assert draws.refusal(rule) is None
     done = draws.draw(rule, admin_id=ADMIN_ID)
     assert Draw.objects.filter(pk=done.pk).exists()
+
+
+def test_every_draw_action_is_refused_on_a_run_whose_data_were_deleted():
+    """AC-12, AC-111: the run is archived but keeps nothing, so no action may add a record."""
+    run, rule, _people = with_players(4, draw_rule(winners=1, alternates=2))
+    draws.draw(rule, admin_id=ADMIN_ID)
+    winner = draws.standing(rule).winners[0]
+    never_drawn_run, never_drawn_rule = open_with(draw_rule(), quiz=published_quiz("druhy"))
+    play(never_drawn_run, 7)
+    closed(never_drawn_run)
+    for deleted in (run, never_drawn_run):
+        assert retention.purge_run(deleted, trigger="manual", admin_id=ADMIN_ID) is True
+    drawn_before = list(Draw.objects.order_by("pk").values_list("pk", flat=True))
+    held_before = held(rule)
+    assert QuizRun.objects.get(pk=run.pk).status == QuizRun.Status.ARCHIVED
+
+    assert draws.refusal(rule) == "stateless"
+    assert draws.refusal(never_drawn_rule) == "stateless"
+    refused("stateless", draws.draw, never_drawn_rule, admin_id=ADMIN_ID)
+    refused("stateless", draws.draw, rule, admin_id=ADMIN_ID)
+    refused("stateless", draws.redraw, rule, "Znovu", admin_id=ADMIN_ID)
+    refused("stateless", draws.move_up, rule, winner, "Nepřevzal", admin_id=ADMIN_ID)
+    refused("stateless", draws.substitute, rule, winner, "Nepřevzal", admin_id=ADMIN_ID)
+
+    assert list(Draw.objects.order_by("pk").values_list("pk", flat=True)) == drawn_before
+    assert held(rule) == held_before
+
+
+def test_draw_minimum_on_average():
+    """ADR-0063: 50 % and 100 % average 75 %, so a 70 % minimum passes; 40 % and 60 % do not."""
+    quiz = published_quiz(questions=10)
+    rewards.save_rule(
+        quiz, draw_rule(min_unit="percent", min_value="70"), rule=None, admin_id=ADMIN_ID
+    )
+    settings.set_override(REWARD_SOURCE, quiz, "quiz", admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={OFFICIAL_ATTEMPT: "average"})
+    rule = rewards.rules_of(run)[0]
+    high = play(run, 1, right=5)
+    low = play(run, 2, right=4)
+    for number, right in ((1, 10), (2, 6)):
+        who = participants.find_or_create(run, f"key-{number:016d}")
+        started = attempts.start(run, participant=who)
+        questions = attempts.questions_of(started.attempt)
+        answers = {
+            q["id"]: {"options": [OPTION_A if i < right else OPTION_B]}
+            for i, q in enumerate(questions)
+        }
+        attempts.submit(started.attempt.id, started.token, answers, f"again-{number:010d}")
+    closed(run)
+    assert draws.preview(rule).participant_ids == [str(high.id)]
+    assert str(low.id) not in draws.preview(rule).participant_ids
+
+
+def test_draw_counts_the_submitted_attempt_while_another_waits():
+    run, rule = open_with(draw_rule(min_unit="percent", min_value="50"))
+    who = play(run, 1, right=6)
+    Attempt.objects.create(
+        run=run,
+        participant=who,
+        revision=run.current_revision,
+        status=Attempt.Status.PENDING_GRADING,
+        submitted_at=NOW,
+        score=Decimal(0),
+        max_score=run.current_revision.max_score,
+    )
+    closed(run)
+    assert draws.preview(rule).participant_ids == [str(who.id)]
+
+
+def test_every_draw_action_refuses_an_archived_quiz():
+    run, rule, _ = with_players(3, draw_rule(winners=1, alternates=1))
+    first = draws.draw(rule, admin_id=ADMIN_ID)
+    winner = first.entries.get(role="winner")
+    Quiz.objects.filter(pk=run.quiz_id).update(archived_at=NOW)
+    with pytest.raises(authoring.QuizArchived):
+        draws.draw(rule, admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        draws.redraw(rule, "Důvod", admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        draws.move_up(rule, winner, "Důvod", admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        draws.substitute(rule, winner, "Důvod", admin_id=ADMIN_ID)
+    with pytest.raises(authoring.QuizArchived):
+        draws.set_public(rule, True, admin_id=ADMIN_ID)
+    assert Draw.objects.count() == 1

@@ -17,6 +17,7 @@ def figures(score: str, max_score: str, correct: int = 0, questions: int = 0) ->
 
 
 def test_four_of_five_is_80_percent_and_misses_90():
+    """AC-10: the threshold rule reads 4 of 5 as 80 %, which reaches 80 and misses 90."""
     four = figures("4", "5", 4, 5)
     assert plugin.reached(rule("a", "percent", "80"), four)
     assert not plugin.reached(rule("b", "percent", "90"), four)

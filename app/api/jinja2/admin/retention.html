@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h1>{{ _("Deletion history") }}</h1>
+<p><a href="{{ url('retention_erasure') }}">{{ _("Erasure request") }}</a></p>
+{% if last_pass %}
+<p id="last-pass">{% if last_pass.finished %}{% if last_pass.outcome == "ok" %}{{ _("Last pass: %(when)s, ok", when=last_pass.finished|when) }}{% elif last_pass.outcome == "stopped" %}{{ _("Last pass: %(when)s, stopped", when=last_pass.finished|when) }}{% else %}{{ _("Last pass: %(when)s, failed", when=last_pass.finished|when) }}{% endif %}{% else %}{{ _("No pass has finished yet") }}{% endif %}</p>
+{% endif %}
+{% if held %}
+<h2>{{ _("Runs waiting for confirmation") }}</h2>
+{% if held_error %}<p class="notice" role="alert">{{ held_error }}</p>{% endif %}
+<p>{{ _("These runs were past their period when deletion was introduced or the period was changed. They stay until you confirm the list.") }}</p>
+<table class="stack">
+  <thead><tr><th>{{ _("Quiz") }}</th><th>{{ _("Run") }}</th><th>{{ _("Ended") }}</th><th>{{ _("Date of deletion") }}</th></tr></thead>
+  <tbody>
+    {% for item in held %}
+    <tr>
+      <td data-label="{{ _('Quiz') }}">{{ item.quiz_title }}</td>
+      <td data-label="{{ _('Run') }}"><a href="{{ url('admin_run', args=[item.run.id]) }}">{{ item.run.run_no }}</a></td>
+      <td data-label="{{ _('Ended') }}">{{ item.run.closed_at|when }}</td>
+      <td data-label="{{ _('Date of deletion') }}">{{ item.due|when }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="{{ url('retention_held') }}">
+  {{ csrf_input }}
+  {% for item in held %}<input type="hidden" name="run" value="{{ item.run.id }}">
+  {% endfor %}
+  <button type="submit" class="secondary">{{ _("Delete these on the next pass") }}</button>
+</form>
+{% endif %}
+<h2 id="history">{{ _("History") }}</h2>
+{% if filtered %}<p><a href="{{ url('retention_history') }}">{{ _("All deletions") }}</a></p>{% endif %}
+{% if rows %}
+<table class="stack">
+  <thead><tr><th>{{ _("When") }}</th><th>{{ _("Kind") }}</th><th>{{ _("Who") }}</th><th>{{ _("Quiz") }}</th><th>{{ _("Run") }}</th><th>{{ _("Period") }}</th><th>{{ _("Deleted") }}</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td data-label="{{ _('When') }}">{{ row.record.executed_at|when }}</td>
+      <td data-label="{{ _('Kind') }}">{{ row.trigger }}</td>
+      <td data-label="{{ _('Who') }}">{{ row.who }}</td>
+      <td data-label="{{ _('Quiz') }}">{{ row.quiz_title }}</td>
+      <td data-label="{{ _('Run') }}">{% if row.linked %}<a href="{{ url('admin_run', args=[row.run.id]) }}">{{ row.run.run_no }}</a>{% elif row.run %}{{ _("test run") }}{% else %}–{% endif %}</td>
+      <td data-label="{{ _('Period') }}">{{ row.period }}</td>
+      <td data-label="{{ _('Deleted') }}">{% for label, count in row.counts %}{{ label }}: {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if page_number > 1 or has_next %}
+<nav aria-label="{{ _('Pages') }}">
+  {% if page_number > 1 %}<a href="{{ url('retention_history') }}?page={{ page_number - 1 }}">{{ _("Previous page") }}</a>{% endif %}
+  <span>{{ _("Page %(number)s", number=page_number) }}</span>
+  {% if has_next %}<a href="{{ url('retention_history') }}?page={{ page_number + 1 }}">{{ _("Next page") }}</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<p>{{ _("Nothing has been deleted yet.") }}</p>
+{% endif %}
+<h2 id="verify">{{ _("Check an address") }}</h2>
+{% if verify_error %}<p class="notice" role="alert">{{ verify_error }}</p>{% endif %}
+{% if verify_done %}
+{% if verified %}
+<ul>
+  {% for item in verified %}<li>{{ _("This address was erased on %(when)s by %(who)s.", when=item.at|when, who=item.who) }}</li>{% endfor %}
+</ul>
+{% else %}
+<p>{{ _("No erasure of this address is recorded.") }}</p>
+{% endif %}
+{% endif %}
+<form method="post" action="{{ url('retention_verify') }}">
+  {{ csrf_input }}
+  <label>{{ _("E-mail") }}
+    <input type="email" name="email" autocomplete="off" maxlength="254">
+  </label>
+  <button type="submit" class="secondary">{{ _("Check") }}</button>
+</form>
+{% endblock %}

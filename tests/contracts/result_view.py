@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+import pytest
+
 from app.contracts import (
     SCOREBOARD_SECOND_SORT,
     TIE_BREAK_POLICY,
@@ -48,6 +50,32 @@ class ResultViewContract:
 
     def test_satisfies_protocol(self):
         assert isinstance(self.view, ResultViewPlugin)
+
+    def test_pick_last(self):
+        found = self.view.pick_official([entry("p", 10, 1), entry("p", 5, 2)], "last")
+        assert found.score == 5
+
+    def test_pick_last_with_same_time_takes_the_greater_attempt_id(self):
+        found = self.view.pick_official(
+            [entry("p", 1, 1, attempt="a"), entry("p", 2, 1, attempt="b")], "last"
+        )
+        assert found.attempt_id == "b"
+
+    def test_pick_average_is_a_new_entry(self):
+        found = self.view.pick_official(
+            [entry("p", 10, 1, max_score=20), entry("p", 6, 2, attempt="b", max_score=10)],
+            "average",
+        )
+        assert (found.score, found.max_score, found.attempt_id) == (
+            Decimal(8),
+            Decimal(15),
+            "b",
+        )
+        assert found.submitted_at == T0 + timedelta(minutes=2)
+
+    def test_unknown_rule_is_refused(self):
+        with pytest.raises(ValueError):
+            self.view.pick_official([entry("p", 1)], "median")
 
     def test_best_takes_highest_then_earlier(self):
         found = self.view.pick_official(

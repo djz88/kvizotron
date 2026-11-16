@@ -34,8 +34,7 @@ def test_migrate_works_on_an_empty_database(tmp_path):
 
 def test_modules_cli_lists_toggles_and_refuses(tmp_path):
     db = tmp_path / "db.sqlite3"
-    make_module(tmp_path, "prov.retention", kind="provider", provides=["retention"])
-    sites = [DEMO_SITE, tmp_path]
+    sites = [DEMO_SITE]
     assert run_manage("migrate", "--noinput", db=db, sites=sites).returncode == 0
 
     assert run_manage("modules", "verify", db=db, sites=sites).returncode == 0
@@ -46,10 +45,15 @@ def test_modules_cli_lists_toggles_and_refuses(tmp_path):
     assert run_manage("modules", "disable", "question.demo", db=db, sites=sites).returncode == 0
     assert "disabled" in run_manage("modules", "list", db=db, sites=sites).stdout
 
-    refused = run_manage("modules", "disable", "prov.retention", db=db, sites=sites)
+    refused = run_manage("modules", "disable", "retention.local", db=db, sites=sites)
     assert refused.returncode != 0
-    assert "prov.retention" in refused.stderr
+    assert "retention.local" in refused.stderr
     assert "Traceback" not in refused.stderr
+
+    locked = run_manage("modules", "disable", "flow.basic", db=db, sites=sites)
+    assert locked.returncode != 0
+    assert "flow.basic" in locked.stderr
+    assert "Traceback" not in locked.stderr
 
 
 def last_line(result):

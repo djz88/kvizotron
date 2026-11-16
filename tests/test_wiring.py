@@ -30,8 +30,7 @@ BUNDLED_SCRIPTS = {"htmx.min.js", "sortable.js"}
 
 # Ports that are not looked up in the registry: Django and the kernel load these.
 LOADED_AT_START = {"auth", "persistence"}
-# The rule says each module passes a shared suite; this one has only its own tests (TD-026).
-NO_SHARED_SUITE_YET = {"media_local"}
+NO_SHARED_SUITE_YET: set[str] = set()
 # Names an element without any rule in the stylesheets. The list only shrinks: a new class needs a
 # rule, because a page with a lost stylesheet still passes every test that reads its HTML.
 NOT_STYLED = {
@@ -148,7 +147,7 @@ def test_a_module_with_texts_has_a_catalogue_that_gets_built():
 
 def test_each_module_is_named_by_a_shared_suite():
     suites = "\n".join(p.read_text() for p in (ROOT / "tests" / "contracts").glob("test_*.py"))
-    named_by_port = {"csv_io": "ExporterProvider"}
+    named_by_port = {"csv_io": "ExporterProvider", "media_local": "MediaStorageSuite"}
     missing = {
         package_of(module).name
         for module in installed_modules()
@@ -232,8 +231,8 @@ def test_each_named_asset_is_served_and_each_served_asset_is_used():
     unused = {
         name
         for name in SERVED_ASSETS
-        # The flags are built from the language code.
-        if sources.count(name) < 2 and not name.startswith("flag-")
+        # The flags are built from the language code, the logos from the family and the kind.
+        if sources.count(name) < 2 and not name.startswith(("flag-", "logo-"))
     }
     assert not unused
 

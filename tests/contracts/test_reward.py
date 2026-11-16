@@ -51,7 +51,7 @@ def test_every_setting_is_run_wide_with_a_reason():
     for item in found.values():
         assert item["scopes"] == ["global", "quiz"]
         assert item["scope_reason"]
-        assert item["group"] == "scoreboard"
+        assert item["group"] == "rewards"  # AC-168: rewards have their own group
         assert item["level"] == "advanced"
         assert item["default"] in item["choices"]
         assert set(item["value_labels"]) == set(item["choices"])

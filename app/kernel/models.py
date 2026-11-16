@@ -46,6 +46,7 @@ class AdminUser(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
     login = models.CharField(max_length=150, unique=True)
     is_active = models.BooleanField(default=True)
+    email = models.EmailField(max_length=254, blank=True)  # optional; may appear in quiz footers
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = AdminUserManager()

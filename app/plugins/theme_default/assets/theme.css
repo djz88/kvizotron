@@ -1,6 +1,6 @@
 /* Kvízotron's look. Pico gives the base; this file gives the colours and the layout.
-   Colours come from the palette in `data-palette` (settings.Palette, FR-53). The marked blocks are
-   read by tests/test_palettes.py, which checks their contrast. Blocks marked `default` apply when
+   Colours come from the palette in `data-palette` (color_palette in the theme's manifest, FR-53).
+   The marked blocks are read by tests/test_palettes.py, which checks their contrast. Blocks marked `default` apply when
    the value is unknown, and must equal the default palette. */
 
 /* palette: default light */
@@ -364,24 +364,75 @@ h2 {
   text-decoration: none;
 }
 
-/* The mark is drawn on a black square, so it is shown as a rounded tile */
+/* The mark can be any aspect ratio; the bar tile stays a square. */
 .site-logo {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.375rem;
+  object-fit: contain;
 }
 
 .about-logo {
   display: block;
-  width: 6rem;
-  height: auto;
+  width: auto;
+  height: 8rem;
   margin-bottom: 1rem;
-  border-radius: 1.25rem;
-  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 25%);
 }
 
-.about-logo[width="160"] {
-  width: 10rem;
+.about-logo-centered {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* The built-in hero logo is one line of text with the icons under it, on a transparent background. */
+.about-logo-builtin {
+  height: auto;
+  max-width: 100%;
+  aspect-ratio: 1120 / 390;
+  width: 18rem;
+}
+
+.about-logo-builtin.about-logo-full {
+  aspect-ratio: 1100 / 760;
+  width: 16rem;
+}
+
+/* The settings pages show the bar logo beside the line that says which one applies. */
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.logo-row img {
+  flex: none;
+  object-fit: contain;
+}
+
+.logo-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kvz-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.logo-row button {
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.logo-preview img {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.about-logo[width="240"] {
+  height: 10rem;
 }
 
 .site-bar {
@@ -601,6 +652,20 @@ body.public {
   color: inherit;
 }
 
+/* The motto of two sentences is set as two lines, the first to the right and the second to the left. */
+.motto-first,
+.motto-rest {
+  display: block;
+}
+
+.motto-first {
+  text-align: right;
+}
+
+.motto-rest {
+  text-align: left;
+}
+
 .hero p {
   margin: 0;
   color: inherit;
@@ -649,6 +714,29 @@ body.public {
 .quiz-list strong {
   display: block;
   font-size: 1.125rem;
+}
+
+/* The organisation of a quiz that has its own: one line above the title, cut off rather than wrapped. */
+.quiz-org {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.15rem;
+  overflow: hidden;
+  color: var(--kvz-muted);
+  font-size: 0.85rem;
+}
+
+.quiz-org img {
+  flex: none;
+  object-fit: contain;
+}
+
+.quiz-org-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .quiz-list span {
@@ -717,6 +805,56 @@ body.public {
 
 .admin-link a {
   color: var(--kvz-on-page);
+}
+
+/* The motto under a quiz's title, when its branding sets one. */
+.motto {
+  font-style: italic;
+}
+
+/* The footer sits on the page background, like the admin link, so it uses the colour of text on the page. */
+.site-footer {
+  padding: 1.5rem 1rem 2rem;
+  color: var(--kvz-on-page);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+/* Pico colours every <p> with --kvz-text, which is dark on the page gradient. */
+.site-footer-line {
+  color: var(--kvz-on-page);
+  margin: 0 auto 0.25rem;
+}
+
+/* A part moves to the next line whole, so a line wraps at a " · " between parts. Only a part
+   wider than the screen (a long footer text or e-mail) breaks inside itself. */
+.site-footer-part {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.site-footer-badges {
+  display: inline-flex;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+
+.site-footer-badges img {
+  display: block;
+  height: 20px;
+  width: auto;
+}
+
+.site-footer a {
+  color: var(--kvz-on-page);
+}
+
+/* Administration has no page gradient behind the footer. */
+.admin .site-footer,
+.admin .site-footer-line,
+.admin .site-footer a {
+  color: var(--kvz-muted);
 }
 
 .sources {
@@ -940,6 +1078,21 @@ main:not(.page) {
   margin-inline: auto;
 }
 
+/* The shared board pick on the Runs page: two small inputs, so the table still fits (AC-118). */
+th.board-pick,
+td.board-pick {
+  padding-inline: 0.5rem;
+  white-space: nowrap;
+}
+
+td.board-pick input {
+  margin-inline-end: 0.25rem;
+}
+
+td.board-pick input:last-child {
+  margin-inline-end: 0;
+}
+
 .page-title {
   display: flex;
   flex-wrap: wrap;
@@ -951,6 +1104,146 @@ main:not(.page) {
 
 .page-title h1 {
   margin: 0;
+}
+
+/* The bar above a list (AC-170): name and count, then managing the list as buttons, a line below. */
+.list-bar {
+  margin: 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--pico-muted-border-color, #d0d7de);
+}
+
+.list-bar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.list-bar-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.list-bar-count {
+  color: var(--kvz-muted);
+  font-weight: 400;
+}
+
+.list-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.list-bar-actions [role="button"] {
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.list-bar-note {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--kvz-muted);
+}
+
+/* Copy and archive of a quiz: a plain bar above the settings, not a tinted section. */
+.quiz-copy {
+  margin-bottom: 1.25rem;
+}
+
+.quiz-copy form,
+.quiz-copy button,
+.quiz-copy [role="button"] {
+  margin: 0;
+}
+
+.quiz-copy small {
+  flex-basis: 100%;
+  color: var(--kvz-muted);
+}
+
+/* The quiz type above the settings (ADR-0062): its name and deviations, then the actions. */
+.quiz-type-bar {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--pico-muted-border-color, #d0d7de);
+  border-radius: 0.5rem;
+}
+
+.quiz-type-name {
+  margin-bottom: 0.5rem;
+}
+
+.quiz-type-actions,
+.quiz-type-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.quiz-type-actions form,
+.quiz-type-bar button,
+.quiz-type-bar [role="button"],
+.quiz-type-pick label,
+.quiz-type-pick select {
+  margin: 0;
+}
+
+.quiz-type-bar button,
+.quiz-type-bar [role="button"],
+.quiz-type-pick select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 2.75rem;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.quiz-type-pick label {
+  align-self: center;
+}
+
+.quiz-type-bar small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--kvz-muted);
+}
+
+/* "▲ type: 30 min" beside a setting that differs from the quiz type. */
+.type-mark {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--kvz-muted);
+}
+
+.notice + h2,
+.notice + section {
+  margin-top: 1.5rem;
+}
+
+.type-changes li {
+  margin-bottom: 0.25rem;
+}
+
+/* The list of types on the new-quiz form, closed until the admin opens it. */
+.quiz-type-choice {
+  margin-bottom: 1.25rem;
+}
+
+.quiz-type-option {
+  margin-bottom: 0.75rem;
+}
+
+.quiz-type-option small {
+  display: block;
+  margin-left: 1.75rem;
+  color: var(--kvz-muted);
 }
 
 .crumb {
@@ -992,10 +1285,6 @@ main:not(.page) {
 .quiz-fold > summary span {
   margin-left: auto;
   white-space: nowrap;
-}
-
-.quiz-title h1 {
-  display: none;
 }
 
 .quiz-title,
@@ -1057,6 +1346,17 @@ main:not(.page) {
   box-shadow: inset 0 0 0 1px var(--kvz-link);
 }
 
+/* Export file names are long: one per line, broken anywhere on a phone. */
+.export-files {
+  margin: 0;
+  padding: 0;
+}
+
+.export-files li {
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
 .chip-draft,
 .chips li.chip-draft {
   background: var(--kvz-accent);
@@ -1113,6 +1413,7 @@ main:not(.page) {
 }
 .tab-more > summary {
   margin: 0;
+  white-space: nowrap;
   line-height: inherit;
   padding: 0.5rem 0.875rem;
   border-bottom: 2px solid transparent;
@@ -1121,6 +1422,14 @@ main:not(.page) {
 }
 .tab-more[open] > summary {
   margin-bottom: 0;
+}
+/* Closed, the arrow points down: "More" opens. Open, the list is to its right, so the arrow
+   points there. Pico has it the other way round. */
+.tab-more:not([open]) > summary::after {
+  transform: rotate(0deg);
+}
+.tab-more[open] > summary::after {
+  transform: rotate(-90deg);
 }
 .tab-more > summary[aria-current],
 .tab-more[open] > summary[aria-current]:not([role]):not(:focus) {
@@ -1156,6 +1465,87 @@ ul.rows-plain > li {
   list-style: none;
 }
 
+.rows > li > input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* A folder's menu moves from a select; a phone gets links to a page instead of a menu with a select. */
+details.dropdown > summary + ul li.move-links {
+  display: none;
+}
+
+details.dropdown > summary + ul li.move-inline select {
+  margin: 0.25rem 1rem;
+  width: auto;
+}
+
+@media (max-width: 48rem) {
+  details.dropdown > summary + ul li.move-inline {
+    display: none;
+  }
+
+  details.dropdown > summary + ul li.move-links {
+    display: block;
+  }
+}
+
+.issues-toggle {
+  margin: 0 0 0.5rem;
+}
+
+/* About 15 rows of the issues table; the rest scrolls, and the header stays. */
+.issues-scroll {
+  max-height: 41rem;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--kvz-line);
+  border-radius: 0.375rem;
+}
+
+.issues-scroll table {
+  margin: 0;
+}
+
+.issues-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: var(--kvz-card);
+}
+
+.bank-search,
+.folder-new,
+.bulk-move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.bank-search input,
+.folder-new input,
+.bulk-move select {
+  flex: 1 1 12rem;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+}
+
+.bank-search button,
+.folder-new button,
+.bulk-move button {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
+
+.folder-crumbs {
+  display: block;
+  margin: 0 0 0.75rem;
+  overflow-wrap: anywhere;
+}
+
 .row-main {
   flex: 1 1 14rem;
   min-width: 0;
@@ -1171,39 +1561,218 @@ ul.rows-plain > li {
   margin-bottom: 2.5rem;
 }
 
-/* "Basic / All" in the admin bar (ADR-0052) */
+/* "Basic / All" in the section panel (ADR-0052) */
 .view-switch {
   display: inline-flex;
   gap: 0.25rem;
   margin: 0;
 }
 
-/* Setting groups: links at the top, then one heading or <details> per group */
-.group-links ul,
-.group-links ul:first-of-type,
-.group-links ul:last-of-type {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin: 0 0 1.5rem;
+/* Section panel: a sticky side panel on a wide screen, a floating list on a narrow one */
+.with-panel {
+  display: block;
+}
+
+.section-panel {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--kvz-card);
+  color: var(--kvz-text);
+  border: 1px solid var(--kvz-line);
+  border-radius: 0.5rem;
+}
+
+.section-list {
+  margin: 0;
+}
+
+.section-panel summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.section-panel nav ul {
+  margin: 0.5rem 0;
+  margin-inline: 0;
   padding: 0;
   list-style: none;
 }
 
-.group-links li {
+.section-panel li {
   margin: 0;
   padding: 0;
 }
 
-.setting-group {
-  margin-bottom: 2rem;
+/* Pico gives `nav li a` a negative vertical margin; without resetting it the marked item
+   is taller than its row and covers the neighbours. */
+.section-panel a {
+  display: block;
+  margin: 0;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+}
+
+.section-panel a[aria-current] {
+  border: 1px solid var(--kvz-line);
+  border: 1px solid color-mix(in srgb, var(--kvz-main) 30%, transparent);
+  background: var(--kvz-tile);
+  background: color-mix(in srgb, var(--kvz-main) 7%, transparent);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.section-panel .view-switch {
+  margin-top: 0.5rem;
+}
+
+.panel-main {
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .with-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 14rem;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .with-panel .section-panel {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 1rem;
+  }
+
+  .with-panel .panel-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .section-panel summary {
+    pointer-events: none;
+    cursor: default;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .js .section-panel {
+    position: fixed;
+    right: 1rem;
+    bottom: 4.5rem;
+    z-index: 20;
+    max-width: calc(100vw - 2rem);
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0;
+    box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 0.25);
+  }
+}
+
+/* A group of settings is tinted with the main colour of the palette, so that it is clear what belongs together. */
+.setting-group,
+.with-panel .form-section[id] {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--kvz-tile);
+  background: color-mix(in srgb, var(--kvz-main) 7%, transparent);
   scroll-margin-top: 1rem;
 }
 
-details.setting-group {
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--kvz-line);
+/* One setting; a dependant is indented under the setting it follows (AC-168).
+   A wide screen puts the label left and the control right; a narrow one keeps them stacked. */
+.form-section.settings-form {
+  max-width: 56rem;
+}
+
+.setting-row {
+  margin-bottom: 0.75rem;
+}
+
+.setting-label,
+.setting-label label,
+.setting-legend {
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.setting-label label,
+.setting-legend {
+  display: block;
+}
+
+.setting-control .logo-row,
+.setting-control .logo-preview {
+  margin: 0;
+}
+
+.setting-control > select,
+.setting-control > input {
+  margin-bottom: 0.25rem;
+}
+
+.setting-control .helptext {
+  color: var(--kvz-muted);
+  font-size: 0.875rem;
+}
+
+/* Radio buttons of a short choice sit in a row and wrap. */
+[role="radiogroup"] .setting-control > div[id]:not(.helptext) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+[role="radiogroup"] .setting-control > div[id]:not(.helptext) label {
+  margin: 0;
+}
+
+/* A search draws what does not match `hidden`; a grid row must not show it again. */
+.setting-row[hidden],
+.setting-columns[hidden],
+.setting-group[hidden] {
+  display: none;
+}
+
+.search-state {
+  margin: -0.5rem 0 1rem;
+}
+
+.setting-columns {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem 0;
+  border: 1px solid var(--kvz-line);
+  border-radius: 0.375rem;
+}
+
+.setting-columns legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+@media (min-width: 48rem) {
+  .setting-row {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    gap: 0 1rem;
+    align-items: start;
+  }
+
+  .setting-label {
+    padding-top: 0.5rem;
+  }
+
+  .setting-child .setting-label {
+    padding-inline-end: 0;
+  }
+}
+
+.setting-child {
+  margin-inline-start: 1.25rem;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--kvz-line);
 }
 
 details.setting-group > summary {
@@ -1301,6 +1870,71 @@ details.setting-group > summary {
   }
 }
 
+/* Compact tables (scoreboard rows) stay one line per row on a phone, which
+   matters with 50 participants: place, name (grows, ellipsis), score and
+   percent share the line without labels. Optional extra columns (submitted
+   time, duration) each take a small line below that keeps its label. The
+   modifier is only for tables whose columns vary; other .stack tables keep the
+   label/value layout. */
+@media (max-width: 47.99rem) {
+  table.stack.compact tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.5rem;
+  }
+
+  table.stack.compact td {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  table.stack.compact td[data-label]::before {
+    content: none;
+  }
+
+  table.stack.compact td.who {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  table.stack.compact .who-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  table.stack.compact td.who strong {
+    flex: 0 0 auto;
+    margin-left: 0.25rem;
+  }
+
+  table.stack.compact td.extra {
+    flex: 0 0 100%;
+    font-size: 0.8125rem;
+    color: var(--kvz-muted);
+    justify-content: flex-start;
+  }
+
+  table.stack.compact td.extra[data-label]::before {
+    content: attr(data-label) ":";
+  }
+
+  table.stack.compact td.row-score {
+    font-variant-numeric: tabular-nums;
+  }
+
+  table.stack.compact td.rank {
+    min-width: 2.25rem;
+  }
+
+  /* Own row: highlight the whole flex row, not just the cells. */
+  table.stack.compact tr[data-mine] {
+    background: var(--pico-primary-focus);
+  }
+}
+
 /* Wide screens: menus are open and their buttons are hidden. */
 @media (min-width: 48rem) {
   .site-nav > summary,
@@ -1349,10 +1983,8 @@ details.setting-group > summary {
     margin-top: 0;
   }
 
-  .quiz-title h1 {
-    display: block;
+  .quiz-title .inline-name {
     flex: 1 1 auto;
-    margin: 0;
   }
 
   .quiz-meta {
@@ -1471,6 +2103,7 @@ details.setting-group > summary {
   z-index: 10;
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
   justify-content: flex-end;
   padding: 0.25rem 0.75rem;
   background: var(--pico-background-color);
@@ -1479,6 +2112,26 @@ details.setting-group > summary {
 
 .countdown strong {
   font-variant-numeric: tabular-nums;
+}
+
+.countdown-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.875em;
+  text-align: right;
+}
+
+.countdown-note:empty {
+  display: none;
+}
+
+.number-note {
+  margin: 0.25em 0 0;
+  font-size: 0.875em;
+}
+
+.number-note:empty {
+  display: none;
 }
 
 .visually-hidden {
@@ -1526,13 +2179,207 @@ details.setting-group > summary {
   padding: 0.4em 0.6em;
 }
 
-.projector:fullscreen {
-  overflow: auto;
-  padding: 2rem;
-  background: var(--pico-background-color);
-}
-
 .scoreboard-tools,
 .scoreboard-tools a {
   color: var(--kvz-on-page);
+}
+
+/* A date close to its end. On its own background, so it stays readable in every palette. */
+.deletion-soon {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.0625rem 0.5rem;
+  white-space: normal;
+  border-radius: 0.25rem;
+  background: var(--kvz-accent);
+  color: var(--kvz-on-accent);
+}
+
+/* A name with a pencil: the text and the pencil flow as one text, so a long name wraps and the
+   pencil stays right after its last word. Only the field with its buttons is a flex row. */
+.inline-name {
+  display: inline;
+  max-width: 100%;
+}
+
+div.inline-name {
+  display: block;
+}
+
+.inline-name-text {
+  display: inline;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.inline-name-pencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin-inline-start: 0.25rem;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+div.inline-name .inline-name-note,
+div.inline-name .inline-name-saved {
+  display: block;
+}
+
+.inline-name-note,
+.inline-name-saved {
+  color: var(--kvz-muted);
+}
+
+.inline-name-form {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.inline-name-form input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+}
+
+.inline-name-form button,
+.inline-name-form .inline-name-cancel {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+}
+
+/* The address of a test link: a block like a paragraph, as its field is a form. */
+.link-address {
+  margin-bottom: var(--pico-typography-spacing-vertical, 1rem);
+  overflow-wrap: anywhere;
+}
+
+/* The fixed part of an address beside its field: the token path, which cannot be changed. */
+.inline-name-suffix {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--kvz-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Admins page (AC-169): one card per account, the login with its pencil on top. */
+.admin-accounts {
+  padding: 0;
+  list-style: none;
+}
+
+.admin-accounts > li {
+  list-style: none;
+}
+
+.admin-account-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.admin-blocked {
+  padding: 0 0.4rem;
+  border-radius: var(--pico-border-radius, 0.25rem);
+}
+
+.admin-password {
+  margin-top: var(--pico-typography-spacing-vertical, 1rem);
+}
+
+.admin-password button {
+  white-space: nowrap;
+}
+
+.admin-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-account-actions form,
+.admin-account-actions button,
+.admin-account-actions [role="button"] {
+  margin: 0;
+}
+
+.inline-name-error {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--pico-del-color);
+}
+
+@media (max-width: 48rem) {
+  .inline-name-pencil {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    margin-block: -0.5rem;
+  }
+
+  .inline-name-form button,
+  .inline-name-form .inline-name-cancel {
+    min-height: 2.75rem;
+  }
+}
+
+/* A reward: its details with the pencil of the name beside them. */
+.reward-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.25rem 0.5rem;
+}
+
+.reward-row details {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+/* The language the texts of a bank are shown in. */
+.chips > li {
+  margin: 0;
+  list-style: none;
+}
+
+.chips a.chip {
+  text-decoration: none;
+}
+
+.chips a.chip[aria-current="true"] {
+  background: var(--kvz-tile);
+  box-shadow: inset 0 0 0 1px var(--kvz-link);
+  font-weight: 600;
+}
+
+.chips + p {
+  margin-top: 0.5rem;
+}
+
+/* The scoreboard button of the quiz page spans the card (AC-176). */
+.boards [role="button"].wide {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.boards p {
+  margin: 1rem 0 0.25rem;
+}
+
+.boards > p:first-child {
+  margin-top: 0;
+}
+
+.boards ul {
+  margin-bottom: 0;
 }

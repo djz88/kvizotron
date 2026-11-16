@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, Protocol, runtime_checkable
 
-CONTRACT_VERSION = "1.0"
+CONTRACT_VERSION = "1.1"
 
 # Infrastructure with exactly one active provider per process (ADR-0037).
 EXTERNAL_IMAGE_MODE = "external_image_mode"
@@ -29,20 +29,56 @@ LOCAL_RESUME = "local_resume"  # on, off
 SCOREBOARD_VISIBILITY = "scoreboard_visibility"  # hidden, live, after_end
 SCOREBOARD_LIVE_NAMES = "scoreboard_live_names"  # shown, anonymised
 SCOREBOARD_UNNAMED = "scoreboard_unnamed"  # anonymous, unlisted
-OFFICIAL_ATTEMPT = "official_attempt"  # best, first
+OFFICIAL_ATTEMPT = "official_attempt"  # best, first, last, average
+PASS_MARK = "pass_mark"  # noqa: S105 - a setting key; percent of the maximum score, "0" is none
+MAX_ATTEMPTS = "max_attempts"  # "0" is no limit
+AFTER_PASS = "after_pass"  # noqa: S105 - a setting key; more, stop
 SCOREBOARD_SHOW_SCORE = "scoreboard_show_score"  # on, off
 SCOREBOARD_SHOW_PERCENT = "scoreboard_show_percent"  # on, off
 SCOREBOARD_SHOW_TIME = "scoreboard_show_time"  # on, off
 SCOREBOARD_SHOW_DURATION = "scoreboard_show_duration"  # on, off
 SCOREBOARD_SECOND_SORT = "scoreboard_second_sort"  # submitted, duration
 TIE_BREAK_POLICY = "tie_break_policy"  # shared, earlier, random (ADR-0026)
-REVISION_MODE = "revision_mode"  # separate, latest; "merged" is an admin action (ADR-0008)
+REVISION_MODE = "revision_mode"  # percent, separate, latest; display only (ADR-0065)
 ARCHIVED_RESULTS = "archived_results"  # off, on (ADR-0031)
+SCOREBOARD_RUNS = "scoreboard_runs"  # current, all; boards the quiz page offers, read live
 REWARD_SOURCE = "reward_source"  # none, previous_run, quiz; only fills a new run
 REWARD_THRESHOLDS = "reward_thresholds"  # highest, all
 WINNER_CONTACT = "winner_contact"  # warn, require_email, silent
+COLOR_PALETTE = "color_palette"  # a preset of the theme, or "custom"
+CUSTOM_PALETTE = "custom"  # colours from the branding's main and accent colour
+# What a theme can let an admin brand, global or per quiz.
+BRANDING_FIELDS: tuple[str, ...] = ("name", "motto", "logo", "hero_logo", "colours", "footer")
+# Colour tokens of a palette, as CSS custom properties `--kvz-<token>`.
+PALETTE_TOKENS: tuple[str, ...] = (
+    "main",
+    "on-main",
+    "page-from",
+    "page-to",
+    "on-page",
+    "bar",
+    "on-bar",
+    "accent",
+    "on-accent",
+    "card",
+    "text",
+    "muted",
+    "tile",
+    "link",
+    "line",
+    "surface",
+)
 # Where a setting shows on the settings pages, and whether "Basic" shows it (ADR-0052)
-SETTING_GROUPS = ("playing", "answers", "participants", "scoreboard", "data", "look", "technical")
+SETTING_GROUPS = (
+    "playing",
+    "answers",
+    "participants",
+    "scoreboard",
+    "rewards",
+    "data",
+    "look",
+    "technical",
+)
 BASIC = "basic"
 ADVANCED = "advanced"
 PARTICIPANT_KEYS: tuple[str, ...] = (
@@ -52,12 +88,15 @@ PARTICIPANT_KEYS: tuple[str, ...] = (
     ASK_EMAIL,
     ASK_WHEN,
     DUPLICATE_NAMES,
+    MAX_ATTEMPTS,
+    AFTER_PASS,
 )
 RESULT_KEYS: tuple[str, ...] = (
     SCOREBOARD_VISIBILITY,
     SCOREBOARD_LIVE_NAMES,
     SCOREBOARD_UNNAMED,
     OFFICIAL_ATTEMPT,
+    PASS_MARK,
     SCOREBOARD_SHOW_SCORE,
     SCOREBOARD_SHOW_PERCENT,
     SCOREBOARD_SHOW_TIME,
@@ -69,7 +108,7 @@ RESULT_KEYS: tuple[str, ...] = (
 )
 # What only changes what is shown, so it may change on a running, ended or archived run.
 RESULT_DISPLAY_KEYS: tuple[str, ...] = tuple(
-    key for key in RESULT_KEYS if key not in (OFFICIAL_ATTEMPT, TIE_BREAK_POLICY, REVISION_MODE)
+    key for key in RESULT_KEYS if key not in (OFFICIAL_ATTEMPT, PASS_MARK, TIE_BREAK_POLICY)
 )
 # Copied onto the run with its rewards, fixed once the run opens.
 REWARD_RUN_KEYS: tuple[str, ...] = (REWARD_THRESHOLDS, WINNER_CONTACT)
@@ -231,6 +270,28 @@ class QuizFlowPlugin(Protocol):
     def client_options(self, mode: str, moment: str) -> JSON: ...
 
 
+@runtime_checkable
+class QuizTypePlugin(Protocol):
+    """A named bundle of quiz settings (ADR-0062). Definitions only; applying is the domain's."""
+
+    @property
+    def id(self) -> str: ...
+    @property
+    def version(self) -> str: ...
+    @property
+    def order(self) -> int:  # position in lists, ascending
+        ...
+    @property
+    def resets_all(self) -> bool:  # True only for a type that removes every quiz override
+        ...
+
+    def label(self) -> str: ...
+    def description(self) -> str: ...
+    def values(self) -> Mapping[str, str]:
+        """Setting key -> value, each a quiz setting and an offered choice; `{}` when resetting."""
+        ...
+
+
 OpenAttempt = Literal["none", "running", "expired"]
 StartDecision = Literal["new", "resume", "replace", "played", "time_up"]
 
@@ -249,9 +310,19 @@ class ParticipantPolicyPlugin(Protocol):
     def name_key(self, clean: str) -> str: ...
     def valid_email(self, raw: str) -> bool: ...
     def on_start(
-        self, rules: Mapping[str, str], *, finished: bool, open_attempt: OpenAttempt
+        self,
+        rules: Mapping[str, str],
+        *,
+        finished: bool,
+        used: int,
+        passed: bool,
+        open_attempt: OpenAttempt,
     ) -> StartDecision:
-        """`replace` closes the open attempt and starts a new one."""
+        """`replace` closes the open attempt and starts a new one (contract 1.1).
+
+        `used` is the participant's started attempts other than the open one; `passed` says the
+        kept score reached the pass mark.
+        """
         ...
 
 
@@ -362,6 +433,25 @@ class PersistenceProvider(Protocol):
     def healthcheck(self) -> bool: ...
 
 
+@dataclass(frozen=True)
+class BrandColours:
+    """Two colours an admin chose, each `#rrggbb`."""
+
+    main: str
+    accent: str
+
+
+@dataclass(frozen=True)
+class DerivedPalette:
+    """Every token of `PALETTE_TOKENS` per mode; `main` and `accent` are the colours used."""
+
+    light: Mapping[str, str]
+    dark: Mapping[str, str]
+    adjusted: bool  # main or accent had to change to reach WCAG AA
+    main: str
+    accent: str
+
+
 @runtime_checkable
 class ThemePlugin(Protocol):
     id: str
@@ -369,6 +459,9 @@ class ThemePlugin(Protocol):
 
     def layout_template(self) -> str: ...
     def stylesheet_urls(self) -> Sequence[str]: ...
+    def palettes(self) -> Sequence[str]: ...  # preset ids, without CUSTOM_PALETTE
+    def branding_fields(self) -> frozenset[str]: ...  # a subset of BRANDING_FIELDS
+    def derive_palette(self, colours: BrandColours) -> DerivedPalette: ...
 
 
 @runtime_checkable
@@ -400,6 +493,10 @@ class MediaStorageProvider(Protocol):
 
     def check_participant_image(self, data: bytes) -> None: ...  # as above, storing nothing
     def delete_image(self, asset_id: str) -> None: ...
+    def private_assets_older_than(self, cutoff: datetime) -> Sequence[str]:
+        """Ids of participants' photos stored before `cutoff`, for the sweep of unused files."""
+        ...
+
     def exists(self, asset_id: str) -> bool: ...
     def load(self, asset_id: str) -> StoredImage | None: ...
 
@@ -467,16 +564,123 @@ class ExporterProvider(Protocol):
     ) -> ExportedFile: ...
 
 
+@dataclass(frozen=True)
+class ExportTable:
+    """One results table. `columns` are keys, `headers` their translated labels, same length."""
+
+    name: str
+    columns: Sequence[str]
+    headers: Sequence[str]
+    rows: Sequence[Mapping[str, str]]
+    numeric: frozenset[str] = frozenset()  # columns whose numbers skip formula protection
+
+
+@dataclass(frozen=True)
+class ExportJobView:
+    id: str
+    status: str  # "queued" | "running" | "done" | "failed" | "interrupted"
+    choices: Mapping[str, Any]
+    files: Sequence[str]
+    error: str | None
+    created_at: datetime
+    expires_at: datetime
+
+
+class ExportJobGone(Exception):
+    """The job is missing, belongs to another admin, or has expired."""
+
+
+@runtime_checkable
+class TableSinkProvider(Protocol):
+    id: str
+
+    def send(self, title: str, tables: Sequence[ExportTable]) -> str: ...  # where it went
+
+
+@runtime_checkable
+class ResultsExporterProvider(Protocol):
+    """Background results export: jobs, their files and links valid for a limited time."""
+
+    id: str
+
+    def create(self, admin_id: str, choices: Mapping[str, Any]) -> str: ...
+    def job(self, job_id: str, admin_id: str) -> ExportJobView: ...  # raises ExportJobGone
+    def jobs(self, admin_id: str) -> Sequence[ExportJobView]: ...  # unexpired, newest first
+    def claim_next(self) -> ExportJobView | None: ...  # the job it set running, with choices
+    def write(
+        self,
+        job_id: str,
+        tables: Sequence[ExportTable],
+        photos: Mapping[str, str],  # name in the ZIP -> filesystem path
+        bundle: bool,
+    ) -> None: ...
+    def fail(self, job_id: str, code: str) -> None: ...
+    def restart(self, job_id: str, admin_id: str) -> str: ...  # only interrupted or failed
+    def path(self, job_id: str, admin_id: str, name: str) -> str: ...  # raises ExportJobGone
+    def delete_for_runs(self, quiz_id: str, run_ids: Sequence[str]) -> None:
+        """The data of these runs were deleted: no export of them stays or can still appear.
+
+        Covers a job naming one of the runs and a job of all runs of that quiz. A queued or
+        running job ends as failed with error `run_data_deleted`, any other goes with its files.
+        Safe to repeat: a job already stopped this way stays. Raises when files cannot be removed
+        and keeps that job's row, so the caller can try again.
+        """
+        ...
+
+
+@dataclass(frozen=True)
+class RetentionRecord:
+    """One execution of a deletion. Holds no personal value, not even the e-mail fingerprint."""
+
+    id: str
+    run_id: str
+    trigger: str  # "automatic" | "manual" | "erasure"
+    admin_id: str | None  # None when automatic
+    policy: str
+    cutoff_at: datetime | None
+    executed_at: datetime
+    counts: Mapping[str, int]  # rows and files deleted, by kind
+    has_fingerprint: bool
+
+
+@runtime_checkable
+class RetentionProvider(Protocol):
+    """The trail of deletions. What is due and what goes is the domain's concern."""
+
+    id: str
+
+    def record(
+        self,
+        run_id: str,
+        *,
+        trigger: str,
+        admin_id: str | None,
+        policy: str,
+        cutoff_at: datetime | None,
+        counts: Mapping[str, int],
+        fingerprint: str | None = None,
+    ) -> str: ...  # the record's id
+    def history(
+        self, limit: int = 200, offset: int = 0
+    ) -> Sequence[RetentionRecord]: ...  # newest first
+    def for_run(self, run_id: str) -> Sequence[RetentionRecord]: ...  # newest first
+    def erased(self, fingerprint: str) -> Sequence[RetentionRecord]: ...  # newest first
+
+
 PORTS: dict[str, type] = {
     "importer": ImporterProvider,
     "exporter": ExporterProvider,
+    "table_sink": TableSinkProvider,
+    "results_exporter": ResultsExporterProvider,
     "question_type": QuestionTypePlugin,
     "scoring_strategy": ScoringStrategyPlugin,
     "quiz_flow": QuizFlowPlugin,
+    "quiz_type": QuizTypePlugin,
     "participant_policy": ParticipantPolicyPlugin,
     "result_view": ResultViewPlugin,
     "reward": RewardPlugin,
     "drawing": DrawingPlugin,
     "theme": ThemePlugin,
     "media_storage": MediaStorageProvider,
+    "retention": RetentionProvider,
 }

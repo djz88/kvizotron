@@ -1,136 +1,140 @@
-#: plugin.py:52
+#: manifest.py plugin.py
+msgid "Matching"
+msgstr "Зіставлення"
+
+#: manifest.py
+msgid "Questions that pair items or put them in order."
+msgstr "Запитання, що поєднують елементи в пари або впорядковують їх."
+
+#: plugin.py
 #, python-format
 msgid "Two rows have the same text: %(text)s"
 msgstr "Два рядки мають однаковий текст: %(text)s"
 
-#: plugin.py:87
-msgid "Matching"
-msgstr "Зіставлення"
-
-#: plugin.py:241
+#: plugin.py
 msgid "Every pair needs both sides."
 msgstr "Кожна пара потребує обох сторін."
 
-#: plugin.py:258
+#: plugin.py
 msgid "The question has no text in any language."
 msgstr "Запитання не має тексту жодною мовою."
 
-#: plugin.py:262
+#: plugin.py
 msgid "This is not valid JSON."
 msgstr "Це не коректний JSON."
 
-#: plugin.py:265 plugin.py:272
+#: plugin.py
 msgid "Write up to 8 items in a list named items."
 msgstr "Вкажіть до 8 елементів у списку items."
 
-#: plugin.py:267
+#: plugin.py
 msgid "The mode must be pairs or order."
 msgstr "Режим має бути pairs або order."
 
-#: plugin.py:276
+#: plugin.py
 msgid "Texts must be listed by language."
 msgstr "Тексти мають бути вказані за мовами."
 
-#: jinja2/matching/admin.html:2 plugin.py:372
+#: jinja2/matching/admin.html plugin.py
 msgid "Question"
 msgstr "Питання"
 
-#: plugin.py:375
+#: plugin.py
 msgid "Row"
 msgstr "Рядок"
 
-#: jinja2/matching/admin.html:34 plugin.py:381
+#: jinja2/matching/admin.html plugin.py
 msgid "Matches"
 msgstr "Відповідає"
 
-#: plugin.py:386
+#: plugin.py
 msgid "Order of rows"
 msgstr "Порядок рядків"
 
-#: jinja2/matching/admin.html:13 plugin.py:387
+#: jinja2/matching/admin.html plugin.py
 msgid "Ordering"
 msgstr "Упорядкування"
 
-#: jinja2/matching/admin.html:12 plugin.py:387
+#: jinja2/matching/admin.html plugin.py
 msgid "Pairs"
 msgstr "Пари"
 
-#: jinja2/matching/admin.html:11 plugin.py:388
+#: jinja2/matching/admin.html plugin.py
 msgid "Kind"
 msgstr "Вид"
 
-#: jinja2/matching/admin.html:17 plugin.py:391
+#: jinja2/matching/admin.html plugin.py
 msgid "From top to bottom"
 msgstr "Згори вниз"
 
-#: jinja2/matching/admin.html:18 plugin.py:391
+#: jinja2/matching/admin.html plugin.py
 msgid "From bottom to top"
 msgstr "Знизу вгору"
 
-#: plugin.py:392
+#: plugin.py
 msgid "Direction"
 msgstr "Напрямок"
 
-#: jinja2/matching/admin.html:16
+#: jinja2/matching/admin.html
 msgid "Direction shown to the participant"
 msgstr "Напрямок, який бачить учасник"
 
-#: jinja2/matching/admin.html:21
+#: jinja2/matching/admin.html
 msgid "Rows"
 msgstr "Рядки"
 
-#: jinja2/matching/admin.html:22
+#: jinja2/matching/admin.html
 msgid "Write pairs as they belong together, and for ordering the rows from first to last. Participants see them in a different order. Leave unused rows empty."
 msgstr "Пишіть пари так, як вони пов'язані, а для впорядкування — рядки від першого до останнього. Учасник бачить їх в іншому порядку. Невикористані рядки залиште порожніми."
 
-#: jinja2/matching/public_order.html:3
+#: jinja2/matching/public_order.html
 msgid "Arrange from bottom to top: the first belongs at the bottom."
 msgstr "Упорядкуйте знизу вгору: перший має бути внизу."
 
-#: jinja2/matching/public_order.html:3
+#: jinja2/matching/public_order.html
 msgid "Arrange from top to bottom: the first belongs at the top."
 msgstr "Упорядкуйте згори вниз: перший має бути вгорі."
 
-#: jinja2/matching/public_order.html:4
+#: jinja2/matching/public_order.html
 msgid "Move up"
 msgstr "Перемістити вгору"
 
-#: jinja2/matching/public_order.html:4
+#: jinja2/matching/public_order.html
 msgid "Move down"
 msgstr "Перемістити вниз"
 
-#: jinja2/matching/public_order.html:4
+#: jinja2/matching/public_order.html
 #, python-brace-format
 msgid "Moved to position {n}"
 msgstr "Переміщено на позицію {n}"
 
-#: jinja2/matching/public_order.html:8
+#: jinja2/matching/public_order.html
 #, python-format
 msgid "Position of: %(text)s"
 msgstr "Позиція елемента: %(text)s"
 
-#: jinja2/matching/public_order.html:9
+#: jinja2/matching/public_order.html
 msgid "Position"
 msgstr "Позиція"
 
-#: jinja2/matching/public_order.html:17
+#: jinja2/matching/public_order.html
 msgid "Each position can be used once."
 msgstr "Кожну позицію можна використати лише один раз."
 
-#: jinja2/matching/public_pairs.html:7
+#: jinja2/matching/public_pairs.html
 msgid "Choose"
 msgstr "Оберіть"
 
-#: jinja2/matching/public_pairs.html:14
+#: jinja2/matching/public_pairs.html
 msgid "Each option can be used once."
 msgstr "Кожен варіант можна використати лише один раз."
 
-#: jinja2/matching/solution.html:6
+#: jinja2/matching/solution.html
 #, python-format
 msgid "you placed it at %(position)s"
 msgstr "ви поставили на %(position)s місце"
 
-#: jinja2/matching/solution.html:15
+#: jinja2/matching/solution.html
 #, python-format
 msgid "your answer: %(answer)s"
 msgstr "ваша відповідь: %(answer)s"

@@ -157,3 +157,12 @@ def test_owner_must_be_an_active_module(module):
 def test_unknown_key_raises_unknown_port(module):
     with pytest.raises(registry.UnknownPort):
         registry.get("question_type", "nope")
+
+
+def test_two_modules_setting_the_same_key_are_refused_naming_both():
+    other = MODULE.model_copy(update={"id": "mod.b"})
+    with override_settings(KVZ_MODULES=[MODULE, other]):
+        registry.register("question_type", "good", GoodQuestion(), owner="mod.a")
+        with pytest.raises(StartupError, match=r"good.*mod\.a.*mod\.b"):
+            registry.register("question_type", "good", GoodQuestion(), owner="mod.b")
+    assert registry.owner_of("question_type", "good") == "mod.a"

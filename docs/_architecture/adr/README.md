@@ -11,7 +11,7 @@ Format: [MADR 4](https://adr.github.io/madr/). Template: [0000-template.md](0000
 | [ADR-0005](0005-sqlite-wal-sqlalchemy-alembic-behind-persistence-provider.md) | SQLite (WAL) via SQLAlchemy 2.x and Alembic behind PersistenceProvider | superseded by ADR-0036 |
 | [ADR-0006](0006-separate-quiz-revision-run-attempt-immutable-revisions.md) | Separate Quiz, QuizRevision, QuizRun, Attempt; published revisions are immutable | accepted |
 | [ADR-0007](0007-restart-creates-new-run-keeps-history.md) | Restart of a competition creates a new QuizRun and keeps history | accepted |
-| [ADR-0008](0008-scoreboard-revision-modes-default-separate.md) | Per-run scoreboard revision mode, default SEPARATE_BY_REVISION | accepted |
+| [ADR-0008](0008-scoreboard-revision-modes-default-separate.md) | Per-run scoreboard revision mode, default SEPARATE_BY_REVISION | superseded by ADR-0065 |
 | [ADR-0009](0009-server-authoritative-scoring-signed-token-idempotent-submit.md) | Server-authoritative scoring with signed attempt token and idempotent submission | accepted |
 | [ADR-0010](0010-strict-server-side-deadline.md) | Strict server-side deadline and attempt time limit | accepted |
 | [ADR-0011](0011-anonymous-cookie-participant-identity.md) | Anonymous cookie as participant identity, without uniqueness guarantee | accepted |
@@ -57,3 +57,15 @@ Format: [MADR 4](https://adr.github.io/madr/). Template: [0000-template.md](0000
 | [ADR-0051](0051-scoreboard-participants-and-official-attempt.md) | A visible scoreboard identifies browsers, one official attempt each, anonymised live names | accepted |
 | [ADR-0052](0052-setting-groups-levels-and-step-default.md) | Settings in named groups with a basic level, pages of questions, one question at a time by default | accepted |
 | [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md) | Rewards copied onto the run, tiers by setting, alternates drawn at once, a draw history that only grows | accepted |
+| [ADR-0054](0054-branding-owned-by-domain-and-theme.md) | Branding owned by the domain, palettes and derivation by the theme, colours that resolve with their palette | accepted |
+| [ADR-0055](0055-results-export-background-job-and-csv-dialect.md) | Results export as a background job in the app process, a semicolon CSV dialect, and a table port for Google Sheets | accepted |
+| [ADR-0056](0056-retention-job-summary-held-runs.md) | Hourly retention in a `jobs` service, a summary in place of deleted rows, held runs and an e-mail fingerprint | accepted |
+| [ADR-0057](0057-plugin-admin-reasons-locks-no-configuration-table.md) | Modules page with shared refusal reasons, always-on plugins, and no configuration table yet | accepted |
+| [ADR-0058](0058-rate-limit-buckets.md) | Four request-limit buckets, a start limit, what a refusal looks like, and the proxy keep-alive | accepted |
+| [ADR-0059](0059-backup-and-restore.md) | A daily verified backup from the `jobs` service and a manual restore that keeps what it replaces | accepted |
+| [ADR-0060](0060-login-reservation-and-address-ceiling.md) | Login slots reserved before the password is checked, a ceiling per address, and a repeated automatic submission | accepted |
+| [ADR-0061](0061-heartbeat-and-restore-marker.md) | Heartbeat files and a pass record, a marker for an interrupted restore, and an address key for the erasure search | accepted |
+| [ADR-0062](0062-quiz-type-port.md) | Quiz types as named bundles of quiz settings behind a `quiz_type` port | accepted |
+| [ADR-0063](0063-kept-score.md) | Kept score: the last attempt or the average of all, one `Kept` value for every consumer | accepted |
+| [ADR-0064](0064-run-copies-flow-and-profile.md) | A run copies its flow, sources and answers visibility when planned or opened | proposed |
+| [ADR-0065](0065-scoreboard-by-percent-and-shared-boards.md) | One scoreboard by percent across revisions by default, and a shared board of several runs | accepted |

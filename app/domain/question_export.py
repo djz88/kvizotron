@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from app.contracts import QuestionTypePlugin
-from app.domain import authoring, question_import, questions, settings
+from app.domain import authoring, bank_folders, question_import, questions, settings
 from app.domain.models import QuestionBank, Quiz
 from app.kernel import audit, registry
 
@@ -111,9 +111,11 @@ def rows_for_bank(bank: QuestionBank, name_of: Callable[[str], str] = _default_n
     assets: dict[str, str] = {}
     rows = []
     locales = question_import.languages()
+    paths = dict(bank_folders.choices(bank))
     for stored in bank.questions.order_by("created_at"):
         row = _question_row(stored.question_json, locales, assets, name_of)
         row["tags"] = ",".join(stored.tags)
+        row["folder"] = paths.get(str(stored.folder_id), "")
         rows.append(row)
     return ExportData(_columns(rows), rows, assets, False)
 
