@@ -1,0 +1,15 @@
+{# The layout of a run's tab: the section panel, the quiz header, the run header and the tab's
+   content. A tab sets `panel_before` (its jump list) and fills the block `tab`. #}
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="with-panel">
+{% set groups = [] %}
+{% include "admin/_section_panel.html" %}
+<div class="panel-main">
+{% include "admin/_quiz_header.html" %}
+{% include "admin/_run_header.html" %}
+{% block tab %}{% endblock %}
+{% include "admin/_clock.html" %}
+</div>
+</div>
+{% endblock %}

@@ -64,7 +64,7 @@ def test_no_log_line_contains_name_or_email(caplog, logged_in):
     )
     third = Browser(run)
     third.start(participant_name=NAMES[2], participant_email=EMAILS[2])
-    page = logged_in.get(f"/admin/runs/{run.id}?lang=en")
+    page = logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en")
     shown = page.content.decode()
     for value in (NAMES[0], NAMES[1], EMAILS[0], EMAILS[1]):
         assert value in shown  # the table did show them, so the check above means something

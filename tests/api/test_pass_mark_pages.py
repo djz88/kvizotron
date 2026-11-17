@@ -189,19 +189,22 @@ def test_attempts_table_and_statistics(logged_in):
     ema, petr = person(run, "Ema"), person(run, "Petr")
     stored(run, ema, 8, 0)
     stored(run, petr, 5, 1)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/statistics?lang=en"))
     assert "Passed: 1 of 2" in html
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en"))
     assert "<th>Pass mark</th>" in html
     assert "Not passed" in html
-    cs = text(logged_in.get(f"/admin/runs/{run.id}?lang=cs"))
+    cs = text(logged_in.get(f"/admin/runs/{run.id}/statistics?lang=cs"))
     assert "Splnilo: 1 z 2" in cs
 
 
 def test_no_column_or_share_without_mark(logged_in):
     run = a_run("0")
     stored(run, person(run, "Ema"), 8)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
-    assert "Passed:" not in html and "<th>Pass mark</th>" not in html
+    html = text(logged_in.get(f"/admin/runs/{run.id}/statistics?lang=en"))
+    assert "Passed:" not in html
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en"))
+    assert "<th>Pass mark</th>" not in html
 
 
 def test_preview_shows_mark(logged_in):
@@ -242,5 +245,5 @@ def test_admin_board_tick_has_hidden_text(logged_in):
     """AC-172: the tick of the admin board is read as "passed" by a screen reader too."""
     run = a_run("70", **{OFFICIAL_ATTEMPT: "best"})
     stored(run, person(run, "Ema"), 8, 0)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/scoreboard?lang=en"))
     assert '<span class="visually-hidden">passed</span>' in html

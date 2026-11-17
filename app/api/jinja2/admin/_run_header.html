@@ -1,0 +1,28 @@
+{# The run header and its tab bar on every tab of a run (ADR-0068). Expects `run`, `status_label`,
+   `run_tabs` (run_tabs.shown) and `run_tab` (the key of the current tab). #}
+{% set live = run.status == "OPEN" %}
+{% set more_keys = run_tabs|selectattr("more")|map(attribute="key")|list %}
+<div class="run-head">
+  <p><strong>{{ _("Run %(no)s", no=run.run_no) }}</strong>
+    <span class="chip{% if live %} chip-live{% endif %}">{{ status_label }}</span>
+    · {{ _("Deadline") }}: {{ run.deadline_at|when }}</p>
+  <nav class="tabs tabs-wrap" aria-label="{{ _('Parts of this run') }}">
+    <ul>
+      {% for item in run_tabs if not item.more %}
+      <li><a href="{{ url(item.url_name, args=[run.id]) }}"{% if item.key == run_tab %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+      {% endfor %}
+      {% if more_keys %}
+      <li>
+        <details class="tab-more"{% if run_tab in more_keys %} open{% endif %}>
+          <summary{% if run_tab in more_keys %} aria-current="page"{% endif %}>{{ _("More") }}</summary>
+          <ul>
+            {% for item in run_tabs if item.more %}
+            <li><a href="{{ url(item.url_name, args=[run.id]) }}"{% if item.key == run_tab %} aria-current="page"{% endif %}>{{ item.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </details>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>

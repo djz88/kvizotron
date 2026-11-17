@@ -268,7 +268,7 @@ def test_run_page_lists_rules(logged_in):
     quiz = published_quiz()
     settings.set_override("ask_name", quiz, "required", admin_id=None)
     run = authoring.open_run(quiz, admin_id=ADMIN_ID)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en"))
     with translation.override("en"):
         labels = [
             str(settings.CATALOGUE[key].label)
@@ -353,7 +353,7 @@ def test_run_page_shows_profile_and_period(showing_all):
     quiz = published_quiz()
     settings.set_override(settings.DATA_PROFILE, quiz, "answers", admin_id=None)
     run = authoring.open_run(quiz, admin_id=ADMIN_ID)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/settings?lang=en"))
     with translation.override("en"):
         profile = str(settings.CATALOGUE[settings.DATA_PROFILE].value_labels["answers"])
         period = str(settings.CATALOGUE[settings.RETENTION_PERIOD].value_labels["90d"])

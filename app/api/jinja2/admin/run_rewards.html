@@ -1,0 +1,6 @@
+{% extends "admin/_run_tab.html" %}
+{# A run's own rewards and entitlements: the run's Rewards tab (ADR-0068). #}
+{% set panel_before = [("rules", _("Rewards")), ("entitlements", _("Who has a reward"))] + ([("grant", _("Grant a manual reward"))] if manual_rules else []) %}
+{% block tab %}
+{% include "admin/_rewards_sections.html" %}
+{% endblock %}

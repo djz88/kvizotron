@@ -17,9 +17,8 @@ from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from app.api import admin_common, export_runner
+from app.api import admin_common, export_runner, run_tabs
 from app.api.admin_auth import admin_required
-from app.api.admin_runs import _status_label
 from app.api.admin_workspace import workspace
 from app.api.rendering import page
 from app.contracts import ExportJobGone, ExportJobView, ResultsExporterProvider
@@ -96,7 +95,7 @@ def _page(
         "runs": [
             {
                 "run": run,
-                "status": _status_label(run),
+                "status": run_tabs.status_label(run),
                 "profile": profile.value_labels[data_policy.of(run)[data_policy.PROFILE]],
             }
             for run in runs

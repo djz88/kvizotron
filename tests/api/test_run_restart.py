@@ -27,5 +27,5 @@ def test_restart_gives_a_new_run_with_an_empty_board_and_keeps_the_old_results(c
     old_page = client.get(f"/q/{quiz.slug}/r/{old.id}/scoreboard?lang=en")
     assert old_page.status_code == 200
     assert "Ema" in text(old_page)
-    assert "Ema" in text(logged_in.get(f"/admin/runs/{old.id}?lang=en"))
-    assert "Ema" not in text(logged_in.get(f"/admin/runs/{new.id}?lang=en"))
+    assert "Ema" in text(logged_in.get(f"/admin/runs/{old.id}/scoreboard?lang=en"))
+    assert "Ema" not in text(logged_in.get(f"/admin/runs/{new.id}/scoreboard?lang=en"))

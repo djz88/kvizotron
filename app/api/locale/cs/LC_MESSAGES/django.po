@@ -91,7 +91,8 @@ msgstr "Začátek"
 msgid "Empty starts the run now."
 msgstr "Prázdné pole spustí běh hned."
 
-#: admin_forms.py jinja2/admin/run.html jinja2/admin/runs.html
+#: admin_forms.py jinja2/admin/_run_header.html jinja2/admin/run.html
+#: jinja2/admin/runs.html
 msgid "Deadline"
 msgstr "Uzávěrka"
 
@@ -115,7 +116,7 @@ msgstr "Nic: jen počty, takže není tabulka pokusů, odkaz na výsledek, žeb�
 msgid "It can change later, also after the run ends."
 msgstr "Dá se změnit i později, také po skončení běhu."
 
-#: admin_forms.py jinja2/admin/run.html jinja2/public/quiz.html
+#: admin_forms.py jinja2/admin/run_settings.html jinja2/public/quiz.html
 msgid "Access code"
 msgstr "Přístupový kód"
 
@@ -123,7 +124,7 @@ msgstr "Přístupový kód"
 msgid "Optional. Participants must enter it before they start. It is shown once after saving."
 msgstr "Volitelný. Účastníci ho musí zadat před začátkem. Po uložení se ukáže jen jednou."
 
-#: admin_forms.py jinja2/admin/run.html
+#: admin_forms.py jinja2/admin/run_settings.html
 msgid "Generate a code"
 msgstr "Vytvořit kód"
 
@@ -267,10 +268,10 @@ msgstr "Vyber složku zvolené banky."
 msgid "Optional. It can appear in the footers of this admin's quizzes as a contact."
 msgstr "Nepovinné. Může se zobrazit v patičkách kvízů tohoto správce jako kontakt."
 
-#: admin_forms.py jinja2/admin/_erasure_rows.html jinja2/admin/erasure.html
+#: admin_forms.py jinja2/admin/_erasure_rows.html
+#: jinja2/admin/_rewards_sections.html jinja2/admin/erasure.html
 #: jinja2/admin/prize_draw.html jinja2/admin/retention.html
-#: jinja2/admin/rewards.html jinja2/admin/run.html
-#: jinja2/public/_identity_fields.html
+#: jinja2/admin/run_attempts.html jinja2/public/_identity_fields.html
 msgid "E-mail"
 msgstr "E-mail"
 
@@ -498,9 +499,10 @@ msgid "NN stands for the number. Empty uses \"Player NN\" in that language."
 msgstr "NN nahradí číslo. Prázdné pole použije v tom jazyce „Hráč NN“."
 
 #: admin_forms_rewards.py admin_rewards.py admin_runs.py
-#: jinja2/admin/plugins.html jinja2/admin/prize_draw.html
-#: jinja2/admin/rewards.html jinja2/admin/run.html
-#: jinja2/public/_identity_fields.html jinja2/public/_scoreboard_rows.html
+#: jinja2/admin/_rewards_sections.html jinja2/admin/plugins.html
+#: jinja2/admin/prize_draw.html jinja2/admin/run_attempts.html
+#: jinja2/admin/run_scoreboard.html jinja2/public/_identity_fields.html
+#: jinja2/public/_scoreboard_rows.html
 msgid "Name"
 msgstr "Jméno"
 
@@ -706,6 +708,7 @@ msgid "Draft (a frozen copy)"
 msgstr "Koncept (zmrazená kopie)"
 
 #: admin_links.py jinja2/admin/revision_compare.html jinja2/admin/run.html
+#: jinja2/admin/run_scoreboard.html jinja2/admin/run_statistics.html
 #: jinja2/public/_scoreboard_rows.html
 #, python-format
 msgid "Revision %(no)s"
@@ -715,7 +718,8 @@ msgstr "Revize %(no)s"
 msgid "Waiting for grading"
 msgstr "Čeká na hodnocení"
 
-#: admin_links.py jinja2/admin/run.html jinja2/admin/runs.html
+#: admin_links.py jinja2/admin/run_attempts.html
+#: jinja2/admin/run_scoreboard.html jinja2/admin/runs.html
 #: jinja2/public/_scoreboard_rows.html
 msgid "Submitted"
 msgstr "Odesláno"
@@ -732,8 +736,8 @@ msgstr "Zrušený"
 msgid "Active"
 msgstr "Aktivní"
 
-#: admin_links.py admin_runs.py jinja2/admin/retention.html
-#: jinja2/admin/runs.html
+#: admin_links.py jinja2/admin/retention.html jinja2/admin/runs.html
+#: run_tabs.py
 msgid "Ended"
 msgstr "Skončil"
 
@@ -920,12 +924,14 @@ msgstr "Běh právě probíhá. Před archivací kvízu ho ukončete."
 msgid "Another quiz that is not archived has this title now. Rename one of them first."
 msgstr "Jiný kvíz, který není v archivu, má teď stejný název. Nejdřív jeden z nich přejmenujte."
 
-#: admin_results_export.py admin_retention.py jinja2/admin/run.html
+#: admin_results_export.py admin_retention.py jinja2/admin/run_attempts.html
+#: run_tabs.py
 msgid "Attempts"
 msgstr "Pokusy"
 
 #: admin_results_export.py admin_retention.py admin_view.py
-#: jinja2/admin/run.html jinja2/admin/runs.html
+#: jinja2/admin/run_attempts.html jinja2/admin/run_statistics.html
+#: jinja2/admin/runs.html
 msgid "Participants"
 msgstr "Účastníci"
 
@@ -1060,7 +1066,7 @@ msgstr "Publikováno"
 msgid "Superseded"
 msgstr "Nahrazeno"
 
-#: admin_revisions.py admin_runs.py jinja2/admin/_chips.html
+#: admin_revisions.py jinja2/admin/_chips.html run_tabs.py
 msgid "Archived"
 msgstr "Archivováno"
 
@@ -1093,7 +1099,7 @@ msgstr "Hranice"
 msgid "Participation"
 msgstr "Účast"
 
-#: admin_rewards.py
+#: admin_rewards.py run_tabs.py
 msgid "Draw"
 msgstr "Losování"
 
@@ -1205,14 +1211,6 @@ msgid "No longer stored"
 msgstr "Už není uložen"
 
 #: admin_runs.py
-msgid "Planned"
-msgstr "Naplánováno"
-
-#: admin_runs.py jinja2/admin/grading.html
-msgid "Running"
-msgstr "Probíhá"
-
-#: admin_runs.py
 #, python-format
 msgid "Run %(no)s is already on the shared scoreboard of another run."
 msgstr "Běh %(no)s už je ve společném žebříčku jiného běhu."
@@ -1269,7 +1267,7 @@ msgstr "Přesunout uzávěrku na %(when)s? Rozehraných pokusů: %(count)s."
 msgid "With this period the date of deletion has already passed, so the data of run %(no)s will be deleted on the next hourly pass. This cannot be undone."
 msgstr "S touto dobou už datum smazání uplynulo, takže data běhu %(no)s se smažou při nejbližším hodinovém průchodu. Nelze to vrátit zpět."
 
-#: admin_runs.py jinja2/admin/run.html
+#: admin_runs.py jinja2/admin/run_attempts.html
 msgid "no name"
 msgstr "bez jména"
 
@@ -1316,18 +1314,21 @@ msgstr "Průchod"
 msgid "Answers and result"
 msgstr "Odpovědi a výsledek"
 
-#: admin_view.py jinja2/admin/_quiz_header.html jinja2/admin/run.html
-#: jinja2/admin/runs.html jinja2/public/_boards.html jinja2/public/_result.html
-#: jinja2/public/result.html jinja2/public/scoreboard.html
+#: admin_view.py jinja2/admin/_quiz_header.html
+#: jinja2/admin/run_scoreboard.html jinja2/admin/runs.html
+#: jinja2/public/_boards.html jinja2/public/_result.html
+#: jinja2/public/result.html jinja2/public/scoreboard.html run_tabs.py
 msgid "Scoreboard"
 msgstr "Žebříček"
 
-#: admin_view.py jinja2/admin/_quiz_header.html jinja2/admin/rewards.html
-#: jinja2/admin/run.html jinja2/admin/run_plan.html jinja2/public/quiz.html
+#: admin_view.py jinja2/admin/_quiz_header.html
+#: jinja2/admin/_rewards_sections.html jinja2/admin/run_plan.html
+#: jinja2/admin/run_rewards.html jinja2/public/quiz.html run_tabs.py
 msgid "Rewards"
 msgstr "Odměny"
 
-#: admin_view.py jinja2/admin/results_export.html jinja2/admin/run.html
+#: admin_view.py jinja2/admin/results_export.html
+#: jinja2/admin/run_settings.html
 msgid "Data"
 msgstr "Data"
 
@@ -1343,7 +1344,8 @@ msgstr "Technické"
 msgid "Scoreboard columns"
 msgstr "Sloupce žebříčku"
 
-#: admin_view.py jinja2/admin/run.html jinja2/admin/test_links.html
+#: admin_view.py jinja2/admin/run_attempts.html
+#: jinja2/admin/run_scoreboard.html jinja2/admin/test_links.html
 #: jinja2/public/_scoreboard_rows.html
 msgid "Score"
 msgstr "Skóre"
@@ -1352,7 +1354,7 @@ msgstr "Skóre"
 msgid "Time submitted"
 msgstr "Čas odeslání"
 
-#: admin_view.py jinja2/admin/run.html jinja2/admin/test_links.html
+#: admin_view.py jinja2/admin/run_attempts.html jinja2/admin/test_links.html
 #: jinja2/public/_scoreboard_rows.html
 msgid "Duration"
 msgstr "Trvání"
@@ -1399,7 +1401,7 @@ msgstr "Nesplněno — %(percent)s %% (hranice %(mark)s %%)"
 msgid "Passed ✓"
 msgstr "Splněno ✓"
 
-#: jinja2/admin/run.html pass_mark.py
+#: jinja2/admin/run_attempts.html pass_mark.py
 msgid "Not passed"
 msgstr "Nesplněno"
 
@@ -1559,6 +1561,33 @@ msgstr "Toto je test. Výsledek se nepočítá."
 #: rendering.py
 msgid "This question changed"
 msgstr "Tato otázka se změnila"
+
+#: run_tabs.py
+msgid "Overview"
+msgstr "Přehled"
+
+#: jinja2/admin/_quiz_header.html jinja2/admin/run_statistics.html
+#: jinja2/admin/runs.html run_tabs.py
+msgid "Statistics"
+msgstr "Statistiky"
+
+#: jinja2/admin/_export_jobs.html jinja2/admin/run_export.html
+#: jinja2/admin/runs.html run_tabs.py
+msgid "Export"
+msgstr "Export"
+
+#: jinja2/admin/_quiz_header.html jinja2/admin/base.html
+#: jinja2/admin/settings.html run_tabs.py
+msgid "Settings"
+msgstr "Nastavení"
+
+#: run_tabs.py
+msgid "Planned"
+msgstr "Naplánováno"
+
+#: jinja2/admin/grading.html run_tabs.py
+msgid "Running"
+msgstr "Probíhá"
 
 #: scoreboard.py
 msgid "The scoreboard is not public."
@@ -1860,17 +1889,13 @@ msgstr "testovací běh"
 msgid "Your exports"
 msgstr "Vaše exporty"
 
-#: jinja2/admin/_export_jobs.html jinja2/admin/run.html jinja2/admin/runs.html
-msgid "Export"
-msgstr "Export"
-
 #: jinja2/admin/_export_jobs.html
 msgid "Created"
 msgstr "Vytvořeno"
 
-#: jinja2/admin/_export_jobs.html jinja2/admin/results_export.html
-#: jinja2/admin/revisions.html jinja2/admin/rewards.html jinja2/admin/runs.html
-#: jinja2/admin/test_links.html
+#: jinja2/admin/_export_jobs.html jinja2/admin/_rewards_sections.html
+#: jinja2/admin/results_export.html jinja2/admin/revisions.html
+#: jinja2/admin/runs.html jinja2/admin/test_links.html
 msgid "Status"
 msgstr "Stav"
 
@@ -2036,11 +2061,6 @@ msgstr "Běhy"
 msgid "Grading"
 msgstr "Hodnocení"
 
-#: jinja2/admin/_quiz_header.html jinja2/admin/base.html
-#: jinja2/admin/settings.html
-msgid "Settings"
-msgstr "Nastavení"
-
 #: jinja2/admin/_quiz_header.html
 msgid "Test links"
 msgstr "Testovací odkazy"
@@ -2061,19 +2081,15 @@ msgstr "Náhled"
 msgid "Export results"
 msgstr "Exportovat výsledky"
 
-#: jinja2/admin/_quiz_header.html jinja2/admin/grading.html
-#: jinja2/admin/results_export.html jinja2/admin/run.html
-#: jinja2/admin/runs.html
+#: jinja2/admin/_quiz_header.html jinja2/admin/_run_header.html
+#: jinja2/admin/grading.html jinja2/admin/results_export.html
+#: jinja2/admin/run.html jinja2/admin/runs.html
 #, python-format
 msgid "Run %(no)s"
 msgstr "Běh %(no)s"
 
-#: jinja2/admin/_quiz_header.html jinja2/admin/run.html jinja2/admin/runs.html
-msgid "Statistics"
-msgstr "Statistiky"
-
-#: jinja2/admin/_quiz_header.html jinja2/admin/run.html jinja2/admin/runs.html
-#: jinja2/public/scoreboard.html
+#: jinja2/admin/_quiz_header.html jinja2/admin/run_scoreboard.html
+#: jinja2/admin/runs.html jinja2/public/scoreboard.html
 msgid "Projector"
 msgstr "Projektor"
 
@@ -2081,7 +2097,7 @@ msgstr "Projektor"
 msgid "Parts of this quiz"
 msgstr "Části kvízu"
 
-#: jinja2/admin/_quiz_header.html
+#: jinja2/admin/_quiz_header.html jinja2/admin/_run_header.html
 msgid "More"
 msgstr "Více"
 
@@ -2147,6 +2163,88 @@ msgstr "Uložit odměnu"
 #: jinja2/admin/_reward_rule_form.html
 msgid "Delete the reward"
 msgstr "Smazat odměnu"
+
+#: jinja2/admin/_rewards_sections.html
+#, python-format
+msgid "Rewards of run %(no)s"
+msgstr "Odměny běhu %(no)s"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Rewards of a new run"
+msgstr "Odměny nového běhu"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "These rewards are a template. A new run copies them when the setting below says so; a change here does not reach runs already planned."
+msgstr "Tyto odměny jsou šablona. Nový běh si je zkopíruje, když to říká nastavení níže; změna tady se nedostane do už naplánovaných běhů."
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/run_plan.html
+msgid "Settings of the quiz"
+msgstr "Nastavení kvízu"
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/run.html
+#: jinja2/admin/run_plan.html
+msgid "This run has a draw but does not collect e-mail."
+msgstr "Tento běh má losování, ale nesbírá e-mail."
+
+#: jinja2/admin/_rewards_sections.html
+msgid "No rewards yet."
+msgstr "Zatím žádné odměny."
+
+#: jinja2/admin/_rewards_sections.html
+msgid "How to claim it"
+msgstr "Jak si ji vyzvednout"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Add a reward"
+msgstr "Přidat odměnu"
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/run_rewards.html
+msgid "Who has a reward"
+msgstr "Kdo má odměnu"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Reward"
+msgstr "Odměna"
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/prize_draw.html
+msgid "Actions"
+msgstr "Akce"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Mark as handed over"
+msgstr "Označit jako předanou"
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/prize_draw.html
+msgid "Reason"
+msgstr "Důvod"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Cancel the reward"
+msgstr "Zrušit odměnu"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Nobody has a reward yet."
+msgstr "Zatím nikdo nemá odměnu."
+
+#: jinja2/admin/_rewards_sections.html jinja2/admin/run_rewards.html
+msgid "Grant a manual reward"
+msgstr "Udělit ruční odměnu"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Participant"
+msgstr "Účastník"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Grant"
+msgstr "Udělit"
+
+#: jinja2/admin/_rewards_sections.html
+msgid "Nobody has submitted an attempt yet."
+msgstr "Zatím nikdo neodeslal pokus."
+
+#: jinja2/admin/_run_header.html
+msgid "Parts of this run"
+msgstr "Části tohoto běhu"
 
 #: jinja2/admin/_section_panel.html
 msgid "Sections"
@@ -2741,14 +2839,6 @@ msgstr "Stav"
 msgid "Prize draw of run %(no)s"
 msgstr "Losování cen běhu %(no)s"
 
-#: jinja2/admin/prize_draw.html jinja2/admin/rewards.html
-msgid "Back to the run"
-msgstr "Zpět na běh"
-
-#: jinja2/admin/prize_draw.html jinja2/admin/run.html
-msgid "Rewards and who has them"
-msgstr "Odměny a kdo je má"
-
 #: jinja2/admin/prize_draw.html
 msgid "This run has no draw."
 msgstr "Tento běh nemá žádné losování."
@@ -2770,14 +2860,6 @@ msgstr "Otisk množiny způsobilých"
 #: jinja2/admin/prize_draw.html
 msgid "Draw now"
 msgstr "Losovat"
-
-#: jinja2/admin/prize_draw.html jinja2/admin/rewards.html
-msgid "Actions"
-msgstr "Akce"
-
-#: jinja2/admin/prize_draw.html jinja2/admin/rewards.html
-msgid "Reason"
-msgstr "Důvod"
 
 #: jinja2/admin/prize_draw.html
 msgid "Do not name people here: the reason stays in the draw history after the data are deleted."
@@ -3221,79 +3303,6 @@ msgstr "Porovnat s předchozí"
 msgid "Use as new draft"
 msgstr "Použít jako nový koncept"
 
-#: jinja2/admin/rewards.html
-#, python-format
-msgid "Rewards of run %(no)s"
-msgstr "Odměny běhu %(no)s"
-
-#: jinja2/admin/rewards.html jinja2/admin/run.html
-msgid "Prize draw"
-msgstr "Losování cen"
-
-#: jinja2/admin/rewards.html
-msgid "Rewards of a new run"
-msgstr "Odměny nového běhu"
-
-#: jinja2/admin/rewards.html
-msgid "These rewards are a template. A new run copies them when the setting below says so; a change here does not reach runs already planned."
-msgstr "Tyto odměny jsou šablona. Nový běh si je zkopíruje, když to říká nastavení níže; změna tady se nedostane do už naplánovaných běhů."
-
-#: jinja2/admin/rewards.html jinja2/admin/run_plan.html
-msgid "Settings of the quiz"
-msgstr "Nastavení kvízu"
-
-#: jinja2/admin/rewards.html jinja2/admin/run.html jinja2/admin/run_plan.html
-msgid "This run has a draw but does not collect e-mail."
-msgstr "Tento běh má losování, ale nesbírá e-mail."
-
-#: jinja2/admin/rewards.html
-msgid "No rewards yet."
-msgstr "Zatím žádné odměny."
-
-#: jinja2/admin/rewards.html
-msgid "How to claim it"
-msgstr "Jak si ji vyzvednout"
-
-#: jinja2/admin/rewards.html
-msgid "Add a reward"
-msgstr "Přidat odměnu"
-
-#: jinja2/admin/rewards.html
-msgid "Who has a reward"
-msgstr "Kdo má odměnu"
-
-#: jinja2/admin/rewards.html
-msgid "Reward"
-msgstr "Odměna"
-
-#: jinja2/admin/rewards.html
-msgid "Mark as handed over"
-msgstr "Označit jako předanou"
-
-#: jinja2/admin/rewards.html
-msgid "Cancel the reward"
-msgstr "Zrušit odměnu"
-
-#: jinja2/admin/rewards.html
-msgid "Nobody has a reward yet."
-msgstr "Zatím nikdo nemá odměnu."
-
-#: jinja2/admin/rewards.html
-msgid "Grant a manual reward"
-msgstr "Udělit ruční odměnu"
-
-#: jinja2/admin/rewards.html
-msgid "Participant"
-msgstr "Účastník"
-
-#: jinja2/admin/rewards.html
-msgid "Grant"
-msgstr "Udělit"
-
-#: jinja2/admin/rewards.html
-msgid "Nobody has submitted an attempt yet."
-msgstr "Zatím nikdo neodeslal pokus."
-
 #: jinja2/admin/run.html jinja2/admin/runs.html
 msgid "QR code of the public address"
 msgstr "QR kód veřejné adresy"
@@ -3321,179 +3330,6 @@ msgid "See this run in the deletion history"
 msgstr "Zobrazit tento běh v historii mazání"
 
 #: jinja2/admin/run.html
-msgid "The access code is"
-msgstr "Přístupový kód je"
-
-#: jinja2/admin/run.html
-msgid "It is shown only now. Write it down: afterwards it can only be replaced."
-msgstr "Ukazuje se jen teď. Zapište si ho: potom ho lze už jen nahradit."
-
-#: jinja2/admin/run.html
-msgid "An access code is set."
-msgstr "Přístupový kód je nastaven."
-
-#: jinja2/admin/run.html
-msgid "No access code: anyone with the address can start."
-msgstr "Bez přístupového kódu: začít může každý, kdo zná adresu."
-
-#: jinja2/admin/run.html
-msgid "New code"
-msgstr "Nový kód"
-
-#: jinja2/admin/run.html
-msgid "A new code stops people who have not started yet. Attempts in progress continue."
-msgstr "Nový kód zastaví ty, kdo ještě nezačali. Rozpracované pokusy pokračují."
-
-#: jinja2/admin/run.html
-msgid "Set the code"
-msgstr "Nastavit kód"
-
-#: jinja2/admin/run.html
-msgid "Remove the code"
-msgstr "Odebrat kód"
-
-#: jinja2/admin/run.html
-msgid "How long a run keeps its data"
-msgstr "Jak dlouho běh uchovává data"
-
-#: jinja2/admin/run.html
-msgid "What a run keeps cannot change once it opens, but the period can."
-msgstr "Co běh ukládá, se po otevření nedá změnit, ale dobu uchování ano."
-
-#: jinja2/admin/run.html
-msgid "Save the period"
-msgstr "Uložit dobu"
-
-#: jinja2/admin/run.html
-#, python-format
-msgid "Rewards: %(count)s"
-msgstr "Odměny: %(count)s"
-
-#: jinja2/admin/run.html jinja2/admin/run_plan.html
-msgid "No rewards."
-msgstr "Žádné odměny."
-
-#: jinja2/admin/run.html jinja2/admin/runs.html jinja2/public/scoreboard.html
-#, python-format
-msgid "Shared scoreboard of runs %(runs)s"
-msgstr "Společný žebříček běhů %(runs)s"
-
-#: jinja2/admin/run.html
-#, python-format
-msgid "Part of the shared scoreboard of run %(no)s"
-msgstr "Je součástí společného žebříčku běhu %(no)s"
-
-#: jinja2/admin/run.html
-msgid "Public scoreboard"
-msgstr "Veřejný žebříček"
-
-#: jinja2/admin/run.html jinja2/public/_scoreboard_rows.html
-msgid "Place"
-msgstr "Místo"
-
-#: jinja2/admin/run.html jinja2/public/_scoreboard_rows.html
-msgid "passed"
-msgstr "splněno"
-
-#: jinja2/admin/run.html jinja2/public/_scoreboard_rows.html
-msgid "No results yet."
-msgstr "Zatím žádné výsledky."
-
-#: jinja2/admin/run.html
-msgid "A visible scoreboard remembers each browser with a cookie from its next start on."
-msgstr "Viditelný žebříček si od dalšího startu pamatuje každý prohlížeč přes cookie."
-
-#: jinja2/admin/run.html
-msgid "Save the scoreboard"
-msgstr "Uložit žebříček"
-
-#: jinja2/admin/run.html
-msgid "Started attempts"
-msgstr "Zahájené pokusy"
-
-#: jinja2/admin/run.html
-msgid "Submitted attempts"
-msgstr "Odeslané pokusy"
-
-#: jinja2/admin/run.html jinja2/admin/runs.html
-msgid "Not sent"
-msgstr "Neodesláno"
-
-#: jinja2/admin/run.html
-#, python-format
-msgid "Passed: %(passed)s of %(judged)s"
-msgstr "Splnilo: %(passed)s z %(judged)s"
-
-#: jinja2/admin/run.html jinja2/admin/runs.html
-msgid "Average"
-msgstr "Průměr"
-
-#: jinja2/admin/run.html
-msgid "Median"
-msgstr "Medián"
-
-#: jinja2/admin/run.html
-msgid "Lowest"
-msgstr "Nejnižší"
-
-#: jinja2/admin/run.html
-msgid "Highest"
-msgstr "Nejvyšší"
-
-#: jinja2/admin/run.html
-msgid "Scores by tenths of the maximum"
-msgstr "Skóre po desetinách maxima"
-
-#: jinja2/admin/run.html
-#, python-format
-msgid "submitted %(count)s, average %(average)s"
-msgstr "odesláno %(count)s, průměr %(average)s"
-
-#: jinja2/admin/run.html
-msgid "Numbers per question need a data profile that keeps all answers."
-msgstr "Čísla po otázkách potřebují profil dat, který ukládá všechny odpovědi."
-
-#: jinja2/admin/run.html
-msgid "Question"
-msgstr "Otázka"
-
-#: jinja2/admin/run.html
-msgid "Answered"
-msgstr "Odpovědí"
-
-#: jinja2/admin/run.html
-msgid "Average points"
-msgstr "Průměr bodů"
-
-#: jinja2/admin/run.html
-msgid "Full points"
-msgstr "Plný počet bodů"
-
-#: jinja2/admin/run.html
-msgid "This run keeps nothing about an attempt, so there is no table of attempts."
-msgstr "Tento běh o pokusu nic neukládá, proto tu není tabulka pokusů."
-
-#: jinja2/admin/run.html
-msgid "Pass mark"
-msgstr "Hranice úspěchu"
-
-#: jinja2/admin/run.html
-msgid "Passed"
-msgstr "Splnil"
-
-#: jinja2/admin/run.html
-msgid "No attempt has been submitted yet."
-msgstr "Zatím nikdo nic neodeslal."
-
-#: jinja2/admin/run.html jinja2/public/quiz.html jinja2/public/unavailable.html
-msgid "See the answers of this run"
-msgstr "Zobrazit odpovědi tohoto běhu"
-
-#: jinja2/admin/run.html
-msgid "Export the results of this run"
-msgstr "Exportovat výsledky tohoto běhu"
-
-#: jinja2/admin/run.html
 msgid "Empty means the run lasts until you end it. It applies to attempts in progress too."
 msgstr "Prázdné pole znamená, že běh trvá, dokud ho neukončíte. Platí i pro rozehrané pokusy."
 
@@ -3509,9 +3345,30 @@ msgstr "Archivovat běh"
 msgid "Restore this run"
 msgstr "Obnovit běh"
 
-#: jinja2/admin/run.html
-msgid "Delete data now"
-msgstr "Smazat data teď"
+#: jinja2/admin/run_attempts.html
+msgid "This run keeps nothing about an attempt, so there is no table of attempts."
+msgstr "Tento běh o pokusu nic neukládá, proto tu není tabulka pokusů."
+
+#: jinja2/admin/run_attempts.html
+msgid "Pass mark"
+msgstr "Hranice úspěchu"
+
+#: jinja2/admin/run_attempts.html
+msgid "Passed"
+msgstr "Splnil"
+
+#: jinja2/admin/run_attempts.html
+msgid "No attempt has been submitted yet."
+msgstr "Zatím nikdo nic neodeslal."
+
+#: jinja2/admin/run_attempts.html jinja2/public/quiz.html
+#: jinja2/public/unavailable.html
+msgid "See the answers of this run"
+msgstr "Zobrazit odpovědi tohoto běhu"
+
+#: jinja2/admin/run_export.html
+msgid "Export the results of this run"
+msgstr "Exportovat výsledky tohoto běhu"
 
 #: jinja2/admin/run_plan.html
 msgid "Plan the run"
@@ -3535,6 +3392,10 @@ msgid "The run takes the quiz's settings."
 msgstr "Běh převezme nastavení kvízu."
 
 #: jinja2/admin/run_plan.html
+msgid "No rewards."
+msgstr "Žádné odměny."
+
+#: jinja2/admin/run_plan.html
 msgid "Change the rewards of this run"
 msgstr "Změnit odměny tohoto běhu"
 
@@ -3549,6 +3410,155 @@ msgstr "Odměny kvízu"
 #: jinja2/admin/run_plan.html
 msgid "The cookie that tells participants apart does not guarantee one person: someone can clear it or use another browser. \"When to ask\" applies only when a name or an e-mail is on."
 msgstr "Cookie, podle které se účastníci rozlišují, nezaručuje jednu osobu: jde ji smazat nebo použít jiný prohlížeč. „Kdy se ptát“ platí jen při zapnutém jménu nebo e-mailu."
+
+#: jinja2/admin/run_scoreboard.html jinja2/admin/runs.html
+#: jinja2/public/scoreboard.html
+#, python-format
+msgid "Shared scoreboard of runs %(runs)s"
+msgstr "Společný žebříček běhů %(runs)s"
+
+#: jinja2/admin/run_scoreboard.html
+#, python-format
+msgid "Part of the shared scoreboard of run %(no)s"
+msgstr "Je součástí společného žebříčku běhu %(no)s"
+
+#: jinja2/admin/run_scoreboard.html
+msgid "Public scoreboard"
+msgstr "Veřejný žebříček"
+
+#: jinja2/admin/run_scoreboard.html jinja2/public/_scoreboard_rows.html
+msgid "Place"
+msgstr "Místo"
+
+#: jinja2/admin/run_scoreboard.html jinja2/public/_scoreboard_rows.html
+msgid "passed"
+msgstr "splněno"
+
+#: jinja2/admin/run_scoreboard.html jinja2/public/_scoreboard_rows.html
+msgid "No results yet."
+msgstr "Zatím žádné výsledky."
+
+#: jinja2/admin/run_scoreboard.html
+msgid "A visible scoreboard remembers each browser with a cookie from its next start on."
+msgstr "Viditelný žebříček si od dalšího startu pamatuje každý prohlížeč přes cookie."
+
+#: jinja2/admin/run_scoreboard.html
+msgid "Save the scoreboard"
+msgstr "Uložit žebříček"
+
+#: jinja2/admin/run_settings.html
+msgid "Nothing here in the Basic view. Switch to All."
+msgstr "Tady v zobrazení Základní nic není. Přepněte na Vše."
+
+#: jinja2/admin/run_settings.html
+msgid "The access code is"
+msgstr "Přístupový kód je"
+
+#: jinja2/admin/run_settings.html
+msgid "It is shown only now. Write it down: afterwards it can only be replaced."
+msgstr "Ukazuje se jen teď. Zapište si ho: potom ho lze už jen nahradit."
+
+#: jinja2/admin/run_settings.html
+msgid "An access code is set."
+msgstr "Přístupový kód je nastaven."
+
+#: jinja2/admin/run_settings.html
+msgid "No access code: anyone with the address can start."
+msgstr "Bez přístupového kódu: začít může každý, kdo zná adresu."
+
+#: jinja2/admin/run_settings.html
+msgid "New code"
+msgstr "Nový kód"
+
+#: jinja2/admin/run_settings.html
+msgid "A new code stops people who have not started yet. Attempts in progress continue."
+msgstr "Nový kód zastaví ty, kdo ještě nezačali. Rozpracované pokusy pokračují."
+
+#: jinja2/admin/run_settings.html
+msgid "Set the code"
+msgstr "Nastavit kód"
+
+#: jinja2/admin/run_settings.html
+msgid "Remove the code"
+msgstr "Odebrat kód"
+
+#: jinja2/admin/run_settings.html
+msgid "How long a run keeps its data"
+msgstr "Jak dlouho běh uchovává data"
+
+#: jinja2/admin/run_settings.html
+msgid "What a run keeps cannot change once it opens, but the period can."
+msgstr "Co běh ukládá, se po otevření nedá změnit, ale dobu uchování ano."
+
+#: jinja2/admin/run_settings.html
+msgid "Save the period"
+msgstr "Uložit dobu"
+
+#: jinja2/admin/run_settings.html
+msgid "Delete data now"
+msgstr "Smazat data teď"
+
+#: jinja2/admin/run_statistics.html
+msgid "Started attempts"
+msgstr "Zahájené pokusy"
+
+#: jinja2/admin/run_statistics.html
+msgid "Submitted attempts"
+msgstr "Odeslané pokusy"
+
+#: jinja2/admin/run_statistics.html jinja2/admin/runs.html
+msgid "Not sent"
+msgstr "Neodesláno"
+
+#: jinja2/admin/run_statistics.html
+#, python-format
+msgid "Passed: %(passed)s of %(judged)s"
+msgstr "Splnilo: %(passed)s z %(judged)s"
+
+#: jinja2/admin/run_statistics.html jinja2/admin/runs.html
+msgid "Average"
+msgstr "Průměr"
+
+#: jinja2/admin/run_statistics.html
+msgid "Median"
+msgstr "Medián"
+
+#: jinja2/admin/run_statistics.html
+msgid "Lowest"
+msgstr "Nejnižší"
+
+#: jinja2/admin/run_statistics.html
+msgid "Highest"
+msgstr "Nejvyšší"
+
+#: jinja2/admin/run_statistics.html
+msgid "Scores by tenths of the maximum"
+msgstr "Skóre po desetinách maxima"
+
+#: jinja2/admin/run_statistics.html
+#, python-format
+msgid "submitted %(count)s, average %(average)s"
+msgstr "odesláno %(count)s, průměr %(average)s"
+
+#: jinja2/admin/run_statistics.html
+msgid "Numbers per question need a data profile that keeps all answers."
+msgstr "Čísla po otázkách potřebují profil dat, který ukládá všechny odpovědi."
+
+#: jinja2/admin/run_statistics.html
+msgid "Question"
+msgstr "Otázka"
+
+#: jinja2/admin/run_statistics.html
+msgid "Answered"
+msgstr "Odpovědí"
+
+#: jinja2/admin/run_statistics.html
+msgid "Average points"
+msgstr "Průměr bodů"
+
+#: jinja2/admin/run_statistics.html
+msgid "Full points"
+msgstr "Plný počet bodů"
 
 #: jinja2/admin/runs.html
 msgid "Share"

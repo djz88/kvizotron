@@ -69,8 +69,8 @@ def trail():
     return registry.get("retention", "local")
 
 
-def run_page(run, *, lang="en"):
-    return f"/admin/runs/{run.id}?lang={lang}"
+def run_page(run, *, lang="en", tab=""):
+    return f"/admin/runs/{run.id}{tab}?lang={lang}"
 
 
 def runs_list(run, *, query="archived=1&lang=en"):
@@ -300,7 +300,7 @@ def test_a_period_that_makes_the_run_due_asks_first(logged_in):
     assert asked.status_code == 200
     assert "next hourly pass" in text(asked)
     assert 'name="retention_period" value="30d"' in text(asked)
-    assert f'href="/admin/runs/{run.id}"' in text(asked)
+    assert f'href="/admin/runs/{run.id}/settings"' in text(asked)
     assert run.retention_json["period"] == "1y"
 
     done = logged_in.post(url, {"retention_period": "30d", "confirm": "1"})
@@ -342,11 +342,11 @@ def test_delete_data_asks_then_deletes(logged_in):
 
 def test_the_button_is_offered_only_where_it_can_work(logged_in, admin_user):
     action = "delete-data"
-    assert action not in text(logged_in.get(run_page(open_run("bezi"))))
+    assert action not in text(logged_in.get(run_page(open_run("bezi"), tab="/settings")))
     ended = ended_run("skoncil")
-    assert action in text(logged_in.get(run_page(ended)))
+    assert action in text(logged_in.get(run_page(ended, tab="/settings")))
     retention.delete_now(ended, admin_id=str(admin_user.pk))
-    assert action not in text(logged_in.get(run_page(ended)))
+    assert action not in text(logged_in.get(run_page(ended, tab="/settings")))
 
 
 @pytest.mark.parametrize("sent", [{}, {"confirm": "1"}], ids=["unconfirmed", "confirmed"])
@@ -708,8 +708,9 @@ def test_a_deleted_run_shows_the_label_and_no_period_form(showing_all, admin_use
     for html in (text(showing_all.get(run_page(run))), text(showing_all.get(runs_list(run)))):
         assert "Data deleted" in html
         assert "deletion-soon" not in html
-    page = text(showing_all.get(run_page(run)))
+    page = text(showing_all.get(run_page(run, tab="/statistics")))
     assert "Submitted attempts" in page
+    page = text(showing_all.get(run_page(run, tab="/settings")))
     assert f"/admin/runs/{run.id}/period" not in page
 
 

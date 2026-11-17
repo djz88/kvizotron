@@ -24,8 +24,8 @@
       {% set shown_run = state.open_run or state.last_run %}
       {% if shown_run and shown_run.status != "ARCHIVED" %}
       <span>{{ _("Run %(no)s", no=shown_run.run_no) }}:
-        <a href="{{ url('admin_run', args=[shown_run.id]) }}#statistics">{{ _("Statistics") }}</a> ·
-        <a href="{{ url('admin_run', args=[shown_run.id]) }}#scoreboard">{{ _("Scoreboard") }}</a> ·
+        <a href="{{ url('admin_run_statistics', args=[shown_run.id]) }}">{{ _("Statistics") }}</a> ·
+        <a href="{{ url('admin_run_scoreboard', args=[shown_run.id]) }}">{{ _("Scoreboard") }}</a> ·
         <a href="{{ url('scoreboard', args=[quiz.slug, shown_run.id]) }}?view=projector" target="_blank" rel="noopener">{{ _("Projector") }}</a>
       </span>
       {% endif %}

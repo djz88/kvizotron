@@ -523,7 +523,7 @@ def send_attempt(run, name, key):
 
 def test_the_table_of_attempts_has_a_pencil_for_each_name(logged_in):
     run, one, two = a_named_run()
-    html = text(logged_in.get(f"/admin/runs/{run.id}"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
     for who, name in ((one, "Ema"), (two, "Jan")):
         cell = grab(rf'<span class="inline-name" id="name-name-{who.pk}">.*?</td>', html).group(0)
         assert f">{name}<" in cell
@@ -542,7 +542,7 @@ def test_renaming_a_participant_through_htmx_and_without(logged_in):
     assert Participant.objects.get(pk=one.pk).display_name == "Žába"
     response = logged_in.post(nick_url(run, one), {"name": "Ema"})
     assert response.status_code == 302
-    assert response["Location"] == f"/admin/runs/{run.id}#attempts"
+    assert response["Location"] == f"/admin/runs/{run.id}/attempts"
     assert Participant.objects.get(pk=one.pk).display_name == "Ema"
 
 
@@ -578,13 +578,13 @@ def test_a_stateless_run_has_no_pencils(logged_in):
     run = authoring.open_run(
         published_quiz(slug="bez-stopy"), admin_id=ADMIN_ID, data={"profile": "none"}
     )
-    html = text(logged_in.get(f"/admin/runs/{run.id}"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
     assert "/participants/" not in html  # the pencil of the quiz title is not one of them
 
 
 def test_the_nickname_field_opens_in_the_page_without_javascript(logged_in):
     run, one, _two = a_named_run()
-    html = text(logged_in.get(f"/admin/runs/{run.id}?edit={one.pk}"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts?edit={one.pk}"))
     assert f'<form method="post" action="{nick_url(run, one)}"' in html
     assert 'value="Ema"' in html
     assert 'maxlength="40"' in html
@@ -597,8 +597,8 @@ def test_a_nickname_with_html_is_escaped(logged_in):
     who = send_attempt(run, "Ema", "k1")
     Participant.objects.filter(pk=who.pk).update(display_name=EVIL)
     pages = [
-        text(logged_in.get(f"/admin/runs/{run.id}")),
-        text(logged_in.get(f"/admin/runs/{run.id}?edit={who.pk}")),
+        text(logged_in.get(f"/admin/runs/{run.id}/attempts")),
+        text(logged_in.get(f"/admin/runs/{run.id}/attempts?edit={who.pk}")),
         text(logged_in.get(nick_url(run, who) + "?edit=1", **HTMX)),
     ]
     for html in pages:
@@ -611,7 +611,7 @@ def test_a_participant_without_a_name_can_be_named(logged_in):
         published_quiz(slug="anon"), admin_id=ADMIN_ID, rules={"ask_name": "optional"}
     )
     who = send_attempt(run, "", "k1")
-    html = text(logged_in.get(f"/admin/runs/{run.id}"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
     assert "inline-name-pencil" in html
     assert logged_in.post(nick_url(run, who), {"name": "Nový"}, **HTMX).status_code == 200
 
@@ -725,10 +725,10 @@ def a_second_attempt(run, who):
 def test_a_participant_with_two_attempts_has_one_pencil_and_unique_ids(logged_in):
     run, one, _two = a_named_run()
     a_second_attempt(run, one)
-    html = text(logged_in.get(f"/admin/runs/{run.id}"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
     assert html.count(f'id="name-name-{one.pk}"') == 1
     assert html.count(f"edit={one.pk}") == 1
-    opened = text(logged_in.get(f"/admin/runs/{run.id}?edit={one.pk}"))
+    opened = text(logged_in.get(f"/admin/runs/{run.id}/attempts?edit={one.pk}"))
     assert opened.count(f'action="{nick_url(run, one)}"') == 1
     rows = re.findall(r"<tr data-attempt-row>.*?</tr>", html, re.S)
     assert sum(">Ema<" in row for row in rows) == 2  # the name is in both rows

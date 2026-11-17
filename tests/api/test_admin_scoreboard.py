@@ -49,7 +49,7 @@ def switch_revision(run, more=0):
 def test_admin_sees_names_on_hidden_board(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
     played(run, "Ema")
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/scoreboard?lang=en"))
     assert "Ema" in html
     assert f"/q/{run.quiz.slug}/r/{run.id}/scoreboard" in html
 
@@ -57,7 +57,7 @@ def test_admin_sees_names_on_hidden_board(logged_in):
 def test_display_form_saves_and_ignores_fixed_keys(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
     logged_in.post(
-        f"/admin/runs/{run.id}/scoreboard",
+        f"/admin/runs/{run.id}/scoreboard/settings",
         {SCOREBOARD_VISIBILITY: "after_end", OFFICIAL_ATTEMPT: "first"},
     )
     run.refresh_from_db()
@@ -67,7 +67,7 @@ def test_display_form_saves_and_ignores_fixed_keys(logged_in):
 
 def test_run_page_offers_the_three_revision_modes(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/scoreboard?lang=en"))
     assert f'<select name="{REVISION_MODE}">' in html
     assert '<option value="percent" selected>One table by percent</option>' in html
     assert '<option value="separate">One table per revision</option>' in html
@@ -84,12 +84,14 @@ def test_admin_can_switch_an_ended_run_to_separate_tables(logged_in):
     authoring.close_run(run, admin_id=ADMIN_ID)
     run.refresh_from_db()
     assert len(results.board(run, audience="admin", locale="cs").tables) == 1
-    response = logged_in.post(f"/admin/runs/{run.id}/scoreboard", {REVISION_MODE: "separate"})
+    response = logged_in.post(
+        f"/admin/runs/{run.id}/scoreboard/settings", {REVISION_MODE: "separate"}
+    )
     assert response.status_code == 302
     run.refresh_from_db()
     tables = results.board(run, audience="admin", locale="cs").tables
     assert [table.max_score for table in tables] == [Decimal(2), Decimal(1)]
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/scoreboard?lang=en"))
     assert '<option value="separate" selected>' in html
     assert AuditEvent.objects.filter(action="run.scoreboard_changed").count() == 1
 

@@ -1266,6 +1266,15 @@ td.board-pick input:last-child {
   margin-bottom: 1.5rem;
 }
 
+/* The run header and its tab bar on every tab of a run (ADR-0068) */
+.run-head {
+  margin-bottom: 1.5rem;
+}
+
+.run-head > p {
+  margin-bottom: 0;
+}
+
 .quiz-fold {
   margin: 0;
   border: 0;
@@ -1452,6 +1461,23 @@ td.board-pick input:last-child {
   display: flex;
   margin: 0;
   padding: 0;
+}
+/* The run's bar never scrolls sideways (AC-118): its items, the open "More" list included, wrap
+   onto further lines, so the current tab stays visible at 390 px and beside the section panel.
+   The quiz header's bar keeps the rules above. */
+.tabs.tabs-wrap {
+  overflow: visible;
+}
+.tabs.tabs-wrap ul,
+.tabs.tabs-wrap ul:first-of-type,
+.tabs.tabs-wrap ul:last-of-type,
+.tabs.tabs-wrap .tab-more[open],
+.tabs.tabs-wrap .tab-more > ul {
+  flex-wrap: wrap;
+}
+.tabs.tabs-wrap li {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .rows {

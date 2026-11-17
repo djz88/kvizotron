@@ -496,7 +496,7 @@ def test_run_changes_on_an_archived_quiz_answer_409(logged_in):
     who = play(run, "a" * 20)
     archive(run)
     for address, data in (
-        (f"/admin/runs/{run.id}/scoreboard?lang=en", {"scoreboard_visibility": "during"}),
+        (f"/admin/runs/{run.id}/scoreboard/settings?lang=en", {"scoreboard_visibility": "during"}),
         (f"/admin/runs/{run.id}/code?lang=en", {"action": "generate"}),
         (f"/admin/runs/{run.id}/participants/{who.id}/name?lang=en", {"name": "Nové"}),
     ):

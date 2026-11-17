@@ -237,13 +237,13 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: Entitlements read `attempt.revision` per row (N+1); the question text helper catches a broad exception; a missing translation falls back per file, not per label; the draw file names the admin by id, not login.
 - Solution: `select_related` the revision, narrow the except, fall back per label, show the admin's login.
 
-### TD-066 Export: public _status_label; edge-case tests (personal file without confirmation, invalid bundle, unknown file, score run without photos); atomic restart against double submit — OPEN
-- Where: `app/api/admin_runs.py` `_status_label`, `app/api/admin_results_export.py`, `tests/api/test_results_export.py`, `app/providers/csv_io/results.py` `restart`
-- Effect: The export page imports a private helper of another view module; edge cases (personal file without confirmation on ZIP, invalid bundle, unknown file, a `score` run without photos) have no tests; two quick restart submits can both create a job before the old row is deleted.
-- Solution: Make the label helper public, add the tests, delete the old row and create the new one in one transaction keyed on the old status.
+### TD-066 Export: edge-case tests (personal file without confirmation, invalid bundle, unknown file, score run without photos); atomic restart against double submit — OPEN
+- Where: `app/api/admin_results_export.py`, `tests/api/test_results_export.py`, `app/providers/csv_io/results.py` `restart`
+- Effect: Edge cases (personal file without confirmation on ZIP, invalid bundle, unknown file, a `score` run without photos) have no tests; two quick restart submits can both create a job before the old row is deleted.
+- Solution: Add the tests, delete the old row and create the new one in one transaction keyed on the old status.
 
 ### TD-069 Attempts table on the run page overflows on a phone — OPEN
-- Where: `app/api/jinja2/admin/run.html:160`
+- Where: `app/api/jinja2/admin/run_attempts.html:11`
 - Effect: The attempts table (C3) is wider than the phone screen and scrolls the page sideways
 - Solution: Use the `stack` table layout with `data-label` cells, as the other admin tables do
 
@@ -253,13 +253,13 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Solution: Let the status cell wrap or give it a maximum width
 
 ### TD-071 A deleted run's page still offers what no longer exists — OPEN
-- Where: `app/api/jinja2/admin/run.html`, `app/api/jinja2/admin/prize_draw.html`, `app/domain/retention.py`
+- Where: `app/api/jinja2/admin/run_scoreboard.html`, `app/api/jinja2/admin/run_export.html`, `app/api/jinja2/admin/prize_draw.html`, `app/domain/retention.py`
 - Effect: The page of a deleted run still shows scoreboard settings and an export link; the draw page says it keeps no scores for a run that had them; a 64-character pseudonym overflows the draw Name column
 - Solution: Hide settings and export for a deleted run, word the draw page by whether scores existed, and wrap or shorten the pseudonym
 
 ### TD-073 admin_retention reaches into private helpers of other modules — OPEN
 - Where: `app/api/admin_retention.py:20`, `app/api/admin_runs.py`
-- Effect: The view imports `_run_context` from `admin_runs` across modules (the refusal is now the public `admin_common.refusal`); a malformed run id on the held form gives a generic message; a replacement theme must supply the `.deletion-soon` style or the warning is not visible
+- Effect: The view imports `_tab_page` from `admin_runs` across modules (the refusal is now the public `admin_common.refusal`); a malformed run id on the held form gives a generic message; a replacement theme must supply the `.deletion-soon` style or the warning is not visible
 - Solution: Make the helpers public, give the malformed id a specific message and put `.deletion-soon` in the theme contract
 
 ### TD-077 D4: command to remove a module and reverse its migrations — OPEN

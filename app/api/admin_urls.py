@@ -142,6 +142,15 @@ urlpatterns = [
     path("runs/<uuid:run_id>/plan/cancel", admin_runs.plan_cancel, name="admin_plan_cancel"),
     path("runs/<uuid:run_id>/plan/start", admin_runs.plan_start, name="admin_plan_start"),
     path("runs/<uuid:run_id>", admin_runs.run_detail, name="admin_run"),
+    path("runs/<uuid:run_id>/attempts", admin_runs.run_attempts, name="admin_run_attempts"),
+    path(
+        "runs/<uuid:run_id>/scoreboard",
+        admin_runs.run_scoreboard_page,
+        name="admin_run_scoreboard",
+    ),
+    path("runs/<uuid:run_id>/statistics", admin_runs.run_statistics, name="admin_run_statistics"),
+    path("runs/<uuid:run_id>/export", admin_runs.run_export, name="admin_run_export"),
+    path("runs/<uuid:run_id>/settings", admin_runs.run_settings, name="admin_run_settings"),
     path(
         "runs/<uuid:run_id>/participants/<uuid:participant_id>/name",
         admin_runs.participant_name,
@@ -178,7 +187,11 @@ urlpatterns = [
     path("runs/<uuid:run_id>/archive", admin_runs.run_archive, name="admin_run_archive"),
     path("runs/<uuid:run_id>/restore", admin_runs.run_restore, name="admin_run_restore"),
     path("runs/<uuid:run_id>/period", admin_runs.run_period, name="admin_run_period"),
-    path("runs/<uuid:run_id>/scoreboard", admin_runs.run_scoreboard, name="admin_run_scoreboard"),
+    path(
+        "runs/<uuid:run_id>/scoreboard/settings",
+        admin_runs.run_scoreboard_settings,
+        name="admin_run_scoreboard_settings",
+    ),
     path("runs/<uuid:run_id>/deadline", admin_runs.run_deadline, name="admin_run_deadline"),
     path("quizzes/<uuid:quiz_id>/draws/new", admin_banks.draw_new, name="admin_draw_new"),
     path(

@@ -37,7 +37,7 @@ def test_run_page_shows_statistics(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID, data={"profile": "answers"})
     submitted(run, 1, 1)
     submitted(run, 0, 0)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/statistics?lang=en"))
     assert "Statistics" in html
     assert "Median" in html and "0.5" in html
     assert "<meter" in html
@@ -47,7 +47,7 @@ def test_run_page_shows_statistics(logged_in):
 def test_score_profile_says_answers_are_needed(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
     submitted(run, 1)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/statistics?lang=en"))
     assert "Numbers per question need a data profile that keeps all answers." in html
 
 

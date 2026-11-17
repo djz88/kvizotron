@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 
 from app.api.admin_auth import admin_required
 from app.api.admin_common import confirm_page, refusal
-from app.api.admin_runs import _run_context
+from app.api.admin_runs import _tab_page
 from app.api.admin_workspace import quiz_title
 from app.api.rendering import page
 from app.contracts import RetentionProvider, RetentionRecord
@@ -204,7 +204,7 @@ def verify(request: HttpRequest) -> HttpResponse:
 def delete_data(request: HttpRequest, run_id: UUID) -> HttpResponse:
     run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)
     if run.data_deleted_at is not None:  # a stale page; its result is the same page
-        return redirect("admin_run", run.id)
+        return redirect("admin_run_settings", run.id)
     if not retention.deletable(run):
         return _run_page_with(request, run, refusal("not_ended"))
     if request.POST.get("confirm") != "1":
@@ -219,12 +219,11 @@ def delete_data(request: HttpRequest, run_id: UUID) -> HttpResponse:
             "Deleting the data could not be finished. Try again; the hourly pass also resumes it."
         )
         return _run_page_with(request, run, problem)
-    return redirect("admin_run", run.id)
+    return redirect("admin_run_settings", run.id)
 
 
 def _run_page_with(request: HttpRequest, run: QuizRun, problem: str) -> HttpResponse:
-    context = _run_context(request, run) | {"run_error": problem}
-    return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+    return _tab_page(request, run, "settings", {"run_error": problem})
 
 
 def _confirm_delete(request: HttpRequest, run: QuizRun) -> HttpResponse:
@@ -240,7 +239,7 @@ def _confirm_delete(request: HttpRequest, run: QuizRun) -> HttpResponse:
         )
         % {"no": run.run_no},
         action=reverse("admin_run_delete_data", args=[run.id]),
-        cancel=reverse("admin_run", args=[run.id]),
+        cancel=reverse("admin_run_settings", args=[run.id]),
     )
 
 

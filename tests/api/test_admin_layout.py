@@ -187,8 +187,8 @@ def test_header_links_results_of_the_running_run_next_to_preview(logged_in):
     run = authoring.open_run(quiz, admin_id=ADMIN_ID)
     html = text(logged_in.get(f"{base(quiz)}/settings"))
     meta = html[html.index('class="quiz-meta"') : html.index('class="tabs"')]
-    assert f"/admin/runs/{run.id}#statistics" in meta
-    assert f"/admin/runs/{run.id}#scoreboard" in meta
+    assert f"/admin/runs/{run.id}/statistics" in meta
+    assert f"/admin/runs/{run.id}/scoreboard" in meta
     assert f"/q/{quiz.slug}/r/{run.id}/scoreboard?view=projector" in meta
 
 
@@ -198,12 +198,12 @@ def test_header_links_results_of_the_last_ended_run(logged_in):
     authoring.close_run(run, admin_id=ADMIN_ID)
     html = text(logged_in.get(f"{base(quiz)}/edit"))
     meta = html[html.index('class="quiz-meta"') : html.index('class="tabs"')]
-    assert f"/admin/runs/{run.id}#statistics" in meta
+    assert f"/admin/runs/{run.id}/statistics" in meta
 
 
 def test_header_without_runs_has_no_result_links(logged_in):
     html = text(logged_in.get(f"{base(published_quiz())}/edit"))
-    assert "#statistics" not in html
+    assert '/statistics"' not in html
 
 
 def test_runs_tab_links_statistics_and_scoreboard_of_each_run(logged_in):
@@ -213,13 +213,13 @@ def test_runs_tab_links_statistics_and_scoreboard_of_each_run(logged_in):
     running = authoring.open_run(quiz, admin_id=ADMIN_ID)
     html = text(logged_in.get(f"{base(quiz)}/runs"))
     panel = html[html.index('class="panel"') : html.index("<table")]
-    assert f"/admin/runs/{running.id}#statistics" in panel
-    assert f"/admin/runs/{running.id}#scoreboard" in panel
+    assert f"/admin/runs/{running.id}/statistics" in panel
+    assert f"/admin/runs/{running.id}/scoreboard" in panel
     history, comparison = html[html.index("<table") :].split("</table>")[:2]
-    assert "#statistics" not in history  # the history table is already as wide as a page
+    assert '/statistics"' not in history  # the history table is already as wide as a page
     for run in (first, running):
-        assert f"/admin/runs/{run.id}#statistics" in comparison
-        assert f"/admin/runs/{run.id}#scoreboard" in comparison
+        assert f"/admin/runs/{run.id}/statistics" in comparison
+        assert f"/admin/runs/{run.id}/scoreboard" in comparison
 
 
 def test_revisions_tab_lists_only_revisions(logged_in):
@@ -451,11 +451,34 @@ def test_more_is_marked_on_its_pages(logged_in):
 
 def test_run_page_basic_hides_deeper_sections(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
-    assert 'id="statistics"' in html and 'id="scoreboard"' in html and 'id="attempts"' in html
+    for tab in ("statistics", "scoreboard", "attempts"):
+        assert f'id="{tab}"' in text(logged_in.get(f"/admin/runs/{run.id}/{tab}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/settings?lang=en"))
     assert f"/admin/runs/{run.id}/period" not in html
     assert f"/admin/runs/{run.id}/code" not in html
-    assert f"/admin/runs/{run.id}/deadline" in html  # the deadline is common work
+    overview = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert f"/admin/runs/{run.id}/deadline" in overview  # the deadline is common work
+
+
+RUN_TAB_SECTIONS = {
+    "attempts": ("participants", "attempts"),
+    "scoreboard": ("scoreboard",),
+    "statistics": ("statistics",),
+    "export": ("export",),
+    "settings": ("access-code", "data"),
+}
+
+
+def test_run_tabs_have_their_main_section_and_every_jump_target(showing_all):
+    """AC-184: each tab has its own section ids; each jump link lands on an id of its page."""
+    run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
+    for tab, ids in RUN_TAB_SECTIONS.items():
+        html = text(showing_all.get(f"/admin/runs/{run.id}/{tab}?lang=en"))
+        for section in ids:
+            assert f'id="{section}"' in html, (tab, section)
+        panel = html[html.index('class="section-panel"') : html.index("</aside>")]
+        for target in re.findall(r'<li><a href="#([^"]+)"', panel):
+            assert f'id="{target}"' in html, (tab, target)
 
 
 def test_run_page_basic_shows_a_set_code(logged_in):
@@ -463,14 +486,14 @@ def test_run_page_basic_shows_a_set_code(logged_in):
 
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
     access_codes.set_code(run, "ABC123", admin_id=ADMIN_ID)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/settings?lang=en"))
     assert "An access code is set." in html
     assert f"/admin/runs/{run.id}/code" in html
 
 
 def test_run_page_all_shows_everything(showing_all):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    html = text(showing_all.get(f"/admin/runs/{run.id}?lang=en"))
+    html = text(showing_all.get(f"/admin/runs/{run.id}/settings?lang=en"))
     assert f"/admin/runs/{run.id}/period" in html
     assert f"/admin/runs/{run.id}/code" in html
 

@@ -345,7 +345,7 @@ def test_foreign_run_refused(logged_in):
 
 def test_entry_points_link_to_export(logged_in):
     quiz, run = played_run()
-    run_page = text(logged_in.get(f"/admin/runs/{run.id}"))
+    run_page = text(logged_in.get(f"/admin/runs/{run.id}/export"))
     assert f"{NEW}?quiz={quiz.id}&amp;runs={run.id}" in run_page
     header = text(logged_in.get(f"/admin/quizzes/{quiz.id}/edit"))
     assert f"{NEW}?quiz={quiz.id}" in header

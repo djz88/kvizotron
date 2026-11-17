@@ -59,7 +59,7 @@ def test_visible_board_refused_with_answers_after_each(logged_in):
     assert not quiz.runs.exists()
     run = authoring.open_run(quiz, admin_id=ADMIN_ID)
     response = logged_in.post(
-        f"/admin/runs/{run.id}/scoreboard?lang=en", {SCOREBOARD_VISIBILITY: "live"}
+        f"/admin/runs/{run.id}/scoreboard/settings?lang=en", {SCOREBOARD_VISIBILITY: "live"}
     )
     assert "Answers after each question cannot go with a visible scoreboard." in text(response)
     run.refresh_from_db()
@@ -68,7 +68,9 @@ def test_visible_board_refused_with_answers_after_each(logged_in):
 
 def test_scoreboard_form_saves_display_values(logged_in):
     run = authoring.open_run(published_quiz(), admin_id=ADMIN_ID)
-    response = logged_in.post(f"/admin/runs/{run.id}/scoreboard", {SCOREBOARD_VISIBILITY: "live"})
+    response = logged_in.post(
+        f"/admin/runs/{run.id}/scoreboard/settings", {SCOREBOARD_VISIBILITY: "live"}
+    )
     assert response.status_code == 302
     run.refresh_from_db()
     assert results.of(run)[SCOREBOARD_VISIBILITY] == "live"

@@ -230,8 +230,9 @@ def test_the_run_page_names_the_combined_runs(logged_in):
     """AC-177: the main run lists them, a member names its main run."""
     quiz, first, second, third = three_runs()
     share(logged_in, quiz, third, [first, second])
-    assert "Společný žebříček běhů 1, 2, 3" in text(logged_in.get(f"/admin/runs/{third.id}"))
-    member = text(logged_in.get(f"/admin/runs/{first.id}"))
+    board = text(logged_in.get(f"/admin/runs/{third.id}/scoreboard"))
+    assert "Společný žebříček běhů 1, 2, 3" in board
+    member = text(logged_in.get(f"/admin/runs/{first.id}/scoreboard"))
     assert "Je součástí společného žebříčku běhu 3" in member
     assert "Společný žebříček běhů" not in member
 

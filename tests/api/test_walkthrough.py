@@ -303,7 +303,7 @@ def test_links_appear_on_public_and_admin_pages(logged_in):
     closed(run)
     assert address(run) in text(FormClient().get(f"/q/{quiz.slug}/r/{run.id}"))
     assert address(run) in text(FormClient().get(f"/q/{quiz.slug}"))
-    assert address(run) in text(logged_in.get(f"/admin/runs/{run.id}"))
+    assert address(run) in text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
 
 
 def test_no_link_when_nothing_is_public(logged_in):
@@ -311,7 +311,7 @@ def test_no_link_when_nothing_is_public(logged_in):
     add_question(quiz)
     run = closed(run_of(quiz))
     assert "/answers" not in text(FormClient().get(f"/q/{quiz.slug}/r/{run.id}"))
-    assert "/answers" not in text(logged_in.get(f"/admin/runs/{run.id}"))
+    assert "/answers" not in text(logged_in.get(f"/admin/runs/{run.id}/attempts"))
 
 
 def test_settings_page_warns_about_free_text(showing_all):

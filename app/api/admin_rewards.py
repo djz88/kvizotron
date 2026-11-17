@@ -18,6 +18,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import pgettext
 from django.views.decorators.http import require_http_methods, require_POST
 
+from app.api import admin_view, run_tabs
 from app.api.admin_auth import admin_required
 from app.api.admin_common import uuid_or_404
 from app.api.admin_forms import RewardNameForm, RewardRuleForm
@@ -280,6 +281,11 @@ def _grantable(run: QuizRun, locale: str, numbers: dict[str, int]) -> list[tuple
     ]
 
 
+def _run_header(request: HttpRequest, run: QuizRun, tab: str) -> dict[str, Any]:
+    """The run header and its tab bar: Rewards and Draw are tabs of the run (ADR-0068)."""
+    return run_tabs.header(run, tab, basic=admin_view.is_basic(request))
+
+
 def _run_page(
     request: HttpRequest,
     run: QuizRun,
@@ -297,21 +303,23 @@ def _run_page(
     editing = request.GET.get("edit", "") if request.method == "GET" else ""
     rows = _rule_rows(rules, locale, not planned, bound, editing, name_field)
     numbers = results.participant_numbers(run)
-    context = workspace(quiz, "runs", error) | {
-        "run": run,
-        "planned": planned,
-        "rules": rows,
-        "new_form": (new_form or _new_form(quiz)) if planned else None,
-        "new_action": reverse("admin_run_reward_new", args=[run.id]),
-        "run_settings": _setting_rows({key: rewards.of(run)[key] for key in REWARD_RUN_KEYS}),
-        "contact_warning": rewards.contact_warning(run),
-        "conflicts": rewards.messages(rewards.conflicts(run)),
-        "entitlements": _entitlement_rows(run, locale, numbers),
-        "manual_rules": [row for row in rows if row["rule"].kind == RewardRule.Kind.MANUAL],
-        "grantable": _grantable(run, locale, numbers),
-        "has_draw": any(rule.kind == RewardRule.Kind.DRAW for rule in rules),
-    }
-    return page(request, "admin/rewards.html", context, locale, status=status)
+    context = (
+        workspace(quiz, "runs", error)
+        | _run_header(request, run, "rewards")
+        | {
+            "planned": planned,
+            "rules": rows,
+            "new_form": (new_form or _new_form(quiz)) if planned else None,
+            "new_action": reverse("admin_run_reward_new", args=[run.id]),
+            "run_settings": _setting_rows({key: rewards.of(run)[key] for key in REWARD_RUN_KEYS}),
+            "contact_warning": rewards.contact_warning(run),
+            "conflicts": rewards.messages(rewards.conflicts(run)),
+            "entitlements": _entitlement_rows(run, locale, numbers),
+            "manual_rules": [row for row in rows if row["rule"].kind == RewardRule.Kind.MANUAL],
+            "grantable": _grantable(run, locale, numbers),
+        }
+    )
+    return page(request, "admin/run_rewards.html", context, locale, status=status)
 
 
 @admin_required
@@ -605,10 +613,13 @@ def _draw_page(
     numbers = results.participant_numbers(run)
     admins = {str(pk): login for pk, login in get_user_model().objects.values_list("pk", "login")}
     rules = [rule for rule in rewards.rules_of(run) if rule.kind == RewardRule.Kind.DRAW]
-    context = workspace(run.quiz, "runs", error) | {
-        "run": run,
-        "sections": [_draw_section(rule, run, locale, numbers, admins) for rule in rules],
-    }
+    context = (
+        workspace(run.quiz, "runs", error)
+        | _run_header(request, run, "draw")
+        | {
+            "sections": [_draw_section(rule, run, locale, numbers, admins) for rule in rules],
+        }
+    )
     return page(request, "admin/prize_draw.html", context, locale, status=status)
 
 

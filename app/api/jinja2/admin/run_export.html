@@ -1,0 +1,6 @@
+{% extends "admin/_run_tab.html" %}
+{% set panel_before = [] %}
+{% block tab %}
+<h3 id="export">{{ _("Export") }}</h3>
+<p><a href="{{ url('results_export_new') }}?quiz={{ quiz.id }}&amp;runs={{ run.id }}">{{ _("Export the results of this run") }}</a></p>
+{% endblock %}

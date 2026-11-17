@@ -1,10 +1,11 @@
-{% extends "admin/base.html" %}
-{# The prize draw of a run: per draw rule the refusal or the preview, the standing, the actions and the history. Only POST changes anything. #}
-{% block content %}
-{% include "admin/_quiz_header.html" %}
+{% extends "admin/_run_tab.html" %}
+{# The prize draw of a run: per draw rule the refusal or the preview, the standing, the actions and the history. Only POST changes anything. The run's Draw tab (ADR-0068). #}
+{% set jump = namespace(items=[]) %}
+{% for section in sections %}{% set jump.items = jump.items + [("rule-" ~ section.rule.id, section.name)] %}{% endfor %}
+{% set panel_before = jump.items %}
+{% block tab %}
 <section class="form-section">
   <h2>{{ _("Prize draw of run %(no)s", no=run.run_no) }}</h2>
-  <p><a href="{{ url('admin_run', args=[run.id]) }}">{{ _("Back to the run") }}</a> · <a href="{{ url('admin_run_rewards', args=[run.id]) }}">{{ _("Rewards and who has them") }}</a></p>
   {% if not sections %}<p>{{ _("This run has no draw.") }}</p>{% endif %}
 </section>
 

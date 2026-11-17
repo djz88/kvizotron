@@ -71,3 +71,4 @@ Format: [MADR 4](https://adr.github.io/madr/). Template: [0000-template.md](0000
 | [ADR-0065](0065-scoreboard-by-percent-and-shared-boards.md) | One scoreboard by percent across revisions by default, and a shared board of several runs | accepted |
 | [ADR-0066](0066-single-container-image.md) | A single-container image beside the Compose deployment | accepted |
 | [ADR-0067](0067-quiz-title-and-public-address.md) | A quiz title is unique among active quizzes, and a quiz can name its public address | accepted |
+| [ADR-0068](0068-run-subpages.md) | A run's parts are pages with their own addresses; `#` only jumps inside a page | accepted |

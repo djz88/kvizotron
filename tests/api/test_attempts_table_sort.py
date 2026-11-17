@@ -79,19 +79,19 @@ def test_sort_by_duration_missing_last():
 def test_duration_column_only_when_stored(logged_in):
     run = a_run()
     played(run, "Ema", 1, 0)
-    assert "Duration" not in text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
+    assert "Duration" not in text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en"))
     detailed = authoring.open_run(
         published_quiz("jiny"), admin_id=ADMIN_ID, data={"profile": "detailed"}
     )
     played(detailed, "Ema", 1, 0, 65000)
-    html = text(logged_in.get(f"/admin/runs/{detailed.id}?lang=en"))
+    html = text(logged_in.get(f"/admin/runs/{detailed.id}/attempts?lang=en"))
     assert "Duration" in html and "1:05" in html
 
 
 def test_header_links_flip_direction(logged_in):
     run = a_run()
     three(run)
-    html = text(logged_in.get(f"/admin/runs/{run.id}?lang=en&sort=score&dir=desc"))
+    html = text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en&sort=score&dir=desc"))
     assert 'aria-sort="descending"' in html
     assert "sort=score&amp;dir=asc" in html
     assert "sort=name&amp;dir=asc" in html

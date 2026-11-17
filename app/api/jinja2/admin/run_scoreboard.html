@@ -1,0 +1,45 @@
+{% extends "admin/_run_tab.html" %}
+{% set panel_before = [] %}
+{% block tab %}
+<h3 id="scoreboard">{{ _("Scoreboard") }}</h3>
+{% if board_numbers %}<p class="notice" role="note">{{ _("Shared scoreboard of runs %(runs)s", runs=board_numbers) }}</p>{% endif %}
+{% if board_main_run %}<p class="notice" role="note"><a href="{{ url('admin_run_scoreboard', args=[board_main_run.id]) }}">{{ _("Part of the shared scoreboard of run %(no)s", no=board_main_run.run_no) }}</a></p>{% endif %}
+<ul>
+  {% for label, value in result_fixed %}<li>{{ label }}: {{ value }}</li>{% endfor %}
+</ul>
+{% if public_board_url %}<p><a href="{{ public_board_url }}">{{ _("Public scoreboard") }}</a> · <a href="{{ public_board_url }}?view=projector" target="_blank" rel="noopener">{{ _("Projector") }}</a></p>{% endif %}
+{% for table in admin_board.tables %}
+{% if admin_board.tables|length > 1 %}<h4>{{ _("Revision %(no)s", no=table.revision_no) }}</h4>{% endif %}
+{% if table.rows %}
+<table>
+  <thead><tr><th>{{ _("Place") }}</th><th>{{ _("Name") }}</th><th>{{ _("Score") }}</th><th>{{ _("Submitted") }}</th></tr></thead>
+  <tbody>
+    {% for row in table.rows %}
+    <tr>
+      <td data-label="{{ _('Place') }}">{{ row.rank }}.</td>
+      <td data-label="{{ _('Name') }}">{{ row.label }}</td>
+      <td data-label="{{ _('Score') }}">{{ row.score|number }} / {{ row.max_score|number }} ({{ row.percent }} %){% if row.passed %} <span aria-hidden="true">✓</span><span class="visually-hidden">{{ _("passed") }}</span>{% endif %}</td>
+      <td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p><small>{{ _("No results yet.") }}</small></p>
+{% endif %}
+{% endfor %}
+{% if can_set_results %}
+<form method="post" action="{{ url('admin_run_scoreboard_settings', args=[run.id]) }}">
+  {{ csrf_input }}
+  {% for key, label, choices, value in result_fields %}
+  <label>{{ label }}
+    <select name="{{ key }}">
+      {% for option, option_label in choices %}<option value="{{ option }}"{% if option == value %} selected{% endif %}>{{ option_label }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endfor %}
+  <small>{{ _("A visible scoreboard remembers each browser with a cookie from its next start on.") }}</small>
+  <button type="submit" class="secondary">{{ _("Save the scoreboard") }}</button>
+</form>
+{% endif %}
+{% endblock %}

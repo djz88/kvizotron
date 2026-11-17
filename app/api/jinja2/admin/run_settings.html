@@ -1,0 +1,50 @@
+{% extends "admin/_run_tab.html" %}
+{% set has_access_section = access_section or new_code %}
+{% set panel_before = ([("access-code", _("Access code"))] if has_access_section else []) + ([("data", _("Data"))] if data_section else []) %}
+{% block tab %}
+{% if empty_in_basic and not new_code and not deletion %}
+<p>{{ _("Nothing here in the Basic view. Switch to All.") }}</p>
+{% endif %}
+{% if has_access_section %}
+<h3 id="access-code">{{ _("Access code") }}</h3>
+{% if new_code %}
+<p class="notice" role="status">{{ _("The access code is") }} <strong><code>{{ new_code }}</code></strong>. {{ _("It is shown only now. Write it down: afterwards it can only be replaced.") }}</p>
+{% endif %}
+<p>{% if has_code %}{{ _("An access code is set.") }}{% else %}{{ _("No access code: anyone with the address can start.") }}{% endif %}</p>
+{% if can_set_code %}
+<form method="post" action="{{ url('admin_run_code', args=[run.id]) }}">
+  {{ csrf_input }}
+  <label>{{ _("New code") }}
+    <input type="text" name="access_code" maxlength="64" autocomplete="off">
+  </label>
+  <small>{{ _("A new code stops people who have not started yet. Attempts in progress continue.") }}</small>
+  <button type="submit" name="action" value="set" class="secondary">{{ _("Set the code") }}</button>
+  <button type="submit" name="action" value="generate" class="secondary">{{ _("Generate a code") }}</button>
+  {% if has_code %}<button type="submit" name="action" value="remove" class="secondary outline">{{ _("Remove the code") }}</button>{% endif %}
+</form>
+{% endif %}
+{% endif %}
+{% if data_section %}
+<h3 id="data">{{ _("Data") }}</h3>
+<ul>{% for label, value in data_rules %}<li>{{ label }}: {{ value }}</li>{% endfor %}</ul>
+{% if can_set_period %}
+<form method="post" action="{{ url('admin_run_period', args=[run.id]) }}">
+  {{ csrf_input }}
+  <label>{{ _("How long a run keeps its data") }}
+    <select name="retention_period">
+      {% for value, label in period_choices %}<option value="{{ value }}"{% if value == period_value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <small>{{ _("What a run keeps cannot change once it opens, but the period can.") }}</small>
+  <button type="submit" class="secondary">{{ _("Save the period") }}</button>
+</form>
+{% endif %}
+{% endif %}
+{% if deletion %}<p>{% include "admin/_deletion.html" %}</p>{% endif %}
+{% if can_delete_data %}
+<form method="post" action="{{ url('admin_run_delete_data', args=[run.id]) }}">
+  {{ csrf_input }}
+  <button type="submit" class="secondary outline">{{ _("Delete data now") }}</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "admin/_run_tab.html" %}
+{% set panel_before = [] %}
+{% block tab %}
+<h3 id="statistics">{{ _("Statistics") }}</h3>
+{% set numbers = stats.run %}
+<ul>
+  <li>{{ _("Participants") }}: {{ numbers.participants }}</li>
+  <li>{{ _("Started attempts") }}: {{ numbers.started }}</li>
+  <li>{{ _("Submitted attempts") }}: {{ numbers.submitted }}</li>
+  <li>{{ _("Not sent") }}: {{ numbers.unsent }}</li>
+  {% if numbers.passed is not none %}<li>{{ _("Passed: %(passed)s of %(judged)s", passed=numbers.passed, judged=numbers.judged) }}</li>{% endif %}
+</ul>
+{% if numbers.summary and numbers.summary.count %}
+<ul>
+  <li>{{ _("Average") }}: {{ numbers.summary.average|number }}</li>
+  <li>{{ _("Median") }}: {{ numbers.summary.median|number }}</li>
+  <li>{{ _("Lowest") }}: {{ numbers.summary.lowest|number }}</li>
+  <li>{{ _("Highest") }}: {{ numbers.summary.highest|number }}</li>
+</ul>
+<table>
+  <caption>{{ _("Scores by tenths of the maximum") }}</caption>
+  <tbody>
+    {% for label, count in stats.bands %}
+    <tr><th scope="row">{{ label }}</th><td><meter min="0" max="{{ stats.band_top }}" value="{{ count }}">{{ count }}</meter> {{ count }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% for no, summary in numbers.by_revision %}
+<p>{{ _("Revision %(no)s", no=no) }}: {{ _("submitted %(count)s, average %(average)s", count=summary.count, average=summary.average|number if summary.average is not none else "–") }}</p>
+{% endfor %}
+{% if numbers.questions_reason == "profile" and not stateless %}
+<p><small>{{ _("Numbers per question need a data profile that keeps all answers.") }}</small></p>
+{% elif stats.questions %}
+<table>
+  <thead><tr><th>{{ _("Question") }}</th><th>{{ _("Answered") }}</th><th>{{ _("Average points") }}</th><th>{{ _("Full points") }}</th></tr></thead>
+  <tbody>
+    {% for label, item in stats.questions %}
+    <tr>
+      <td data-label="{{ _('Question') }}">{{ label }}</td>
+      <td data-label="{{ _('Answered') }}">{{ item.answered }}</td>
+      <td data-label="{{ _('Average points') }}">{{ item.average|number }}</td>
+      <td data-label="{{ _('Full points') }}">{{ item.full_share }} %</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

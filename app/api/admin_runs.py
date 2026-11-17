@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
@@ -14,9 +15,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_http_methods, require_POST, require_safe
 
-from app.api import admin_view
+from app.api import admin_view, run_tabs
 from app.api.admin_auth import admin_required
 from app.api.admin_common import confirm_page, refusal
 from app.api.admin_forms import RunPlanForm, conflict_messages, result_messages
@@ -47,7 +48,7 @@ from app.domain import (
     settings,
     walkthrough,
 )
-from app.domain.models import Attempt, Participant, Quiz, QuizRun, RewardRule
+from app.domain.models import Attempt, Participant, Quiz, QuizRun
 from app.kernel import registry
 
 
@@ -56,16 +57,6 @@ def _submitted(run: QuizRun, counted: int) -> int:
     if data_policy.is_stateless(attempts.effective_profile(run)):
         return run.stateless_submitted
     return counted
-
-
-def _status_label(run: QuizRun) -> str:
-    labels = {
-        QuizRun.Status.SCHEDULED: _("Planned"),
-        QuizRun.Status.OPEN: _("Running"),
-        QuizRun.Status.CLOSED: _("Ended"),
-        QuizRun.Status.ARCHIVED: _("Archived"),
-    }
-    return labels[QuizRun.Status(run.status)]
 
 
 def _deletion(run: QuizRun, now: datetime) -> dict[str, Any] | None:
@@ -134,7 +125,7 @@ def _runs_response(
     rows = [
         {
             "run": run,
-            "status": _status_label(run),
+            "status": run_tabs.status_label(run),
             "limit_minutes": run.attempt_limit_sec // 60 if run.attempt_limit_sec else None,
             "unsent": run_schedule.unsent(run),
             "deletion": _deletion(run, now),
@@ -252,8 +243,7 @@ def board_split(request: HttpRequest, run_id: UUID) -> HttpResponse:
     try:
         results.split_board(run, admin_id=str(request.user.pk))
     except authoring.QuizArchived:
-        context = _run_context(request, run) | {"run_error": archived_message()}
-        return page(request, "admin/run.html", context, request.locale, status=409)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "scoreboard", {"run_error": archived_message()}, status=409)
     return redirect("admin_run_open", run.quiz_id)
 
 
@@ -385,8 +375,7 @@ def _saved(request: HttpRequest, run: QuizRun, code: str | None) -> HttpResponse
 
 def _show_code(request: HttpRequest, run: QuizRun, code: str) -> HttpResponse:
     run = QuizRun.objects.select_related("quiz").get(pk=run.pk)
-    context = _run_context(request, run) | {"new_code": code}
-    return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+    return _tab_page(request, run, "settings", {"new_code": code})
 
 
 @admin_required
@@ -531,28 +520,45 @@ def _has_deletion_records(run: QuizRun) -> bool:
     return bool(cast(RetentionProvider, registry.get("retention", "local")).for_run(str(run.pk)))
 
 
-def _run_context(
-    request: HttpRequest, run: QuizRun, name_field: NameField | None = None
-) -> dict[str, Any]:
-    run_rules = rewards.rules_of(run)
-    return workspace(run.quiz, "runs") | {
-        "run": run,
-        "is_open": run.status == QuizRun.Status.OPEN,
-        "status_label": _status_label(run),
+def _header_context(request: HttpRequest, run: QuizRun, tab: str) -> dict[str, Any]:
+    """The quiz header, the run header and its tab bar, the same on every tab (ADR-0068)."""
+    basic = admin_view.is_basic(request)
+    return (
+        workspace(run.quiz, "runs")
+        | run_tabs.header(run, tab, basic=basic)
+        | {"is_open": run.status == QuizRun.Status.OPEN}
+    )
+
+
+def _overview(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    return {
         "unsent": run_schedule.unsent(run),
         "deadline_value": clock.form_value(run.deadline_at),
         "limit_minutes": run.attempt_limit_sec // 60 if run.attempt_limit_sec else None,
+        "deletion": _deletion(run, timezone.now()),
+        "has_deletion_records": _has_deletion_records(run),
+        "public_url": _public_url(request, run.quiz),
+        "submitted": _submitted(run, run.attempts.filter(status__in=Attempt.FINISHED).count()),
+        "contact_warning": rewards.contact_warning(run),
+    }
+
+
+def _attempts(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    return {
         "rules": [
             (settings.CATALOGUE[key].label, settings.CATALOGUE[key].value_labels[value])
             for key, value in participants.rules_of(run).items()
         ],
-        "data_rules": [
-            (settings.CATALOGUE[name].label, settings.CATALOGUE[name].value_labels[value])
-            for name, value in (
-                (settings.DATA_PROFILE, data_policy.of(run)[data_policy.PROFILE]),
-                (settings.RETENTION_PERIOD, data_policy.of(run)[data_policy.PERIOD]),
-            )
-        ],
+        "stateless": data_policy.is_stateless(attempts.effective_profile(run)),
+        **_attempt_table(request, run, name_field),
+        "walkthrough_url": reverse("walkthrough_page", args=[run.quiz.slug, run.id])
+        if walkthrough.available(run)
+        else None,
+    }
+
+
+def _scoreboard(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    return {
         "result_fields": [
             (
                 key,
@@ -572,7 +578,6 @@ def _run_context(
             )
             for key in (OFFICIAL_ATTEMPT, TIE_BREAK_POLICY)
         ],
-        "stats": _stats(run, request.locale),  # type: ignore[attr-defined]
         "admin_board": results.board(run, audience="admin", locale=request.locale),  # type: ignore[attr-defined]
         "board_numbers": ", ".join(map(str, results.shared_numbers(run))),
         "board_main_run": run.board_main if run.board_main_id else None,
@@ -580,6 +585,30 @@ def _run_context(
         if run.kind == QuizRun.Kind.NORMAL
         else None,
         "can_set_results": run.kind != QuizRun.Kind.TEST,
+    }
+
+
+def _statistics(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    return {
+        "stats": _stats(run, request.locale),  # type: ignore[attr-defined]
+        "stateless": data_policy.is_stateless(attempts.effective_profile(run)),
+    }
+
+
+def _export(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    return {}
+
+
+def _settings(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
+    basic = admin_view.is_basic(request)
+    return {
+        "data_rules": [
+            (settings.CATALOGUE[name].label, settings.CATALOGUE[name].value_labels[value])
+            for name, value in (
+                (settings.DATA_PROFILE, data_policy.of(run)[data_policy.PROFILE]),
+                (settings.RETENTION_PERIOD, data_policy.of(run)[data_policy.PERIOD]),
+            )
+        ],
         "period_value": data_policy.of(run)[data_policy.PERIOD],
         "period_choices": [
             (value, settings.CATALOGUE[settings.RETENTION_PERIOD].value_labels[value])
@@ -588,33 +617,66 @@ def _run_context(
         "can_set_period": run.kind != QuizRun.Kind.TEST and run.data_deleted_at is None,
         "can_delete_data": retention.deletable(run),
         "deletion": _deletion(run, timezone.now()),
-        "has_deletion_records": _has_deletion_records(run),
-        "public_url": _public_url(request, run.quiz),
         "has_code": bool(run.access_code_hash),
         "can_set_code": run.status in (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN),
-        "stateless": data_policy.is_stateless(attempts.effective_profile(run)),
-        **_attempt_table(request, run, name_field),
-        "submitted": _submitted(run, run.attempts.filter(status__in=Attempt.FINISHED).count()),
-        "reward_count": len(run_rules),
-        "has_draw": any(rule.kind == RewardRule.Kind.DRAW for rule in run_rules),
-        "contact_warning": rewards.contact_warning(run),
-        "walkthrough_url": reverse("walkthrough_page", args=[run.quiz.slug, run.id])
-        if walkthrough.available(run)
-        else None,
+        "empty_in_basic": run_tabs.settings_empty(run, basic=basic),
+        "access_section": not basic or bool(run.access_code_hash),
+        "data_section": not basic,
     }
 
 
-@admin_required
-def run_detail(request: HttpRequest, run_id: UUID) -> HttpResponse:
-    run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)
-    return page(request, "admin/run.html", _run_context(request, run), request.locale)  # type: ignore[attr-defined]
+TabContext = Callable[[HttpRequest, QuizRun, NameField | None], dict[str, Any]]
+# Each tab computes only what it shows: no statistics or scoreboard on the Overview.
+TAB_TEMPLATES: dict[str, tuple[str, TabContext]] = {
+    "overview": ("admin/run.html", _overview),
+    "attempts": ("admin/run_attempts.html", _attempts),
+    "scoreboard": ("admin/run_scoreboard.html", _scoreboard),
+    "statistics": ("admin/run_statistics.html", _statistics),
+    "export": ("admin/run_export.html", _export),
+    "settings": ("admin/run_settings.html", _settings),
+}
+
+
+def _tab_page(
+    request: HttpRequest,
+    run: QuizRun,
+    tab: str,
+    extra: dict[str, Any] | None = None,
+    *,
+    status: int = 200,
+    name_field: NameField | None = None,
+) -> HttpResponse:
+    template, tab_context = TAB_TEMPLATES[tab]
+    context = (
+        _header_context(request, run, tab) | tab_context(request, run, name_field) | (extra or {})
+    )
+    return page(request, template, context, request.locale, status=status)  # type: ignore[attr-defined]
+
+
+def _tab_view(tab: str) -> Callable[[HttpRequest, UUID], HttpResponse]:
+    @admin_required
+    @require_safe
+    def view(request: HttpRequest, run_id: UUID) -> HttpResponse:
+        run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)
+        return _tab_page(request, run, tab)
+
+    view.__name__ = view.__qualname__ = f"run_{tab}"
+    return view
+
+
+run_detail = _tab_view("overview")
+run_attempts = _tab_view("attempts")
+run_scoreboard_page = _tab_view("scoreboard")
+run_statistics = _tab_view("statistics")
+run_export = _tab_view("export")
+run_settings = _tab_view("settings")
 
 
 @admin_required
 @require_http_methods(["GET", "POST"])
 def participant_name(request: HttpRequest, run_id: UUID, participant_id: UUID) -> HttpResponse:
     """An admin renames a nickname for the scoreboard (AC-161); the rules of the run hold."""
-    run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)  # not a test run
+    run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)
     who = get_object_or_404(Participant, pk=participant_id, run=run)
     if request.method == "GET":
         editing = request.GET.get("edit") == "1"
@@ -626,8 +688,7 @@ def participant_name(request: HttpRequest, run_id: UUID, participant_id: UUID) -
     try:
         participants.rename(who, typed, admin_id=str(request.user.pk))
     except authoring.QuizArchived:
-        context = _run_context(request, run) | {"run_error": archived_message()}
-        return page(request, "admin/run.html", context, request.locale, status=409)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "attempts", {"run_error": archived_message()}, status=409)
     except participants.NameRefused as refused:
         messages = {
             "empty": _("The name cannot be empty."),
@@ -638,13 +699,7 @@ def participant_name(request: HttpRequest, run_id: UUID, participant_id: UUID) -
         field = _nick_field(run, who.pk, typed, editing=True, error=messages[refused.code])
         if wants_partial(request):
             return render_field(request, field, status=400)
-        return page(
-            request,
-            "admin/run.html",
-            _run_context(request, run, field),
-            request.locale,  # type: ignore[attr-defined]
-            status=400,
-        )
+        return _tab_page(request, run, "attempts", status=400, name_field=field)
     if wants_partial(request):
         response = render_field(request, _nick_field(run, who.pk, who.display_name, saved=True))
         if who.attempts.filter(status__in=Attempt.FINISHED).count() > 1:
@@ -689,8 +744,7 @@ def run_deadline(request: HttpRequest, run_id: UUID) -> HttpResponse:
             return redirect("admin_run", run.id)
         except run_schedule.ScheduleRefused as error:
             problem = refusal(error.code)
-    context = _run_context(request, run) | {"run_error": problem, "deadline_value": value}
-    return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+    return _tab_page(request, run, "overview", {"run_error": problem, "deadline_value": value})
 
 
 def _confirm_period(request: HttpRequest, run: QuizRun, period: str) -> HttpResponse:
@@ -704,7 +758,7 @@ def _confirm_period(request: HttpRequest, run: QuizRun, period: str) -> HttpResp
         )
         % {"no": run.run_no},
         action=reverse("admin_run_period", args=[run.id]),
-        cancel=reverse("admin_run", args=[run.id]),
+        cancel=reverse("admin_run_settings", args=[run.id]),
         hidden={"retention_period": period},
     )
 
@@ -722,29 +776,25 @@ def run_period(request: HttpRequest, run_id: UUID) -> HttpResponse:
             confirmed=request.POST.get("confirm") == "1",
         )
     except run_schedule.ScheduleRefused as error:
-        context = _run_context(request, run) | {"run_error": refusal(error.code)}
-        return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "settings", {"run_error": refusal(error.code)})
     except run_schedule.PeriodNeedsConfirmation:
         return _confirm_period(request, run, period)
-    return redirect("admin_run", run.id)
+    return redirect("admin_run_settings", run.id)
 
 
 @admin_required
 @require_POST
-def run_scoreboard(request: HttpRequest, run_id: UUID) -> HttpResponse:
+def run_scoreboard_settings(request: HttpRequest, run_id: UUID) -> HttpResponse:
     """What the scoreboard shows; the order a run decides by stays as it opened."""
     run = get_object_or_404(QuizRun.objects.select_related("quiz"), pk=run_id)
     try:
         results.set_display(run, request.POST, admin_id=str(request.user.pk))
     except authoring.QuizArchived:
-        context = _run_context(request, run) | {"run_error": archived_message()}
-        return page(request, "admin/run.html", context, request.locale, status=409)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "scoreboard", {"run_error": archived_message()}, status=409)
     except results.ResultConflict as error:
-        context = _run_context(request, run) | {
-            "run_error": " ".join(result_messages(error.reasons))
-        }
-        return page(request, "admin/run.html", context, request.locale, status=409)  # type: ignore[attr-defined]
-    return redirect("admin_run", run.id)
+        problem = " ".join(result_messages(error.reasons))
+        return _tab_page(request, run, "scoreboard", {"run_error": problem}, status=409)
+    return redirect("admin_run_scoreboard", run.id)
 
 
 def _nick_field(
@@ -757,7 +807,7 @@ def _nick_field(
     saved: bool = False,
 ) -> NameField:
     """The nickname in a row of the table of attempts (AC-161)."""
-    host = reverse("admin_run", args=[run.id])
+    host = reverse("admin_run_attempts", args=[run.id])
     name_url = reverse("admin_participant_name", args=[run.id, participant_id])
     return NameField(
         label=_("Name"),
@@ -767,8 +817,8 @@ def _nick_field(
         save_url=name_url,
         edit_url=f"{name_url}?edit=1",
         view_url=name_url,
-        edit_page=f"{host}?edit={participant_id}#attempts",
-        back_page=f"{host}#attempts",
+        edit_page=f"{host}?edit={participant_id}",
+        back_page=host,
         max_length=participants.NAME_LENGTH,
         editing=editing,
         error=error,
@@ -791,7 +841,7 @@ def _attempt_table(
         active = key == sort
         flip = "asc" if active and descending else ("desc" if active else "asc")
         return {
-            "href": f"?sort={key}&dir={flip}#attempts",
+            "href": f"?sort={key}&dir={flip}",
             "aria": ("descending" if descending else "ascending") if active else None,
         }
 
@@ -907,17 +957,13 @@ def run_code(request: HttpRequest, run_id: UUID) -> HttpResponse:
     elif action == "remove":
         code = None
     else:
-        problem = _("Enter a code.")
-        context = _run_context(request, run) | {"run_error": problem}
-        return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "settings", {"run_error": _("Enter a code.")})
     try:
         access_codes.set_code(run, code, admin_id=str(request.user.pk))
     except authoring.QuizArchived:
-        context = _run_context(request, run) | {"run_error": archived_message()}
-        return page(request, "admin/run.html", context, request.locale, status=409)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "settings", {"run_error": archived_message()}, status=409)
     except access_codes.CodeRefused:
-        context = _run_context(request, run) | {"run_error": refusal("not_open")}
-        return page(request, "admin/run.html", context, request.locale)  # type: ignore[attr-defined]
+        return _tab_page(request, run, "settings", {"run_error": refusal("not_open")})
     if code is None:
-        return redirect("admin_run", run.id)
+        return redirect("admin_run_settings", run.id)
     return _show_code(request, run, code.strip().upper())

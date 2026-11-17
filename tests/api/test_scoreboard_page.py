@@ -127,7 +127,7 @@ def test_projector_links_open_a_new_window():
     templates = Path(__file__).resolve().parents[2] / "app/api/jinja2"
     names = (
         "admin/_quiz_header.html",
-        "admin/run.html",
+        "admin/run_scoreboard.html",
         "admin/runs.html",
         "public/scoreboard.html",
     )

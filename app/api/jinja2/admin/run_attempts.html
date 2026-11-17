@@ -1,0 +1,29 @@
+{% extends "admin/_run_tab.html" %}
+{% from "admin/_inline_name.html" import inline_name with context %}
+{% set panel_before = [] %}
+{% block tab %}
+<h3 id="participants">{{ _("Participants") }}</h3>
+<ul>{% for label, value in rules %}<li>{{ label }}: {{ value }}</li>{% endfor %}</ul>
+<h3 id="attempts">{{ _("Attempts") }}</h3>
+{% if stateless %}
+<p><small>{{ _("This run keeps nothing about an attempt, so there is no table of attempts.") }}</small></p>
+{% elif attempt_rows %}
+<table>
+  {% macro sortable(key, label) %}{% set h = attempt_headers[key] %}<th{% if h.aria %} aria-sort="{{ h.aria }}"{% endif %}><a href="{{ h.href }}">{{ label }}</a></th>{% endmacro %}
+  <thead><tr>{{ sortable("name", _("Name")) }}<th>{{ _("E-mail") }}</th>{{ sortable("score", _("Score")) }}{% if attempt_passes %}<th>{{ _("Pass mark") }}</th>{% endif %}{{ sortable("submitted", _("Submitted")) }}{% if attempt_durations %}{{ sortable("duration", _("Duration")) }}{% endif %}</tr></thead>
+  <tbody>
+    {% for row in attempt_rows %}
+    <tr data-attempt-row>
+      <td data-label="{{ _('Name') }}">{% if name_fields[loop.index0] %}{{ inline_name(name_fields[loop.index0]) }}{% elif row.name %}{{ row.name }}{% else %}<em>{{ _("no name") }}</em>{% endif %}</td>
+      <td data-label="{{ _('E-mail') }}">{{ row.email or "" }}</td>
+      <td data-label="{{ _('Score') }}">{% if row.score is not none %}{{ row.score|number }} / {{ row.max_score|number }}{% endif %}</td>
+      {% if attempt_passes %}<td data-label="{{ _('Pass mark') }}">{% if row.passed is not none %}{{ _("Passed") if row.passed else _("Not passed") }}{% endif %}</td>{% endif %}
+      <td data-label="{{ _('Submitted') }}">{{ row.submitted_at|when }}</td>
+      {% if attempt_durations %}<td data-label="{{ _('Duration') }}">{% if row.duration_ms is not none %}{{ (row.duration_ms // 1000) // 60 }}:{{ "%02d"|format((row.duration_ms // 1000) % 60) }}{% endif %}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>{{ _("No attempt has been submitted yet.") }}</p>{% endif %}
+{% if walkthrough_url %}<p><a href="{{ walkthrough_url }}">{{ _("See the answers of this run") }}</a></p>{% endif %}
+{% endblock %}

@@ -45,7 +45,7 @@ def send(run, name="", email="", key="k"):
 
 
 def page(client, run):
-    return text(client.get(f"/admin/runs/{run.id}?lang=en"))
+    return text(client.get(f"/admin/runs/{run.id}/attempts?lang=en"))
 
 
 def test_table_shows_name_email_score_time(logged_in):
@@ -66,14 +66,14 @@ def test_table_lists_only_finished(logged_in):
     html = page(logged_in, run)
     assert "Hotová" in html
     assert html.count("data-attempt-row") == 1
-    assert "Not sent: 1" in html
+    assert "Not sent: 1" in text(logged_in.get(f"/admin/runs/{run.id}?lang=en"))
 
 
 def test_empty_name_shows_bez_jmena(logged_in):
     run = a_run()
     send(run)
     assert "no name" in page(logged_in, run)
-    assert "bez jména" in text(logged_in.get(f"/admin/runs/{run.id}?lang=cs"))
+    assert "bez jména" in text(logged_in.get(f"/admin/runs/{run.id}/attempts?lang=cs"))
 
 
 def test_rows_follow_submission_time(logged_in, monkeypatch):

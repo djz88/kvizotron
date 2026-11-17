@@ -236,15 +236,22 @@ def test_run_page_has_the_panel_with_the_switch(logged_in):
     assert 'action="/admin/view"' in box
     assert html.count('action="/admin/view"') == 1
     assert f'name="next" value="/admin/runs/{run.id}?lang=en"' in box
-    targets = re.findall(r'<a href="#([\w-]+)"', box)
-    assert {"rewards", "scoreboard", "attempts"} <= set(targets)
-    for target in targets:
-        assert f'id="{target}"' in html, target
+    logged_in.cookies[admin_view.COOKIE] = "all"
+    for tab in ("", "/attempts", "/scoreboard", "/statistics", "/export", "/settings"):
+        html = text(logged_in.get(f"/admin/runs/{run.id}{tab}?lang=en"))
+        box = panel(html)
+        assert html.count('action="/admin/view"') == 1, tab
+        assert f'name="next" value="/admin/runs/{run.id}{tab}?lang=en"' in box
+        targets = re.findall(r'<a href="#([\w-]+)"', box)
+        if tab == "/settings":  # a tab's jump list holds only its own sections (ADR-0068)
+            assert {"access-code", "data"} <= set(targets)
+        for target in targets:
+            assert f'id="{target}"' in html, target
 
 
 def test_run_page_panel_lists_only_sections_shown_in_the_view(logged_in):
     run = open_quiz_run()
-    url = f"/admin/runs/{run.id}?lang=en"
+    url = f"/admin/runs/{run.id}/settings?lang=en"
     basic = panel(text(logged_in.get(url)))
     assert 'href="#data"' not in basic
     logged_in.cookies[admin_view.COOKIE] = "all"
