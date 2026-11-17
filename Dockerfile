@@ -30,7 +30,7 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=2)"]
 
 # Jeden proces: SQLite a limity v paměti procesu na tom závisí (ADR-0036).
-CMD ["gunicorn", "app.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8"]
+CMD ["gunicorn", "app.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8", "--no-control-socket"]
 
 # Jeden kontejner (ADR-0066): migrace, aplikace a `jobs` vedle sebe, třeba jako pod v Kubernetes
 # za ingressem. Sestavení: `docker build --target single`.

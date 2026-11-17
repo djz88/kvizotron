@@ -107,6 +107,11 @@ def test_the_children_are_the_application_and_the_jobs_loop():
     assert [grace for _command, grace in serve.children()] == [30.0, 115.0]
 
 
+def test_gunicorn_opens_no_control_socket():
+    """gunicorn 26 puts one under $HOME, and the image user has no home: an error on every start."""
+    assert "--no-control-socket" in serve.IMAGE_COMMAND
+
+
 def test_the_image_has_a_single_container_target_and_compose_keeps_the_default():
     """`docker build --target single` runs `serve`; the last stage, which Compose builds, stays."""
     import json

@@ -27,6 +27,8 @@ IMAGE_COMMAND = [
     "1",
     "--threads",
     "8",
+    # gunicorn 26 opens a control socket under $HOME, which the image user does not have.
+    "--no-control-socket",
 ]
 # ... plus idle connections kept longer than an ingress keeps them (ingress-nginx: 60 s), or a POST
 # sent on one gunicorn just closed is reset and answered 502. Caddy in Compose closes its own after
