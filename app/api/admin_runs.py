@@ -20,7 +20,12 @@ from django.views.decorators.http import require_http_methods, require_POST, req
 from app.api import admin_view, run_tabs
 from app.api.admin_auth import admin_required
 from app.api.admin_common import confirm_page, refusal
-from app.api.admin_forms import RunPlanForm, conflict_messages, result_messages
+from app.api.admin_forms import (
+    RunPlanForm,
+    conflict_messages,
+    result_messages,
+    setting_value_label,
+)
 from app.api.admin_quizzes import archived_message, not_archived, run_open
 from app.api.admin_workspace import workspace
 from app.api.inline_name import NameField, render_field, wants_partial
@@ -546,7 +551,7 @@ def _overview(request: HttpRequest, run: QuizRun, name_field: NameField | None) 
 def _attempts(request: HttpRequest, run: QuizRun, name_field: NameField | None) -> dict[str, Any]:
     return {
         "rules": [
-            (settings.CATALOGUE[key].label, settings.CATALOGUE[key].value_labels[value])
+            (settings.CATALOGUE[key].label, setting_value_label(key, value))
             for key, value in participants.rules_of(run).items()
         ],
         "stateless": data_policy.is_stateless(attempts.effective_profile(run)),
@@ -574,7 +579,7 @@ def _scoreboard(request: HttpRequest, run: QuizRun, name_field: NameField | None
         "result_fixed": [
             (
                 settings.CATALOGUE[key].label,
-                settings.CATALOGUE[key].value_labels[results.of(run)[key]],
+                setting_value_label(key, results.of(run)[key]),
             )
             for key in (OFFICIAL_ATTEMPT, TIE_BREAK_POLICY)
         ],
@@ -603,7 +608,7 @@ def _settings(request: HttpRequest, run: QuizRun, name_field: NameField | None) 
     basic = admin_view.is_basic(request)
     return {
         "data_rules": [
-            (settings.CATALOGUE[name].label, settings.CATALOGUE[name].value_labels[value])
+            (settings.CATALOGUE[name].label, setting_value_label(name, value))
             for name, value in (
                 (settings.DATA_PROFILE, data_policy.of(run)[data_policy.PROFILE]),
                 (settings.RETENTION_PERIOD, data_policy.of(run)[data_policy.PERIOD]),

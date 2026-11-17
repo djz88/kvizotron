@@ -4,6 +4,18 @@ Full details of resolved items from TECH_DEBT.md. Read only when investigating r
 
 ## RESOLVED
 
+### TD-087 D5: other connection resets by gunicorn still surface as 502 — ✅ RESOLVED (2026-11-17)
+- Where: `deploy/Caddyfile`, `Dockerfile:33` (gunicorn)
+- Effect: `keepalive 1s` removes the 502 for a connection that gunicorn closes after 2 s of idleness, but other resets by gunicorn (a worker restart, a killed or recycled thread) still surface as 502, and Caddy does not retry a POST because that could write twice. The automatic submission at the deadline is now repeated by the page after a 5xx (its submission key makes a repeat safe, [ADR-0060](adr/0060-login-reservation-and-address-ceiling.md)), but the server refuses any send after the limit, so a reset on that submit is covered only when it clears within the margin before the limit (about 3.5 seconds); a reset on `start` still is not covered, because a repeated start would create a second attempt
+- Solution: if it shows in practice, make `start` safe to repeat (it has no key; a repeat creates another attempt) and let the proxy retry it, or keep gunicorn from restarting workers
+- Resolution: checked, not fixed in code. Neither image gives gunicorn `--max-requests`, so it never recycles a worker; one worker with threads restarts only after it crashes. A reset on `start` therefore needs a crash, and the participant can start again. Reopen if it shows in practice.
+
+### TD-031 C2: run page value_labels[value] raises KeyError for a stored rule value no longer offered — ✅ RESOLVED (2026-11-17)
+- Where: `app/api/admin_runs.py` (rules on the Attempts, Scoreboard and Settings tabs), `app/api/admin_rewards.py` (`_setting_rows`, the reward source)
+- Effect: a stored run rule whose value a later version no longer offers raised `KeyError` in `value_labels[value]`, so the run page answered 500
+- Solution: name stored values through `setting_value_label`
+- Resolution: `setting_value_label` (the form's naming, the raw value when unknown) on all five places; test `test_a_stored_rule_value_no_longer_offered_still_shows`.
+
 ### TD-072 SIGTERM waits for a backup that is due — ✅ RESOLVED (2026-11-16)
 - Where: `app/domain/management/commands/jobs.py` (`_work`)
 - Effect: after the stop flag is set the retention pass ends between runs, but `_work` still runs `backup.due`, `create` and `prune` and records the pass `ok`, so `docker compose stop` waits for a backup that was due until Compose kills the container. The rest of the old list (trigger kept in the summary, no double count after an erasure, one no-exporter warning, a retried late export removal, the stop flag between runs) is closed by [ADR-0061](adr/0061-heartbeat-and-restore-marker.md)

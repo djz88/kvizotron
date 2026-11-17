@@ -21,7 +21,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from app.api import admin_view, run_tabs
 from app.api.admin_auth import admin_required
 from app.api.admin_common import uuid_or_404
-from app.api.admin_forms import RewardNameForm, RewardRuleForm
+from app.api.admin_forms import RewardNameForm, RewardRuleForm, setting_value_label
 from app.api.admin_quizzes import archived_message
 from app.api.admin_workspace import workspace
 from app.api.inline_name import NameField, render_field, wants_partial
@@ -168,7 +168,7 @@ def _rule_rows(
 
 def _setting_rows(values: dict[str, str]) -> list[tuple[str, str]]:
     return [
-        (settings.CATALOGUE[key].label, settings.CATALOGUE[key].value_labels[value])
+        (settings.CATALOGUE[key].label, setting_value_label(key, value))
         for key, value in values.items()
     ]
 
@@ -199,7 +199,7 @@ def _quiz_page(
         ),
         "new_form": new_form or _new_form(quiz),
         "new_action": reverse("admin_quiz_reward_new", args=[quiz.id]),
-        "source": settings.CATALOGUE[REWARD_SOURCE].value_labels[source],
+        "source": setting_value_label(REWARD_SOURCE, source),
         "source_label": settings.CATALOGUE[REWARD_SOURCE].label,
         "run_settings": _setting_rows(rewards.rules_for_quiz(quiz)),
         "editable": quiz.archived_at is None,

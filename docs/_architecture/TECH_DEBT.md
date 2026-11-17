@@ -71,11 +71,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect:
 - Solution:
 
-### TD-031 C2: run page value_labels[value] raises KeyError for a stored rule value no longer offered — OPEN
-- Where:
-- Effect:
-- Solution:
-
 ### TD-032 C2: plan form re-render echoes a typed but unsaved access code — OPEN
 - Where:
 - Effect:
@@ -286,11 +281,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Where: `tools/load_participants.py:402`, `deploy/load.sh` (the `load` quiz)
 - Effect: measured on the `kvizotron-load` stack (the follow-up): the published ports are served by Docker's proxy, so every loopback source (127.0.0.1, 127.0.0.2) reaches Caddy as one address and shares one request-limit bucket, while a connection to the machine's LAN address keeps its source and is counted apart. The probe therefore proves only that a LAN source is counted apart and reports the loopback line as not measured; and a quiz with a photo question cannot use reveal after each question, because the application forbids the combination (a person must grade the photo), so the heaviest mode is run on two quizzes (`load` with photos, `reveal` without) and never together
 - Solution: for the first half nothing in the application can change what Docker's proxy hides (a stack that publishes no port through the proxy would); if the combination becomes allowed, merge the two seeded quizzes. Until then the limits are documented in `docs/deployment.md`
-
-### TD-087 D5: other connection resets by gunicorn still surface as 502 — OPEN
-- Where: `deploy/Caddyfile`, `Dockerfile:33` (gunicorn)
-- Effect: `keepalive 1s` removes the 502 for a connection that gunicorn closes after 2 s of idleness, but other resets by gunicorn (a worker restart, a killed or recycled thread) still surface as 502, and Caddy does not retry a POST because that could write twice. The automatic submission at the deadline is now repeated by the page after a 5xx (its submission key makes a repeat safe, [ADR-0060](adr/0060-login-reservation-and-address-ceiling.md)), but the server refuses any send after the limit, so a reset on that submit is covered only when it clears within the margin before the limit (about 3.5 seconds); a reset on `start` still is not covered, because a repeated start would create a second attempt
-- Solution: if it shows in practice, make `start` safe to repeat (it has no key; a repeat creates another attempt) and let the proxy retry it, or keep gunicorn from restarting workers
 
 ### TD-088 D5: the Caddyfile test hardcodes gunicorn's keep-alive default — OPEN
 - Where: `tests/test_deploy_headers.py:26`

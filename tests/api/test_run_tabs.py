@@ -461,3 +461,16 @@ def test_every_tab_renders_in_every_state(logged_in, state):
         assert logged_in.get(f"/admin/runs/{run.id}{path}?lang=en").status_code == 200, path
     for path in ("", "/attempts", "/scoreboard", "/statistics", "/export", "/settings"):
         assert logged_in.post(f"/admin/runs/{run.id}{path}", {}).status_code == 405, path
+
+
+def test_a_stored_rule_value_no_longer_offered_still_shows(logged_in):
+    """TD-031: a value a later version dropped from the choices is shown as stored, not a 500."""
+    from app.domain.participants import PARTICIPANT_KEYS
+
+    run = open_run()
+    key = PARTICIPANT_KEYS[0]
+    run.participant_rules_json = {**(run.participant_rules_json or {}), key: "retired-value"}
+    run.save(update_fields=["participant_rules_json"])
+    response = logged_in.get(f"/admin/runs/{run.id}/attempts?lang=en")
+    assert response.status_code == 200
+    assert "retired-value" in text(response)
