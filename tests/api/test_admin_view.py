@@ -182,6 +182,16 @@ def test_anonymous_label_sits_in_the_scoreboard_group_when_set(logged_in):
     assert 'name="anonymous_label_cs"' in board
 
 
+def test_revision_mode_sits_in_the_scoreboard_group(logged_in):
+    """It shapes only the scoreboard, so it is found there, not among technical settings."""
+    quiz = make_quiz()
+    logged_in.cookies["kvz_admin_view"] = "all"
+    html = text(logged_in.get(f"/admin/quizzes/{quiz.id}/settings"))
+    board = html[html.index('id="group-scoreboard"') :]
+    board = board[: board.index("</section>")]
+    assert 'name="revision_mode"' in board
+
+
 def test_refused_hidden_field_is_shown_with_its_error(logged_in):
     """Review Focus 2: a refusal on an advanced field is never hidden."""
     settings.set_global(settings.DATA_PROFILE, "score", admin_id=None)

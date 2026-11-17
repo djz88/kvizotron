@@ -27,7 +27,7 @@ _SHOW = {"on": _("Show"), "off": _("Hide")}
 _NEEDS_TIMES = _("Needs the data profile that keeps times.")
 
 
-GROUPS = {REVISION_MODE: "technical", PASS_MARK: "playing"}
+GROUPS = {PASS_MARK: "playing"}  # the rest, revision mode included, shape the scoreboard
 
 
 def _setting(key, choices, default, label, value_labels, help_text=""):

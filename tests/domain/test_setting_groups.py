@@ -54,7 +54,7 @@ def test_basic_settings_are_exactly_the_first_cut():
         ("photo_visibility", "answers"),
         ("none_option", "playing"),
         ("duplicate_names", "participants"),
-        ("revision_mode", "technical"),
+        ("revision_mode", "scoreboard"),
         ("official_attempt", "scoreboard"),
         ("retention_period", "data"),
         ("announce_planned", "look"),
@@ -89,10 +89,11 @@ def test_manifest_refuses_an_unknown_level():
 
 
 def test_rewards_none_option_and_revision_mode_moved():
-    """AC-168: rewards have their own group; two settings sit where they belong."""
+    """AC-168: rewards have their own group; settings sit where they belong (revision mode
+    moved again, from technical to the scoreboard it shapes)."""
     group = {key: definition.group for key, definition in settings.CATALOGUE.items()}
     assert {group[k] for k in ("reward_source", "reward_thresholds", "winner_contact")} == {
         "rewards"
     }
     assert group["none_option"] == "playing"
-    assert group["revision_mode"] == "technical"
+    assert group["revision_mode"] == "scoreboard"

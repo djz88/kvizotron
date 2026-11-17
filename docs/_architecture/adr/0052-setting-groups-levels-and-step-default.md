@@ -44,7 +44,7 @@ Design: `docs/superpowers/specs/2026-11-08-c45-ui-simplification-design.md`.
 
 ### Addendum 2026-11-12: order, rows and search
 
-* A group `rewards` between `scoreboard` and `data` holds the three reward settings; `none_option` moved to `playing` and `revision_mode` to `technical`.
+* A group `rewards` between `scoreboard` and `data` holds the three reward settings; `none_option` moved to `playing` and `revision_mode` to `technical`. Since 2026-11-17 `revision_mode` sits in `scoreboard`: after ADR-0065 it only decides how the scoreboard ranks attempts of several revisions, so that is where an admin looks for it.
 * The groups on a page are alphabetical by their label in the admin's language (the order of `SETTING_GROUPS` only lists them); a page's own sections stay where they are (Time first; Name, logo and texts, and Copy and archive last), and they are drawn like the groups.
 * Inside a group the order is no longer the catalogue's: settings are alphabetical by their translated label, so it differs between languages, and a dependant (`admin_view.CHILD_OF`) follows the setting it depends on, indented. The order is the admin pages' business, so it lives in the API layer, not in the catalogue or the manifests.
 * A choice with at most three values (not counting "use global") is drawn as radio buttons; the four scoreboard columns are one block. The submitted values are unchanged.
