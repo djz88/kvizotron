@@ -141,21 +141,16 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: Basic shows "Questions per page" on every quiz, also when it is not in pages mode, with the help "Only for pages".
 - Solution: Show it in Basic only when the navigation resolves to pages.
 
-### TD-047 C5: rewards ignore the scoreboard revision mode when choosing the official attempt — OPEN
-- Where: app/domain/results.py `official_attempt`, app/domain/rewards.py `refresh`.
-- Effect: In a run with several revisions the reward uses the best or first attempt over all revisions, while the scoreboard may show one table per revision or only the latest.
-- Solution: Decide whether rewards follow `revision_mode` (ADR-0053 states the current rule) and pick the official attempt the same way the board does.
-
 ### TD-048 C5: entitlement actions on archived runs and automatic changes without audit — OPEN
-- Where: app/domain/rewards.py `hand_over`, `cancel`, `refresh`; app/api/admin_rewards.py `entitlement`, `reward_grant`.
-- Effect: An admin can hand over, cancel or grant on an archived run. Automatic grants and cancellations keep only the row's reason and time, not an audit event.
+- Where: app/domain/rewards.py `hand_over`, `cancel`, `refresh`, `refresh_run` (called by `results.set_display` and `authoring._move_round`); app/api/admin_rewards.py `entitlement`, `reward_grant`.
+- Effect: An admin can hand over, cancel or grant on an archived run. Automatic grants and cancellations keep only the row's reason and time, not an audit event; since a changed revision mode recomputes the run's entitlements (`refresh_run`), such an automatic, unaudited change can now happen also on an ended or archived run.
 - Solution: Refuse changes on archived runs if wanted, and record automatic changes in `audit_event` with ids only.
 
 ### TD-049 C5: draws uses private helpers of rewards; module-level import cycle rewards and authoring — OPEN
 - Where: app/domain/draws.py (`rewards._figures`, `_grant_draw`, `_cancel_draw`, `_locked_run` called twice); app/domain/rewards.py and authoring.py import each other at module level.
 - Effect: Works today; a refactor can break it, and private names hide a real interface.
-  Four lazy or back imports now hold the cycles together: attempts and rewards, participants and rewards, rewards and draws, and grading to rewards (rewards to results to draws to grading).
-- Solution: Make the three helpers public, drop the second run check, and move one import into the function. Longer term, one "after an attempt changes" hook that the domain calls in the transaction (not an event, which dispatches on commit) would replace the four cross-imports.
+  Five lazy or back imports now hold the cycles together: attempts and rewards, participants and rewards, rewards and draws, grading to rewards (rewards to results to draws to grading), and results to rewards in `set_display` (`refresh_run`, rewards to results).
+- Solution: Make the three helpers public, drop the second run check, and move one import into the function. Longer term, one "after the counted attempt changes" hook that the domain calls in the transaction (not an event, which dispatches on commit) would replace the five cross-imports.
 
 ### TD-050 C5: one reward form shows threshold and draw fields for every kind — OPEN
 - Where: app/api/admin_forms.py `RewardRuleForm`, admin/_reward_rule_form.html.
@@ -287,11 +282,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: the test asserts that Caddy's `keepalive` is below 2, gunicorn's default, without reading what the `Dockerfile` starts gunicorn with, so adding `--keep-alive 1` to the `CMD` would pass the test while the proxy could again reuse a closed connection
 - Solution: read `--keep-alive` from the `CMD` in the `Dockerfile` (default 2) and compare Caddy's value with it
 
-### TD-091 D5 follow-up: a 429 at the deadline cannot be recovered by waiting — OPEN
-- Where: `app/api/assets/countdown.js` (the 429 repeat), `app/api/play.py` (`_limited`, bucket `submit`)
-- Effect: a 429 on the automatic submission repeats after `Retry-After`, which is always 60 seconds and so always after the limit, and the server rejects any send after the limit with `attempt_expired` (`attempts._check_still_valid`, no grace, [ADR-0025](adr/0025-deadline-boundary-second-semantics.md)). The attempt is lost, though the participant now sees the server's verdict. It needs more than the submit limit of 120 a minute from one address, for example a class of over 120 on one address finishing in the same minute. The repeats of the automatic submission make it likelier: every send counts toward the same bucket, so a shared address where each participant sends once and up to six more times after failures raises the volume well above the number of participants, and a very large group hitting the deadline together can meet 429
-- Solution: do not count a repeat of an attempt that is still in progress in the `submit` bucket, or count only the first send per attempt, or raise the default; decide it with ADR-0025 in mind (no grace after the limit)
-
 ### TD-092 D5 follow-up: a hung request at the deadline is neither cut nor repeated — OPEN
 - Where: `app/api/assets/countdown.js`
 - Effect: a request that hangs when the automatic submission is sent is only ended by the browser or the network, so no repeat follows inside the margin. A request timeout was tried and removed: a cut request that the server still stores made the repeat get 410, and the participant was told the time had run out although the original committed
@@ -369,6 +359,21 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
   - immutable entitlements and draw history (ADR-0053): kept, recomputed or refused when a run has them;
   - what happens to the source run: deleted, archived or left empty;
   - the source run's exports and private result links: still valid, redirected or broken.
+
+### TD-104 Counted tokens count toward the rate limit sweep threshold — OPEN
+- Where: `app/api/rate_limit.py:17`, `app/api/rate_limit.py:65`, `app/api/rate_limit.py:109`
+- Effect: counted tokens of `submit` count toward `_SWEEP_AT`, so about 9 addresses sending distinct attempt ids at the limit keep the size at the threshold and make every `_take` (start and login too) sweep all keys under the global lock, O(n) each time
+- Solution: amortized sweep threshold: after a sweep, set the next threshold to a multiple of what remains (or at least `_SWEEP_AT`), so a sweep that frees little does not run again at once
+
+### TD-105 One place for the counted attempt changed — OPEN
+- Where: `app/domain/results.py` (`set_display`), `app/domain/authoring.py` (`_move_round`), `app/domain/rewards.py` (`refresh_run`)
+- Effect: both callers guard themselves (a changed revision mode; a switch under `latest`) and call `rewards.refresh_run`; `set_display` does it through a function-level import, which adds a lazy import to the results, authoring and rewards cycle (TD-049). A third place that changes which attempt counts has to remember the call (`app/domain/CLAUDE.md` says so in words only)
+- Solution: one domain hook or an `app.kernel.events` event "the counted attempt of a run changed" that rewards subscribes to, fired from both places in their transaction
+
+### TD-106 refresh_run holds the write lock proportionally to participants — OPEN
+- Where: `app/domain/rewards.py` (`refresh_run`, `_recompute`), `app/domain/results.py` (`kept`, `_maxima`), called from `set_display` and `_move_round`
+- Effect: `refresh_run` runs inside the publish or scoreboard-settings transaction with a fixed number of queries per participant, so it holds the SQLite write lock in proportion to participants; `results.kept` also reads `_maxima(run)` once per participant whose attempts span revisions (likewise in the run statistics, export and draw loops). Fine at about 50 participants
+- Solution: pass `maxima` from the caller once per run into `kept`; measure the publish with a few hundred participants before changing more
 
 ## RESOLVED
 

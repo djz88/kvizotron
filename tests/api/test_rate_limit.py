@@ -230,3 +230,130 @@ def test_compose_passes_the_ceiling_through_as_empty_by_default():
 def test_a_header_of_separators_only_falls_back_to_the_connection(rf):
     request = rf.get("/", HTTP_X_FORWARDED_FOR=" , ,", REMOTE_ADDR="3.3.3.3")
     assert rate_limit.client_ip(request) == "3.3.3.3"
+
+
+def test_a_repeat_of_the_same_attempt_counts_once(settings):
+    """TD-091, ADR-0058: a repeat of an attempt already counted takes no place in the bucket."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 2
+    for _ in range(1 + rate_limit.FREE_REPEATS):  # the first send and its free repeats
+        assert rate_limit.try_acquire_once("submit", "1.2.3.4", "attempt-a", now=100.0)
+    assert rate_limit.try_acquire_once("submit", "1.2.3.4", "attempt-b", now=101.0)
+    assert not rate_limit.try_acquire_once("submit", "1.2.3.4", "attempt-c", now=102.0)
+
+
+def test_a_counted_attempt_is_forgotten_after_the_window(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 2
+    later = rate_limit.WINDOW + 2  # a (sent at 0) is forgotten, b (sent at 30) is still counted
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)
+    assert rate_limit.try_acquire_once("submit", "k", "b", now=30.0)
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=later)  # counts again: b + a = 2
+    assert not rate_limit.try_acquire_once("submit", "k", "c", now=later + 1)  # bucket full
+
+
+def test_a_repeat_does_not_extend_the_window_of_its_attempt(settings):
+    """The memory of an attempt runs a window from its first counted send, never sliding."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)  # takes the one place
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=59.0)  # a free repeat
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=61.0)  # counts again: the place
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=61.0)  # so the bucket is full
+
+
+def test_a_send_exactly_one_window_after_the_first_counts_again(settings):
+    """The window is `>=`: at t = WINDOW the attempt is forgotten and its send takes a place."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)  # takes the one place
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=rate_limit.WINDOW - 0.001)  # free
+    # at the boundary the place of the first send is also gone from the bucket, so it counts again
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=rate_limit.WINDOW)
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=rate_limit.WINDOW)  # place taken
+
+
+def test_the_free_repeats_are_eight(settings):
+    """The page repeats an automatic submission at most 6 times after errors and 2 after a 429."""
+    assert rate_limit.FREE_REPEATS == 8
+
+
+def test_a_ninth_repeat_in_the_window_counts_like_a_new_send(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)  # takes the one place
+    for moment in range(1, 1 + rate_limit.FREE_REPEATS):
+        assert rate_limit.try_acquire_once("submit", "k", "a", now=float(moment))
+    assert not rate_limit.try_acquire_once("submit", "k", "a", now=9.0)  # the 9th: bucket full
+    assert not rate_limit.try_acquire_once("submit", "k", "a", now=30.0)  # still in the window
+
+
+def test_repeats_past_the_free_ones_take_places(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 3
+    for _ in range(1 + rate_limit.FREE_REPEATS):
+        assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=1.0)  # the 9th takes a place
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=2.0)  # the 10th takes the last
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=3.0)
+    assert not rate_limit.try_acquire_once("submit", "k", "a", now=3.0)
+    # The window of a ended at 60 and the places at 0 and 1 have left it: a new first send.
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=61.0)
+    for _ in range(rate_limit.FREE_REPEATS):
+        assert rate_limit.try_acquire_once("submit", "k", "a", now=61.5)
+    assert rate_limit.try_acquire_once("submit", "k", "b", now=61.5)  # free repeats took nothing
+
+
+def test_a_counted_attempt_is_remembered_per_address(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "1.1.1.1", "a", now=0.0)
+    assert rate_limit.try_acquire_once("submit", "2.2.2.2", "a", now=1.0)  # its own place there
+    assert not rate_limit.try_acquire_once("submit", "1.1.1.1", "b", now=2.0)
+    assert not rate_limit.try_acquire_once("submit", "2.2.2.2", "b", now=2.0)
+
+
+def test_a_refused_attempt_is_not_remembered(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=1.0)
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=2.0)  # still not counted
+    assert rate_limit.tracked() == 2  # the key of the bucket and attempt a, nothing for b
+    with pytest.raises(KeyError):
+        rate_limit.try_acquire_once("nope", "k", "a", now=0.0)
+
+
+def test_sweep_and_reset_forget_counted_attempts(settings):
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=0.0)
+    assert rate_limit.tracked() == 2
+    rate_limit.sweep(100.0)
+    assert rate_limit.tracked() == 0
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=200.0)
+    rate_limit.reset()
+    assert rate_limit.try_acquire_once("submit", "k", "a", now=201.0)  # counted again: the place
+    assert not rate_limit.try_acquire_once("submit", "k", "b", now=201.0)
+
+
+def test_counted_attempts_count_towards_the_sweep(settings):
+    """Memory stays bounded: remembered attempts are swept with the idle keys past 1000 tracked."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 2000
+    for number in range(999):
+        assert rate_limit.try_acquire_once("submit", "1.2.3.4", f"attempt-{number}", now=0.0)
+    assert rate_limit.tracked() == 1000  # one key and 999 attempts
+    assert rate_limit.try_acquire_once("submit", "5.6.7.8", "attempt-x", now=1000.0)
+    assert rate_limit.tracked() == 2
+
+
+def test_parallel_repeats_take_one_place(settings, fast_thread_switching):
+    """TD-091: parallel sends of one attempt pass together and take one place between them."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    barrier = threading.Barrier(8)
+    results: list[bool] = []
+
+    def work():
+        barrier.wait()
+        results.append(rate_limit.try_acquire_once("submit", "1.2.3.4", "attempt-a", 10.0))
+
+    threads = [threading.Thread(target=work) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert results == [True] * 8
+    assert not rate_limit.allow("submit", "1.2.3.4", 10.0)  # at least one event
+    settings.KVZ_SUBMITS_PER_MINUTE = 2
+    assert rate_limit.allow("submit", "1.2.3.4", 10.0)  # and only one

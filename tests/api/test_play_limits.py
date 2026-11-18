@@ -78,17 +78,57 @@ def test_start_is_refused_after_the_limit_without_creating_a_participant(setting
     assert Participant.objects.count() == 3
 
 
-def test_submit_is_refused_after_the_limit(client, run, settings):
-    """AC-130: a submit over the limit is refused with 429 and Retry-After."""
+def test_submit_is_refused_after_the_limit(run, settings):
+    """AC-130: a submit over the limit is refused with 429 and Retry-After.
+
+    The limit counts attempts: a repeat of one already counted passes (TD-091), so each send here
+    is another attempt.
+    """
     settings.KVZ_SUBMITS_PER_MINUTE = 2
-    action, fields = form_of(start(client, run))
-    body = fields | answers_of(run)
-    for _ in range(2):
-        assert client.post(action, body, headers=HTMX, **ip()).status_code == 200
-    refused = client.post(action, body, headers=HTMX, **ip())
+    sends = []
+    for _ in range(3):
+        client = FormClient()
+        sends.append((client, *form_of(start(client, run))))
+    for client, action, fields in sends[:2]:
+        sent = client.post(action, fields | answers_of(run), headers=HTMX, **ip())
+        assert sent.status_code == 200
+    client, action, fields = sends[2]
+    refused = client.post(action, fields | answers_of(run), headers=HTMX, **ip())
     assert refused.status_code == 429
     assert refused["Retry-After"] == "60"
     assert REFUSED_CS in refused.content.decode()
+
+
+def test_repeats_of_counted_attempts_pass_and_a_third_attempt_is_refused(run, settings):
+    """TD-091, ADR-0058: limit 2; A sends three times, B once: all pass; C is refused."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 2
+    clients = [FormClient() for _ in range(3)]
+    forms = [form_of(start(client, run)) for client in clients]
+
+    def send(number):
+        action, fields = forms[number]
+        return clients[number].post(action, fields | answers_of(run), headers=HTMX, **ip())
+
+    assert [send(0).status_code for _ in range(3)] == [200, 200, 200]
+    assert send(1).status_code == 200
+    refused = send(2)
+    assert refused.status_code == 429
+    assert refused["Retry-After"] == "60"
+
+
+def test_a_repeat_of_the_same_attempt_passes_the_submit_limit(client, run, settings):
+    """TD-091, ADR-0058: a repeat of an attempt counted this minute passes; another one does not."""
+    settings.KVZ_SUBMITS_PER_MINUTE = 1
+    action, fields = form_of(start(client, run))
+    body = fields | answers_of(run)
+    assert client.post(action, body, headers=HTMX, **ip()).status_code == 200
+    repeated = client.post(action, body, headers=HTMX, **ip())  # same key: the stored result
+    assert repeated.status_code == 200
+    other = FormClient()
+    other_action, other_fields = form_of(start(other, run))
+    refused = other.post(other_action, other_fields | answers_of(run), headers=HTMX, **ip())
+    assert refused.status_code == 429
+    assert refused["Retry-After"] == "60"
 
 
 def test_the_limit_counts_every_request_not_only_failures(client, settings):
@@ -107,10 +147,11 @@ def test_the_refusal_comes_before_any_lookup(client, settings, what):
     settings.KVZ_SUBMITS_PER_MINUTE = 1
     settings.KVZ_STARTS_PER_MINUTE = 1
     wanted = uuid.uuid4()
-    path = f"/a/{wanted}/submit" if what == "submit" else f"/r/{wanted}/start"
-    assert client.post(path, {}, **ip()).status_code == 404
+    path = "/a/{}/submit" if what == "submit" else "/r/{}/start"
+    # Another id fills the bucket: a repeat of an attempt already counted would pass (TD-091).
+    assert client.post(path.format(uuid.uuid4()), {}, **ip()).status_code == 404
     with CaptureQueriesContext(connection) as queries:
-        refused = client.post(path, {}, **ip())
+        refused = client.post(path.format(wanted), {}, **ip())
 
     assert refused.status_code == 429
     statements = [query["sql"] for query in queries.captured_queries]
@@ -224,9 +265,11 @@ def test_a_429_on_submit_is_in_the_forms_language(client, run, settings):
     """AC-141, TD-084: a refusal answers in the language in the address, not in the browser's."""
     settings.KVZ_SUBMITS_PER_MINUTE = 1
     action, fields = form_of(start(client, run, lang="uk"))
+    assert client.post(action, fields | answers_of(run), headers=HTMX, **ip()).status_code == 200
+    other = FormClient()  # another attempt: a repeat of the first would pass (TD-091)
+    action, fields = form_of(start(other, run, lang="uk"))
     body = fields | answers_of(run)
-    assert client.post(action, body, headers=HTMX, **ip()).status_code == 200
-    refused = client.post(action, body, headers=HTMX | {"Accept-Language": "cs"}, **ip())
+    refused = other.post(action, body, headers=HTMX | {"Accept-Language": "cs"}, **ip())
     assert refused.status_code == 429
     assert REFUSED_UK in refused.content.decode()
     assert REFUSED_CS not in refused.content.decode()

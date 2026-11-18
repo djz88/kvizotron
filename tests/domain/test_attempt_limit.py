@@ -5,10 +5,17 @@ from decimal import Decimal
 
 import pytest
 
-from app.contracts import AFTER_PASS, MAX_ATTEMPTS, PASS_MARK, REPEAT_ATTEMPTS, UNFINISHED_ATTEMPT
+from app.contracts import (
+    AFTER_PASS,
+    MAX_ATTEMPTS,
+    PASS_MARK,
+    REPEAT_ATTEMPTS,
+    REVISION_MODE,
+    UNFINISHED_ATTEMPT,
+)
 from app.domain import attempts, authoring, data_policy, participants, settings
 from app.domain.models import Attempt, QuizRun
-from tests.domain.helpers import ADMIN_ID, published_quiz
+from tests.domain.helpers import ADMIN_ID, add_question, published_quiz
 
 pytestmark = pytest.mark.django_db
 T0 = datetime(2030, 1, 1, 10, 0, tzinfo=UTC)
@@ -86,6 +93,36 @@ def test_stop_after_passing():
     with pytest.raises(attempts.AttemptError) as refused:
         attempts.start(run, participant=person)
     assert refused.value.code == "already_played"
+
+
+@pytest.mark.parametrize(("mode", "again"), [("percent", False), ("latest", True)])
+def test_a_pass_on_an_older_revision_stops_only_where_the_mode_counts_it(mode, again):
+    """AC-173; TD-047: "stop" reads the kept score, which under `latest` counts only the run's
+    current revision, so after a switch a pass on an older revision no longer stops a new start
+    (ADR-0053, addendum of 2026-11-17)."""
+    quiz = published_quiz()
+    run = authoring.open_run(
+        quiz,
+        admin_id=ADMIN_ID,
+        rules={
+            REPEAT_ATTEMPTS: "allow",
+            MAX_ATTEMPTS: "3",
+            UNFINISHED_ATTEMPT: "submitted",
+            AFTER_PASS: "stop",
+        },
+        results={PASS_MARK: "50", REVISION_MODE: mode},
+    )
+    person = who(run)
+    finish(attempts.start(run, participant=person).attempt, "1")
+    add_question(quiz)
+    newer = authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    run.refresh_from_db()
+    if again:
+        assert attempts.start(run, participant=person).attempt.revision_id == newer.id
+    else:
+        with pytest.raises(attempts.AttemptError) as refused:
+            attempts.start(run, participant=person)
+        assert refused.value.code == "already_played"
 
 
 def test_more_after_passing_by_default():

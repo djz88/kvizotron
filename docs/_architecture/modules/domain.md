@@ -43,7 +43,7 @@ Key decision: [ADR-0006](../adr/0006-separate-quiz-revision-run-attempt-immutabl
 
 ## Scoreboard modes on revision change (per run, chosen by admin)
 
-See [ADR-0065](../adr/0065-scoreboard-by-percent-and-shared-boards.md). The mode (`scoreboard_revision_mode`, global → quiz) is copied to the run with the other display settings and can be switched on the run page, also after the run ended; rewards and draws do not read it.
+See [ADR-0065](../adr/0065-scoreboard-by-percent-and-shared-boards.md). The mode (`scoreboard_revision_mode`, global → quiz) is copied to the run with the other display settings and can be switched on the run page, also after the run ended; rewards, draws and the pass mark count the attempt the board counts under it (addendum of 2026-11-17 to [ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md)).
 
 | Mode | Behaviour |
 |---|---|
@@ -65,7 +65,7 @@ Decision: [ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md). 
                   └──cancel (reason)──▶ cancelled ◀── cancel (admin, reason)
 ```
 
-- Sources: `auto` (threshold or participation from the official attempt; recomputation may cancel a granted one with "no longer reached"), `manual` (granted by the admin), `draw` (a drawn winner). Only an admin cancels `manual`, `draw`, participation and handed-over entitlements; a rule an admin cancelled is never granted back automatically.
+- Sources: `auto` (threshold from the official attempt, participation from any submitted, scored attempt of the run, [ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md) addendum 2026-11-17; recomputation may cancel a granted one with "no longer reached"), `manual` (granted by the admin), `draw` (a drawn winner). Only an admin cancels `manual`, `draw`, participation and handed-over entitlements; a rule an admin cancelled is never granted back automatically.
 - Draw actions: `draw` starts a chain, `move_up` and `substitute` amend it, `redraw` supersedes it and starts a new one. Each action is a new `draw` row; the current winners and alternates are replayed from the chain. Only on a closed or archived run.
 
 ## Restart

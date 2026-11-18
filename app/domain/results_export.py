@@ -338,7 +338,8 @@ def _attempts(run: QuizRun, locale: str, questions: _Questions) -> list[Row]:
     """Place as the admin board shows it, whatever the public sees; official as rewards see it.
 
     The admin board keeps the run's revision mode, so a separate table ranks its own attempts and
-    an official attempt on an older revision under `latest` has no place. A shared board of several
+    under `latest` an attempt on an older revision has no place and is never official, not under
+    `average` and not without a participant (`results.counted`, TD-047). A shared board of several
     runs never counts: the place is the one in the run's own board (ADR-0065).
     """
     del questions
@@ -348,16 +349,22 @@ def _attempts(run: QuizRun, locale: str, questions: _Questions) -> list[Row]:
         for row in table.rows
     }
     official: dict[object, object] = {}  # participant -> the chosen attempt id, or None
-    averaged: set[object] = set()  # participants whose every submitted attempt is in the mean
-    rows = []
-    for attempt in (
+    averaged: set[object] = set()  # participants whose every counted attempt is in the mean
+    finished = list(
         _finished(run).select_related("participant", "revision").order_by("submitted_at", "id")
-    ):
+    )
+    in_mode = {attempt.pk for attempt in results.counted(run, finished)}
+    rows = []
+    for attempt in finished:
         attempt.run = run
         who = attempt.participant
         place = ranked.get(str(attempt.id))
-        if who is None:  # an attempt without a browser counts on its own
-            counts = attempt.status == Attempt.Status.SUBMITTED and attempt.score is not None
+        if who is None:  # an attempt without a browser counts on its own, where the mode counts
+            counts = (
+                attempt.pk in in_mode
+                and attempt.status == Attempt.Status.SUBMITTED
+                and attempt.score is not None
+            )
         else:
             if who.pk not in official:
                 found = results.kept(who)
@@ -369,6 +376,7 @@ def _attempts(run: QuizRun, locale: str, questions: _Questions) -> list[Row]:
                         averaged.add(who.pk)
             counts = official[who.pk] == attempt.pk or (
                 who.pk in averaged
+                and attempt.pk in in_mode
                 and attempt.status == Attempt.Status.SUBMITTED
                 and attempt.score is not None
             )

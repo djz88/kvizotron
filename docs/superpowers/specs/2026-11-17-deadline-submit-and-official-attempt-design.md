@@ -44,7 +44,9 @@ Two open debt items before v1.0 can cost a participant their result or their pri
 - Under `latest`, a participant whose only attempts are on an older revision has no counted attempt:
   they are off the board, their automatic threshold entitlement that is not handed over is
   cancelled as "no longer reached" by the usual recomputation, and they are not eligible for a
-  draw. Participation, handed-over and admin-given entitlements stay (ADR-0053).
+  draw. Participation, handed-over and admin-given entitlements stay (ADR-0053). Participation is
+  granted for any submitted, scored attempt of the run whatever the mode (owner decision): "took
+  part", not a place; so a participant who finishes the old revision after a switch gets it too.
 
 ## Decided by the agent (owner may change)
 
@@ -59,9 +61,12 @@ Two open debt items before v1.0 can cost a participant their result or their pri
   are cancelled, nothing an admin cancelled is granted back, participation is never taken back).
   Draws already held stay in their unchangeable history; the next draw action rebuilds its
   eligible set with the new rule (it already rebuilds at every action).
-- **The limiter's memory of counted attempts** lasts the bucket's window (60 s) from the latest send
-  of that attempt, and is swept with the other idle keys. A repeat later than that counts again;
-  by then the deadline has passed and the server rejects the send anyway (ADR-0025).
+- **The limiter's memory of counted attempts** lasts the bucket's window (60 s) from the first
+  counted send of that attempt (a repeat does not extend it), and lets at most 8 repeats of that
+  attempt pass free in that window (the page sends at most 6 after errors and 2 after a 429);
+  a further repeat counts like a new send. It is swept with the other idle keys. A repeat later
+  than the window counts again; by then the deadline has passed and the server rejects the send
+  anyway (ADR-0025). This keeps one address from resending one attempt id without limit.
 
 ## Goals
 

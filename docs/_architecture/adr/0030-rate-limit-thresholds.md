@@ -38,7 +38,7 @@ Values are configurable.
 
 ### Consequences
 
-* Good, because 50 participants behind one IP can submit together at the defaults, with each participant sending once; repeats of the automatic submission after a failure can add sends ([ADR-0060](0060-login-reservation-and-address-ceiling.md), [TD-091](../TECH_DEBT.md))
+* Good, because 50 participants behind one IP can submit together at the defaults, with each participant sending once; repeats of the automatic submission after a failure can add sends ([ADR-0060](0060-login-reservation-and-address-ceiling.md); since the addendum of 2026-11-17 to [ADR-0058](0058-rate-limit-buckets.md) they count once per attempt, [TD-091](../TECH_DEBT_archive.md))
 * Good, because no extra service or custom proxy build is needed
 * Bad, because a restart resets the counters
 * Bad, because it works only with a single application process

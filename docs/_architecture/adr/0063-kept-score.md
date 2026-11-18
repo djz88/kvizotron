@@ -30,12 +30,12 @@ Chosen option: "A `Kept` value from the domain", because the figures are compute
 * **Figures.** Under average `correct` is the floor of the mean and `questions` the mean rounded half up; the representative attempt is the last submitted one.
 * **`results.kept(participant)`** returns `Kept` or None (no submitted, scored attempt). `official_attempt` is `kept(...).attempt`. Attempts waiting for grading are ignored by every rule, as before: rewards, draws, the scoreboard, the export and `official_attempt` count only submitted, scored attempts.
 * **Waiting.** `Kept.waiting` is a flag: under `first` the earliest finished attempt is pending, under `last` the latest, under `best` and `average` any. Only the pass mark uses it (no verdict while waiting).
-* **Entitlements** of an average point at the last attempt. The attempts export marks every submitted attempt as official under average, otherwise the chosen one.
+* **Entitlements** of an average point at the last attempt. The attempts export marks every submitted attempt the run's revision mode counts as official under average, otherwise the chosen one.
 
 ### Consequences
 
 * Good, because rewards, draws, the export and the pass mark read one computed value
-* Bad, because the scoreboard ranks per table under the revision modes `separate` and `latest` (each table's own entries and maximum), while `kept` spans all of the participant's attempts; the board can show another attempt or mean, as it already could for best and first
+* Bad, because under `separate` the board ranks one row per revision table while `kept` is one attempt over all revisions, and under `average` the board ranks by the mean of percents while `kept` keeps the mean of points over the mean of maxima; which attempts `kept` counts follows the board's revision mode (addendum of 2026-11-17 to [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md), [TD-047](../TECH_DEBT_archive.md))
 
 ### Confirmation
 

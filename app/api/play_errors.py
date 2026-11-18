@@ -111,10 +111,19 @@ def _error(
     return page(request, "public/play.html", context, locale, status=STATUS[code])
 
 
-def _limited(request: HttpRequest, bucket: str) -> HttpResponse | None:
-    """Every request counts, the first thing a view does: before a lookup, a row or a cookie."""
+def _limited(request: HttpRequest, bucket: str, token: str | None = None) -> HttpResponse | None:
+    """The limit is the first thing a view does: before a lookup, a row or a cookie.
+
+    Without a token every request counts. With one (the attempt of `submit`), a repeat of the same
+    attempt passes without counting again, but only up to `rate_limit.FREE_REPEATS` times within the
+    window of its first counted send (ADR-0058, TD-091).
+    """
     ip, now = rate_limit.client_ip(request), time.monotonic()
-    if not rate_limit.try_acquire(bucket, ip, now):
+    if token is None:
+        allowed = rate_limit.try_acquire(bucket, ip, now)
+    else:
+        allowed = rate_limit.try_acquire_once(bucket, ip, token, now)
+    if not allowed:
         response = _error(request, "rate_limited", request.locale)  # type: ignore[attr-defined]
         response["Retry-After"] = rate_limit.retry_after()
         return response

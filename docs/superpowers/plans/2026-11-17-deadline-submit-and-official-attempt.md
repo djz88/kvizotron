@@ -14,7 +14,7 @@
 
 - No grace after the deadline (ADR-0025); `countdown.js` repeat schedule unchanged.
 - `start`, `login`, `code`, `login_address` buckets unchanged; `submit` limit value, address key (`rate_limit.client_ip`) and 429 + `Retry-After` unchanged.
-- A counted attempt is remembered 60 s (`rate_limit.WINDOW`) from its latest send and swept with the other idle keys (`_SWEEP_AT`).
+- A counted attempt is remembered 60 s (`rate_limit.WINDOW`) from its first counted send (a repeat does not extend it, at most 8 free repeats) and swept with the other idle keys (`_SWEEP_AT`).
 - `results` stays the only owner of "which attempt counts"; `rewards` keeps calling `results.kept` / `results.official_attempt`.
 - Revision modes (ADR-0065): `percent` and `separate` → the run's rule over all revisions by percent of each attempt's own revision maximum (`_pick_by_percent` with `_maxima(run)`); `latest` → only attempts of `run.current_revision`, by the run's rule. Within one revision behaviour is unchanged.
 - `average`: picked as the board picks (mean of percents); the figures stay `_average_figures` (mean points over mean maxima).
@@ -40,7 +40,7 @@
 - Test: `tests/api/test_rate_limit.py`, `tests/api/test_request_limits.py` (or the existing submit-limit test file)
 
 **Interfaces:**
-- Produces: `rate_limit.try_acquire_once(bucket: str, key: str, token: str, now: float) -> bool` — True without taking a place when `(bucket, key, token)` was counted within `WINDOW` (refreshes its time); otherwise behaves like `try_acquire` and, on success, remembers the token. `_limited(request, bucket, token: str | None = None)`; `submit` passes `str(attempt_id)`.
+- Produces: `rate_limit.try_acquire_once(bucket: str, key: str, token: str, now: float) -> bool` — True without taking a place when `(bucket, key, token)` was counted within `WINDOW` (within the fixed window, at most `FREE_REPEATS` = 8 times; it does not refresh its time); otherwise behaves like `try_acquire` and, on success, remembers the token. `_limited(request, bucket, token: str | None = None)`; `submit` passes `str(attempt_id)`.
 
 - [ ] **Step 1: Failing tests** (limit set to 2 via `settings` override as existing limiter tests do):
 

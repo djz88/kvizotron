@@ -53,11 +53,12 @@ the threshold as a share of the attempt, `reached(rule, figures)` compares, and
 the largest share with ties by rule order. Rules, entitlements, copies and transactions live in
 `app/domain/rewards.py`.
 
-## Known limit
+## Official attempt
 
-The official attempt for rewards (and for a draw) is chosen over all of the participant's submitted
-attempts in the run, whatever the scoreboard's revision mode. Under `separate` or `latest` the
-scoreboard may count a different attempt than the one that earned the reward.
+Rewards and draws count the attempt the run's scoreboard counts under its revision mode, and a
+changed revision mode or, under `latest` only (the one mode that filters by revision), a switch of the run to another revision recomputes the run's
+entitlements: the addendum of 2026-11-17 to
+[ADR-0053](../adr/0053-rewards-tiers-alternates-and-draw-history.md).
 
 ## Data owned
 

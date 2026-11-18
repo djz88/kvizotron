@@ -54,6 +54,7 @@ __all__ = [
     "place_of",
     "anonymous_label",
     "conflicts",
+    "counted",
     "ensure_run_allowed",
     "needs_participant",
     "reasons",
@@ -115,7 +116,7 @@ def of(run: QuizRun) -> dict[str, str]:
 
 
 def revision_mode(run: QuizRun) -> str:
-    """percent, separate or latest; only what the board shows, never rewards or draws."""
+    """percent, separate or latest: how the board shows revisions and which attempts count."""
     return of(run)[REVISION_MODE]
 
 
@@ -167,7 +168,11 @@ def ensure_run_allowed(quiz: Quiz, chosen: Mapping[str, str], profile: str) -> N
 
 
 def set_display(run: QuizRun, chosen: Mapping[str, str], *, admin_id: str) -> None:
-    """Only what changes what is shown; the rest decides the order and stays as opened."""
+    """What is shown and the revision mode; the rest decides the order and stays as opened.
+
+    The revision mode also decides which attempt counts (`kept`), so a changed one recomputes the
+    run's rewards in the same transaction (ADR-0053, addendum of 2026-11-17).
+    """
     authoring.ensure_editable(run.quiz)
     if run.kind == QuizRun.Kind.TEST:
         raise ResultConflict([SCOREBOARD_VISIBILITY], [TEST_RUN])
@@ -192,6 +197,10 @@ def set_display(run: QuizRun, chosen: Mapping[str, str], *, admin_id: str) -> No
             return
         current.results_json = (current.results_json or {}) | after
         current.save(update_fields=["results_json"])
+        if REVISION_MODE in changed:
+            from app.domain import rewards  # rewards imports this module
+
+            rewards.refresh_run(current)
         _forget(current)  # a rollback only costs a rebuilt board
         audit.record(
             actor_type="admin",
@@ -450,19 +459,29 @@ def _waits(rule: str, finished: list[Attempt]) -> bool:
 
 
 def kept(participant: Participant) -> Kept | None:
-    """The attempt and the figures that count for the participant, by the run's rule.
+    """The attempt and the figures that count for the participant, as the run's board counts.
+
+    The run's own revision mode decides which attempts count (`latest`: only its current
+    revision), and the run's rule picks among them by the percent of each attempt's own revision
+    maximum, as `_pick_by_percent` does for the board; `separate` picks like `percent`, so a
+    participant counts once (ADR-0065, TD-047). Within one revision that is the order of points.
+    Under `average` the figures stay the mean of points over the mean of maxima.
 
     Only submitted attempts with a score count; switched, abandoned, unsent and waiting ones
     never do. `waiting` only says that the rule depends on an attempt that waits for grading;
     the pass mark uses it, nothing that grants or ranks does (ADR-0063). None when the
-    participant has no submitted, scored attempt.
+    participant has no submitted, scored attempt the mode counts.
     """
-    finished = list(
+    run = participant.run
+    values = of(run)
+    finished = counted(
+        run,
         Attempt.objects.filter(
             participant=participant,
             status__in=Attempt.FINISHED,
             submitted_at__isnull=False,
-        )
+        ),
+        values[REVISION_MODE],
     )
     for attempt in finished:
         attempt.participant = participant  # one query, not one per attempt
@@ -471,12 +490,17 @@ def kept(participant: Participant) -> Kept | None:
     found = [a for a in finished if a.status == Attempt.Status.SUBMITTED and a.score is not None]
     if not found:
         return None
-    rule = of(participant.run)[OFFICIAL_ATTEMPT]
+    rule = values[OFFICIAL_ATTEMPT]
     by_id = {str(attempt.id): attempt for attempt in found}
-    entries = [_entry(attempt, attempt.max_score or Decimal(0)) for attempt in found]
-    chosen = _view().pick_official(entries, rule)
+    by_points = _view().pick_official(
+        [_entry(attempt, attempt.max_score or Decimal(0)) for attempt in found], rule
+    )
+    chosen = by_points  # within one revision percents order as points: no query for maxima
+    if len({attempt.revision_id for attempt in found}) > 1:
+        picked, _shown = _pick_by_percent(found, _maxima(run), rule)
+        chosen = picked[0]
     attempt = by_id[chosen.attempt_id]
-    figures = _average_figures(found, chosen) if rule == "average" else _figures_of(attempt)
+    figures = _average_figures(found, by_points) if rule == "average" else _figures_of(attempt)
     return Kept(attempt, figures, len(found), rule, _waits(rule, finished))
 
 
@@ -590,12 +614,19 @@ def _maxima(run: QuizRun, used: list[RunRevision] | None = None) -> dict[object,
     return maxima
 
 
-def _shown_candidates(run: QuizRun) -> list[Attempt]:
-    """The run's candidates its own revision mode shows: `latest` keeps its current revision."""
-    attempts = _candidates(run)
-    if revision_mode(run) == LATEST:
+def counted(run: QuizRun, attempts: Sequence[Attempt], mode: str | None = None) -> list[Attempt]:
+    """The attempts the run's own revision mode counts: `latest` keeps its current revision.
+
+    `mode` is the run's revision mode when the caller has already read it.
+    """
+    if (mode or revision_mode(run)) == LATEST:
         return [a for a in attempts if a.revision_id == run.current_revision_id]
-    return attempts
+    return list(attempts)
+
+
+def _shown_candidates(run: QuizRun) -> list[Attempt]:
+    """The run's candidates its own revision mode shows."""
+    return counted(run, _candidates(run))
 
 
 def _rank_shared(runs: list[QuizRun], values: Mapping[str, str]) -> _Ranked:
@@ -628,7 +659,7 @@ def _ranked_tables(run: QuizRun, values: Mapping[str, str]) -> list[_Ranked]:
     if mode == LATEST:
         current = next((row for row in used if row.revision_id == run.current_revision_id), None)
         top = current.max_score if current else run.current_revision.max_score
-        mine = [a for a in attempts if a.revision_id == run.current_revision_id]
+        mine = counted(run, attempts, mode)
         return [
             _Ranked(
                 run.current_revision_id,

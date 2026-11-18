@@ -511,7 +511,11 @@ def _round_decision(quiz: Quiz, decision: str | None) -> str:
 
 
 def _move_round(run: QuizRun, revision: QuizRevision, decision: str) -> None:
-    """`stay` changes nothing, including what earlier decisions said about older attempts."""
+    """`stay` changes nothing, including what earlier decisions said about older attempts.
+
+    A switch can change which attempt counts (`latest` counts only the current revision), so it
+    recomputes the run's rewards in the publication's transaction (ADR-0053).
+    """
     if decision == Decision.STAY:
         return
     now = timezone.now()
@@ -528,6 +532,9 @@ def _move_round(run: QuizRun, revision: QuizRevision, decision: str) -> None:
         ),
     )
     QuizRun.objects.filter(pk=run.pk).update(current_revision=revision)
+    run.current_revision = revision
+    if run_results.revision_mode(run) == run_results.LATEST:  # only `latest` filters by revision
+        run_rewards.refresh_run(run)
 
 
 def future_snapshot(quiz: Quiz) -> dict[str, Any]:

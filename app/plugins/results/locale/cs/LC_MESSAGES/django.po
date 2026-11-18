@@ -163,8 +163,8 @@ msgid "Only the latest revision"
 msgstr "Jen poslední revize"
 
 #: manifest.py
-msgid "One table ranks each attempt by the percent of its own revision's maximum."
-msgstr "Jedna tabulka řadí každý pokus podle procent z maxima jeho vlastní revize."
+msgid "One table ranks each attempt by the percent of its own revision's maximum. This choice also decides which attempt counts for rewards, draws and the pass mark."
+msgstr "Jedna tabulka řadí každý pokus podle procent z maxima jeho vlastní revize. Tato volba také určuje, který pokus se počítá pro odměny, losování a hranici úspěchu."
 
 #: manifest.py
 msgid "Scoreboards on the quiz page"

@@ -241,10 +241,10 @@ def _verdicts(run: QuizRun, found: Sequence[Attempt]) -> tuple[int | None, int]:
     people = {a.participant_id for a in found if a.participant_id}  # ids only: no query each
     for who in Participant.objects.filter(pk__in=people).select_related("run"):
         verdicts.append(results.kept_passed(results.kept(who), run))
-    for attempt in found:
-        if not attempt.participant_id:
-            attempt.run = run
-            verdicts.append(results.attempt_passed(attempt))
+    alone = [a for a in found if not a.participant_id]
+    for attempt in results.counted(run, alone):  # on its own: judged where the mode counts it
+        attempt.run = run
+        verdicts.append(results.attempt_passed(attempt))
     judged = [v for v in verdicts if v is not None]
     return sum(1 for v in judged if v), len(judged)
 

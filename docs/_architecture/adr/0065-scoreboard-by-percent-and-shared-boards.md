@@ -14,7 +14,7 @@ date: 2026-11-16
 * An admin sees everyone in one table without clicking through revisions or runs
 * Scores from revisions with different maxima stay comparable
 * No attempt, participant, reward or draw moves between runs; a restart still never takes over results ([ADR-0007](0007-restart-creates-new-run-keeps-history.md))
-* The revision mode only changes what is shown; rewards and draws do not read it (TD-047)
+* The revision mode moves no data; since the addendum of 2026-11-17 to [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md), rewards, draws and the pass mark count the attempt the board counts under it ([TD-047](../TECH_DEBT_archive.md))
 * Fewer admin pages: no separate merge page with a confirmation
 
 ## Considered Options
@@ -49,7 +49,7 @@ Chosen option: (b), together with a display-only shared board of several runs, b
 
 * Good, because a run with revisions of different maxima shows one table by default, and several runs can show one table, without moving data
 * Good, because one admin page and one audited action less: the revision mode is a plain run display setting
-* Good, because rewards and draws are unaffected: they never read the revision mode (TD-047) and the shared board copies nothing
+* Good, because the shared board copies nothing: rewards and draws stay with each run and count the attempt that run's own board counts (addendum of 2026-11-17 to [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md), [TD-047](../TECH_DEBT_archive.md))
 * Bad, because a percentage hides that revisions may differ in difficulty; the admin can still switch a run to one table per revision
 * Bad, because existing runs change what they show after the upgrade (`separate` and merged runs become `percent`)
 * Neutral, because [AC-06](../acceptance-criteria.md) changes meaning: it no longer tests the equal-maximum merge but the percent default and the switch on the run

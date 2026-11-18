@@ -383,7 +383,7 @@ def test_places_of_a_shared_main_run_stay_within_the_run():
 
 
 def test_official_is_the_attempt_rewards_count():
-    """AC-103."""
+    """AC-103; TD-047: under `latest` the official attempt is the board's, though not the best."""
     quiz = three_types()
     run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={REVISION_MODE: "latest"})
     old = play(run, 1, name="Jana")
@@ -393,10 +393,10 @@ def test_official_is_the_attempt_rewards_count():
     run.refresh_from_db()
     new = play(run, 2, who=old.participant)
     Attempt.objects.filter(pk=new.pk).update(score=Decimal(1))
-    assert results.official_attempt(old.participant).pk == old.pk
+    assert results.official_attempt(old.participant).pk == new.pk  # old has more points
     (found,) = results_export.tables([run], ["attempts"], "cs", photos=False)
     shown = {row["attempt_id"]: (row["official"], row["place"]) for row in found.rows}
-    assert shown == {str(old.id): ("ano", ""), str(new.id): ("ne", "1")}
+    assert shown == {str(old.id): ("ne", ""), str(new.id): ("ano", "1")}
 
 
 def test_export_marks_all_attempts_under_average():
@@ -408,6 +408,48 @@ def test_export_marks_all_attempts_under_average():
     (found,) = results_export.tables([run], ["attempts"], "cs", photos=False)
     shown = {row["attempt_id"]: row["official"] for row in found.rows}
     assert shown == {str(first.id): "ano", str(second.id): "ano"}
+
+
+def test_export_average_under_latest_marks_only_the_current_revision():
+    """TD-047: under `latest` the average spans the current revision, as `kept` counts it."""
+    quiz = three_types()
+    run = authoring.open_run(
+        quiz,
+        admin_id=ADMIN_ID,
+        results={REVISION_MODE: "latest", OFFICIAL_ATTEMPT: "average"},
+    )
+    old = play(run, 1, name="Jana")
+    Attempt.objects.filter(pk=old.pk).update(score=Decimal(8), max_score=Decimal(10))
+    add_question(quiz, OPTION_B)
+    authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    run.refresh_from_db()
+    new = play(run, 2, who=old.participant)
+    Attempt.objects.filter(pk=new.pk).update(score=Decimal(9), max_score=Decimal(12))
+    assert results.kept(old.participant).count == 1
+    (found,) = results_export.tables([run], ["attempts"], "cs", photos=False)
+    shown = {row["attempt_id"]: (row["official"], row["place"]) for row in found.rows}
+    assert shown == {str(old.id): ("ne", ""), str(new.id): ("ano", "1")}
+
+
+@pytest.mark.parametrize(("mode", "old_official"), [("percent", "ano"), ("latest", "ne")])
+def test_an_attempt_without_a_participant_is_official_only_where_the_mode_counts(
+    mode, old_official
+):
+    """TD-047: an attempt without a browser counts on its own, and only where the mode counts it."""
+    quiz = three_types()
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={REVISION_MODE: mode})
+    old = play(run, 1)
+    add_question(quiz, OPTION_B)
+    authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+    run.refresh_from_db()
+    new = play(run, 2)
+    Attempt.objects.filter(pk__in=[old.pk, new.pk]).update(participant=None)
+    (found,) = results_export.tables([run], ["attempts"], "cs", photos=False)
+    shown = {row["attempt_id"]: (row["official"], bool(row["place"])) for row in found.rows}
+    assert shown == {
+        str(old.id): (old_official, old_official == "ano"),
+        str(new.id): ("ano", True),
+    }
 
 
 def test_export_marks_only_the_last_under_last():

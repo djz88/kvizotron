@@ -626,7 +626,7 @@ def _result_link(
 @csrf_exempt
 @require_POST
 def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
-    if (refused := _limited(request, "submit")) is not None:
+    if (refused := _limited(request, "submit", str(attempt_id))) is not None:
         return refused
     received_at = received_time(request)
     automatic = request.POST.get("auto_submit") == "1"

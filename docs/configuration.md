@@ -39,7 +39,7 @@ Counted per client address and minute (the login has two buckets: per user name 
 | `KVZ_LOGIN_ATTEMPTS_PER_MINUTE` | no | `5` | Wrong administration logins per client address and user name | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE` | no | `30` | Wrong administration logins per client address across all user names | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_CODE_ATTEMPTS_PER_MINUTE` | no | `10` | Wrong access codes one client address may try | `app/settings.py`, `app/api/rate_limit.py` | app |
-| `KVZ_SUBMITS_PER_MINUTE` | no | `120` | Submit requests per client address | `app/settings.py`, `app/api/rate_limit.py` | app |
+| `KVZ_SUBMITS_PER_MINUTE` | no | `120` | Submitted attempts per client address per minute; up to 8 repeats of an attempt within a minute of its first counted send take no place (ADR-0058) | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_STARTS_PER_MINUTE` | no | `300` | Start requests per client address | `app/settings.py`, `app/api/rate_limit.py` | app |
 | `KVZ_TRUSTED_PROXIES` | no | `1` | Proxies in front of the application that append the client address to `X-Forwarded-For` (Caddy in Compose, the ingress in Kubernetes); `0` when clients reach the application directly ([ADR-0066](_architecture/adr/0066-single-container-image.md)) | `app/settings.py`, `app/api/rate_limit.py` | no |
 

@@ -39,7 +39,7 @@ SCOREBOARD_SHOW_TIME = "scoreboard_show_time"  # on, off
 SCOREBOARD_SHOW_DURATION = "scoreboard_show_duration"  # on, off
 SCOREBOARD_SECOND_SORT = "scoreboard_second_sort"  # submitted, duration
 TIE_BREAK_POLICY = "tie_break_policy"  # shared, earlier, random (ADR-0026)
-REVISION_MODE = "revision_mode"  # percent, separate, latest; display only (ADR-0065)
+REVISION_MODE = "revision_mode"  # percent, separate, latest; counted attempt and board (ADR-0065)
 ARCHIVED_RESULTS = "archived_results"  # off, on (ADR-0031)
 SCOREBOARD_RUNS = "scoreboard_runs"  # current, all; boards the quiz page offers, read live
 REWARD_SOURCE = "reward_source"  # none, previous_run, quiz; only fills a new run
@@ -106,7 +106,8 @@ RESULT_KEYS: tuple[str, ...] = (
     REVISION_MODE,
     ARCHIVED_RESULTS,
 )
-# What only changes what is shown, so it may change on a running, ended or archived run.
+# What may change on a running, ended or archived run: what is shown, and the revision mode,
+# which also decides the counted attempt, so a change recomputes rewards (ADR-0053).
 RESULT_DISPLAY_KEYS: tuple[str, ...] = tuple(
     key for key in RESULT_KEYS if key not in (OFFICIAL_ATTEMPT, PASS_MARK, TIE_BREAK_POLICY)
 )

@@ -149,7 +149,11 @@ MANIFEST = {
                 "separate": _("One table per revision"),
                 "latest": _("Only the latest revision"),
             },
-            _("One table ranks each attempt by the percent of its own revision's maximum."),
+            _(
+                "One table ranks each attempt by the percent of its own revision's maximum. "
+                "This choice also decides which attempt counts for rewards, draws and the "
+                "pass mark."
+            ),
         ),
         _setting(
             SCOREBOARD_RUNS,

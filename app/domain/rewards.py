@@ -59,6 +59,7 @@ __all__ = [
     "offered",
     "public_winners",
     "refresh",
+    "refresh_run",
     "rules_for_quiz",
     "rules_of",
     "save_rule",
@@ -471,25 +472,75 @@ def _reached(run: QuizRun, rules: list[RewardRule], figures: AttemptFigures) -> 
     return set(_reward().qualifies(thresholds, figures, of(run)[REWARD_THRESHOLDS]))
 
 
+def _automatic_rules(run: QuizRun) -> list[RewardRule]:
+    """The rules a recomputation grants by itself; a test run has none."""
+    if run.kind == QuizRun.Kind.TEST:
+        return []
+    return _ordered(
+        RewardRule.objects.filter(run=run, kind__in=[_KINDS.THRESHOLD, _KINDS.PARTICIPATION])
+    )
+
+
 def refresh(participant: Participant) -> None:
     """Call it inside the transaction that changed one of the participant's attempts.
 
     Grants what the official attempt reaches and cancels the automatic grants it no longer
     reaches. A handed-over entitlement, and one the admin or a draw gave, stays as it is. A rule
     the admin cancelled for this participant is not granted again; one this function cancelled is.
-    Participation is granted once and never taken back. A test run gets nothing.
+    Participation is granted once and never taken back, and follows any submitted, scored
+    attempt of the run whatever the revision mode (addendum of 2026-11-17 to ADR-0053); thresholds
+    follow the official attempt. A test run gets nothing.
     """
     run = participant.run
-    if run.kind == QuizRun.Kind.TEST:
+    rules = _automatic_rules(run)
+    if rules:
+        _recompute(participant, run, rules)
+
+
+def refresh_run(run: QuizRun) -> None:
+    """`refresh` for every participant of the run with a finished attempt (TD-047, ADR-0053).
+
+    Call it inside the transaction that changed which attempt counts without a new attempt: a
+    changed revision mode of the run, or the run's switch to another revision under `latest`
+    (only that mode filters by revision). It reads the run
+    as stored now, so the caller saves the change first. Draws already held stay as they are; a
+    test run and a run without threshold or participation rules get nothing.
+    """
+    current = QuizRun.all_kinds.filter(pk=run.pk).first()
+    if current is None:
         return
-    rules = _ordered(
-        RewardRule.objects.filter(run=run, kind__in=[_KINDS.THRESHOLD, _KINDS.PARTICIPATION])
-    )
+    rules = _automatic_rules(current)
     if not rules:
         return
+    finished = Participant.objects.filter(
+        run=current,
+        attempts__status__in=Attempt.FINISHED,
+        attempts__submitted_at__isnull=False,
+    )
+    for participant in finished.distinct().order_by("created_at", "id"):
+        participant.run = current  # one read of the run, not one per participant
+        _recompute(participant, current, rules)
+
+
+def _recompute(participant: Participant, run: QuizRun, rules: list[RewardRule]) -> None:
+    """What `refresh` says, with the run's automatic rules already read."""
     found = results.kept(participant)
     official = found.attempt if found is not None else None
     reached = _reached(run, rules, found.figures) if found is not None else set()
+    took_part = official
+    if took_part is None and any(rule.kind == _KINDS.PARTICIPATION for rule in rules):
+        # participation is "took part", not a place: any submitted, scored attempt of the run
+        took_part = (
+            Attempt.objects.filter(
+                participant=participant,
+                run=run,
+                status=Attempt.Status.SUBMITTED,
+                submitted_at__isnull=False,
+                score__isnull=False,
+            )
+            .order_by("-submitted_at", "-id")
+            .first()
+        )
     held: dict[object, RewardEntitlement] = {}
     refused: set[object] = set()  # an admin cancelled it: never granted back automatically
     for row in RewardEntitlement.objects.filter(participant=participant):
@@ -500,15 +551,17 @@ def refresh(participant: Participant) -> None:
     now = timezone.now()
     for rule in rules:
         current = held.get(rule.id)
-        wanted = official is not None and (
-            rule.kind == _KINDS.PARTICIPATION or str(rule.id) in reached
+        wanted = (
+            took_part is not None
+            if rule.kind == _KINDS.PARTICIPATION
+            else official is not None and str(rule.id) in reached
         )
         if wanted and current is None and rule.id not in refused:
             RewardEntitlement.objects.create(
                 run=run,
                 rule=rule,
                 participant=participant,
-                attempt=official,
+                attempt=took_part if rule.kind == _KINDS.PARTICIPATION else official,
                 status=_STATUS.GRANTED,
                 source=_SOURCE.AUTO,
             )

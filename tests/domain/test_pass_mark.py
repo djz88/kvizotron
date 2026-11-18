@@ -5,10 +5,10 @@ from decimal import Decimal
 
 import pytest
 
-from app.contracts import OFFICIAL_ATTEMPT, PASS_MARK, SCOREBOARD_VISIBILITY
+from app.contracts import OFFICIAL_ATTEMPT, PASS_MARK, REVISION_MODE, SCOREBOARD_VISIBILITY
 from app.domain import authoring, participants, results, results_export, run_stats, settings
 from app.domain.models import Attempt, Participant
-from tests.domain.helpers import ADMIN_ID, published_quiz
+from tests.domain.helpers import ADMIN_ID, add_question, published_quiz
 
 pytestmark = pytest.mark.django_db
 T0 = datetime(2030, 1, 1, 10, 0, tzinfo=UTC)
@@ -206,3 +206,18 @@ def test_stats_leave_out_people_whose_kept_waits():
     played(run, waiting, 2, 2, status=Attempt.Status.PENDING_GRADING)
     stats = run_stats.of_run(run)
     assert (stats.passed, stats.judged) == (1, 1)
+
+
+def test_stats_share_of_attempts_without_a_participant_follows_the_mode():
+    """An attempt on its own is judged only where the run's revision mode counts it (TD-047)."""
+    judged = {}
+    for mode in ("percent", "latest"):
+        run = a_run(slug=mode, **{REVISION_MODE: mode})
+        played(run, None, 8)  # revision 1, 80 %
+        add_question(run.quiz)
+        authoring.publish(run.quiz, admin_id=ADMIN_ID, decision=authoring.Decision.LET_FINISH)
+        run.refresh_from_db()
+        played(run, None, 5, 1)  # revision 2, 5 of 11
+        stats = run_stats.of_run(run)
+        judged[mode] = (stats.passed, stats.judged)
+    assert judged == {"percent": (1, 2), "latest": (0, 1)}
