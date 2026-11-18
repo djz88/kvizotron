@@ -14,7 +14,7 @@
 
 - One page per thing an admin works with, its address after `/`; `#` only jumps inside one page; POST actions have verb names.
 - Addresses: Overview `/admin/runs/<run>` (name `admin_run`), Attempts `…/attempts` (`admin_run_attempts`), Scoreboard `…/scoreboard` (GET, `admin_run_scoreboard`), Statistics `…/statistics` (`admin_run_statistics`), Rewards `…/rewards` (unchanged, `admin_run_rewards`), Draw `…/draw` (unchanged, `admin_run_draw`), Export `…/export` (`admin_run_export`), Settings `…/settings` (`admin_run_settings`). The scoreboard settings form posts to `…/scoreboard/settings` (`admin_run_scoreboard_settings`).
-- Labels: cs Přehled, Pokusy, Žebříček, Statistiky, Odměny, Losování, Export, Nastavení; en Overview, Attempts, Scoreboard, Statistics, Rewards, Draw, Export, Settings. The bar's "more" is the quiz header's existing "More" / "Více".
+- Labels (the English msgids): Overview, Attempts, Scoreboard, Statistics, Rewards, Draw, Export, Settings. The bar's "more" is the quiz header's existing "More".
 - Always visible: Overview, Attempts, Scoreboard, Statistics. Under More: Rewards, Draw, Export, Settings; the More list is open and marked `aria-current="page"` when its tab is current (same markup as `_quiz_header.html` lines 33–45).
 - Draw is listed only when the run has a draw rule. Settings is listed only when `not basic or has_code`. A tab opened by address with nothing to show says one line: cs "Tady v zobrazení Základní nic není. Přepněte na Vše." / en "Nothing here in the Basic view. Switch to All."
 - Refusals keep today's status codes (409, 400, or 200 where today's view answers 200) and appear on the tab the form is on; `run_error` keeps its place in `_quiz_header.html`.

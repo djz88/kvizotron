@@ -376,7 +376,7 @@ git commit -m "feat(plugins): modules page and detail in the administration"
 
 - [ ] **Step 2: Write ADR-0057** in MADR 4, `status: accepted`: reasons as `Blocker`, `always_on` over a list in the kernel, `name`/`description` optional, and no `plugin_configuration` until a module needs one.
 
-- [ ] **Step 3: Update the rest.** Roadmap row: `D4 Plugin admin | A Modules page … (AC-120 to AC-127). Done 2026-11-09`. `kernel.md`: `plugin_configuration` remains "added with the first configurable module", and the rule "disabling a plugin that an active quiz depends on" now includes scheduled runs and always-on plugins. Mark `plugin_configuration` in `data-model.md` as not created yet. `CLAUDE.md`: milestone list, Stav, "Další je D5". `flows.md`: new flow "Vypnutí modulu". Record with `make tech-debt-create title="D4: command to remove a module and reverse its migrations"`.
+- [ ] **Step 3: Update the rest.** Roadmap row: `D4 Plugin admin | A Modules page … (AC-120 to AC-127). Done 2026-11-09`. `kernel.md`: `plugin_configuration` remains "added with the first configurable module", and the rule "disabling a plugin that an active quiz depends on" now includes scheduled runs and always-on plugins. Mark `plugin_configuration` in `data-model.md` as not created yet. `CLAUDE.md`: milestone list, Status, "Next is D5". `flows.md`: new flow "Switching a module off". Record with `make tech-debt-create title="D4: command to remove a module and reverse its migrations"`.
 
 - [ ] **Step 4: Verify**
 

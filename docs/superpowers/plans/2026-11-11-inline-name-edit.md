@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A pencil next to a name turns it into a field with Uložit and Zrušit (HTMX, with full-page links as the fallback) for the names of a bank, a folder, a quiz, a reward and a participant's nickname, and the bank page says which languages a bank's questions have.
+**Goal:** A pencil next to a name turns it into a field with Save and Cancel (HTMX, with full-page links as the fallback) for the names of a bank, a folder, a quiz, a reward and a participant's nickname, and the bank page says which languages a bank's questions have.
 
 **Architecture:** One component: a Jinja macro `admin/_inline_name.html`, a small helper `app/api/inline_name.py` that decides between a partial (HTMX) and a full page, and a script `inline-edit.js` for Enter, Esc and focus. Each place gives its own save route and its field; domain services do the saving.
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- A pencil is an icon button with an accessible name containing the name it edits ("Upravit název: …"); at least 44 px on a phone; focus goes to the field on open and back to the pencil on close; "saved" is announced in `role="status"`, a refusal in `role="alert"`. [spec]
-- Enter saves, Esc cancels. Without JavaScript the pencil is a link to `?edit=name` on the host page and **Zrušit** a link back; a refusal re-renders the host page with status 400 and keeps what was typed. [spec]
+- A pencil is an icon button with an accessible name containing the name it edits ("Edit name: …"); at least 44 px on a phone; focus goes to the field on open and back to the pencil on close; "saved" is announced in `role="status"`, a refusal in `role="alert"`. [spec]
+- Enter saves, Esc cancels. Without JavaScript the pencil is a link to `?edit=name` on the host page and **Cancel** a link back; a refusal re-renders the host page with status 400 and keeps what was typed. [spec]
 - Last one wins: no version check. [spec]
 - Banks and folders have one name for all languages; a quiz and a reward are edited inline for the default language only, the other languages stay in their forms. [spec]
 - A quiz rename makes a draft (`authoring.get_draft`) and says "visitors see it after publication". [spec]
@@ -28,7 +28,7 @@
 - A participant rename refuses a name another participant of the run holds when the run forbids equal names, refuses an empty name, and clears the cached scoreboard; the audit entry holds no name.
 - A quiz rename of a quiz whose default language has no title yet, and of an archived quiz (409, nothing changed).
 - A reward rename on a run that is not scheduled changes only texts (`rewards.save_texts`) and keeps the structure.
-- Pressing Esc or **Zrušit** restores the shown name without a request or with a harmless GET, and focus returns to the pencil.
+- Pressing Esc or **Cancel** restores the shown name without a request or with a harmless GET, and focus returns to the pencil.
 
 ---
 
@@ -37,7 +37,7 @@
 | File | Responsibility |
 |---|---|
 | `app/api/inline_name.py` (new) | `NameField` dataclass, `wants_partial(request)`, `render_field(request, field, status)` |
-| `app/api/jinja2/admin/_inline_name.html` (new) | macro `inline_name(field, tag)` drawing the display with a pencil or the field with Uložit and Zrušit |
+| `app/api/jinja2/admin/_inline_name.html` (new) | macro `inline_name(field, tag)` drawing the display with a pencil or the field with Save and Cancel |
 | `app/api/assets/inline-edit.js` (new), `app/api/rendering.py` | Enter, Esc, focus; entry in `SCRIPTS` |
 | `app/plugins/theme_default/assets/theme.css` | `.inline-name*` styles with theme tokens |
 | `app/api/admin_banks.py`, `admin_urls.py`, `bank.html`, `_bank_languages` in `bank.html` | bank and folder names, languages |
@@ -61,12 +61,12 @@
   - `@dataclass class NameField: label: str; field: str; value: str; save_url: str; edit_url: str; view_url: str; max_length: int; editing: bool = False; error: str = ""; note: str = ""; saved: bool = False`
   - `wants_partial(request: HttpRequest) -> bool` (header `HX-Request: true`)
   - `render_field(request: HttpRequest, field: NameField, status: int = 200) -> HttpResponse` (the macro as a partial)
-- Produces, macro `inline_name(field: NameField, tag: str = "span")` in `admin/_inline_name.html`: a wrapper `<span class="inline-name" id="name-<field.field>-<id>">` holding the name (in `tag`) and a pencil `<a href="?edit=<field.field>" hx-get="{{ field.edit_url }}" hx-target="closest .inline-name" hx-swap="outerHTML" aria-label="…">✎</a>`, or, when `editing`, a `<form method="post" action="{{ field.save_url }}" hx-post=… hx-target="closest .inline-name" hx-swap="outerHTML">` with a text input (`maxlength`, `autofocus`, `aria-describedby` the message), **Uložit**, and a **Zrušit** link (`href` the host page, `hx-get="{{ field.view_url }}"`).
+- Produces, macro `inline_name(field: NameField, tag: str = "span")` in `admin/_inline_name.html`: a wrapper `<span class="inline-name" id="name-<field.field>-<id>">` holding the name (in `tag`) and a pencil `<a href="?edit=<field.field>" hx-get="{{ field.edit_url }}" hx-target="closest .inline-name" hx-swap="outerHTML" aria-label="…">✎</a>`, or, when `editing`, a `<form method="post" action="{{ field.save_url }}" hx-post=… hx-target="closest .inline-name" hx-swap="outerHTML">` with a text input (`maxlength`, `autofocus`, `aria-describedby` the message), **Save**, and a **Cancel** link (`href` the host page, `hx-get="{{ field.view_url }}"`).
 - Bank routes: `admin_bank_name` at `banks/<uuid:bank_id>/name`: GET returns the display partial, or with `?edit=1` the field partial; POST saves (`banks.rename`) and returns the display partial with `saved=True` (HTMX) or a redirect to `admin_bank` (no HTMX); a refusal is a 400 with the field partial (HTMX) or the host page with the field open (no HTMX). The existing POST on `admin_bank` is removed with the old form. The host page opens the field when `?edit=name`.
 - Validation: `BankForm.name` (1 to 120 characters, stripped).
 
 - [ ] **Step 1: Write failing tests** in `tests/api/test_inline_name.py` (use `logged_in`, `make_bank`):
-  - `test_the_bank_name_is_shown_with_a_pencil_and_the_old_form_is_gone`: page has `class="inline-name"`, an `<a>` with `href="?edit=name"`, `hx-get` and an `aria-label` that contains the bank name; no `name="name"` input and no full-width Uložit in "Name and removal"; **Smazat banku** is still there.
+  - `test_the_bank_name_is_shown_with_a_pencil_and_the_old_form_is_gone`: page has `class="inline-name"`, an `<a>` with `href="?edit=name"`, `hx-get` and an `aria-label` that contains the bank name; no `name="name"` input and no full-width Save in "Name and removal"; **Delete the bank** is still there.
   - `test_edit_partial_and_full_page`: GET `…/name?edit=1` with `HX-Request: true` returns a fragment (no `<html`) with a form; GET `/admin/banks/<id>?edit=name` returns the full page with the field open and focus attribute.
   - `test_saving_through_htmx_returns_the_display_and_changes_the_name`: POST with `HX-Request`, name `"Nová"` → 200, fragment contains `Nová`, `role="status"`; `QuestionBank.name == "Nová"`; audit `bank.renamed` with `details_json == {}`.
   - `test_saving_without_htmx_redirects`.
@@ -74,8 +74,8 @@
   - `test_a_name_with_html_is_escaped_everywhere`: `<img src=x onerror=alert(1)>` appears as `&lt;img` in the display, the field value and the `aria-label`.
   - `test_the_script_is_loaded_and_used` (wiring): `inline-edit.js` is in `SCRIPTS` and `assets/inline-edit.js` exists.
 - [ ] **Step 2: Run** `uv run pytest tests/api/test_inline_name.py -q`. Expected: FAIL.
-- [ ] **Step 3: Implement** `inline_name.py`, the macro and partial, the route and its URL (name `admin_bank_name`), and rebuild the top of `bank.html`: the heading becomes `{{ inline_name(name_field, "h1") }}` and "Name and removal" keeps only **Smazat banku**.
-- [ ] **Step 4: Write `inline-edit.js`** (plain script, no inline code): on `keydown` inside `.inline-name form` Esc clicks the **Zrušit** link; Enter submits (the form already does); after an `htmx:afterSwap` into `.inline-name` it focuses the input when the field is open, or the pencil when it was closed. Everything works without it.
+- [ ] **Step 3: Implement** `inline_name.py`, the macro and partial, the route and its URL (name `admin_bank_name`), and rebuild the top of `bank.html`: the heading becomes `{{ inline_name(name_field, "h1") }}` and "Name and removal" keeps only **Delete the bank**.
+- [ ] **Step 4: Write `inline-edit.js`** (plain script, no inline code): on `keydown` inside `.inline-name form` Esc clicks the **Cancel** link; Enter submits (the form already does); after an `htmx:afterSwap` into `.inline-name` it focuses the input when the field is open, or the pencil when it was closed. Everything works without it.
 - [ ] **Step 5: CSS** `.inline-name`, `.inline-name form` (inline flex, wraps on a phone, input and buttons in one row at 1280 px, stacked at 390 px), `.inline-name-pencil` (44 px target, theme tokens), `.inline-name-note`.
 - [ ] **Step 6: Run** the new tests, `uv run pytest tests/api tests/test_wiring.py -q`. Expected: PASS.
 - [ ] **Step 7: Commit** `feat(admin): inline editing of the name of a bank with a pencil`
@@ -182,7 +182,7 @@
 - Modify: `app/api/locale/{cs,uk}/…`, `app/domain/locale/{cs,uk}/…`, `docs/_architecture/acceptance-criteria.md` (AC-160 inline names with HTMX and without, AC-161 nickname rename, AC-162 bank languages), `docs/_architecture/modules/api-ui.md`, addenda in the ADRs of banks (ADR-0041), branding or rewards where they own the name (ADR-0053 for rewards), `app/api/CLAUDE.md` (the component), `docs/_architecture/README.md` (range of AC ids)
 - Test: the whole suite
 
-- [ ] **Step 1: `make messages`**, fill every new `msgstr` in cs and uk (Upravit název, Uložit, Zrušit, "Visitors see the new name after you publish.", the nickname messages, the language texts), run it again; stage only the catalogues whose `.po` you changed and their `.mo`.
+- [ ] **Step 1: `make messages`**, fill every new `msgstr` in cs and uk (Edit name, Save, Cancel, "Visitors see the new name after you publish.", the nickname messages, the language texts), run it again; stage only the catalogues whose `.po` you changed and their `.mo`.
 - [ ] **Step 2: Docs:** the AC rows with their ids in test docstrings; `api-ui.md` and the ADR addenda; the `AC_NOT_NAMED_BY_A_TEST` list only shrinks.
 - [ ] **Step 3: `make quality`.** Expected: lint, tests, gitleaks and the tech-debt check pass.
 - [ ] **Step 4: Browser check** with the `kvizotron-browser-walkthrough` skill on a **throwaway instance** (own database, a session cookie from `force_login`, no passwords): at 1280 px light and 390 px dark, with the mouse and with Tab, Enter and Esc: rename a bank, a folder (row and from inside), a quiz (note shown), a reward and a nickname; try an empty and a taken name; open a page with the script blocked to confirm the full-page fallback; open the screenshots, `errs` empty. Do not touch the `kvizotron-browser` stack or any other running instance.

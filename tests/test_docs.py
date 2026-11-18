@@ -1,4 +1,4 @@
-"""Identifiers in the documentation stay stable and resolvable (CLAUDE.md, Dokumentace)."""
+"""Identifiers in the documentation stay stable and resolvable (CLAUDE.md, Documentation)."""
 
 import re
 from collections import Counter

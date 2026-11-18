@@ -153,7 +153,7 @@ Stages of `purge_run`, each its own transaction:
 
 - [ ] **Step 1:** Write tests. AC-117: history lists an automatic, a manual and an erasure row with who, when, run and counts, and the run page links to its own row; verify answers yes with date and admin for an erased address and no for another. AC-114: held runs are listed above the history; POST with `confirm=1` releases them to the next pass, and without it asks; the period form shows `admin/confirm.html` when a confirmation is needed. AC-115: delete-data without `confirm=1` shows the confirmation naming what goes, and with it deletes. AC-116: an erasure shows found rows in a response with `Cache-Control: no-store`, deletes only ticked rows after confirmation. AC-118: the date shows on the run page and in the runs list; at 9 days left the element has class `deletion-soon` and text with `9`; at 30 days not; a deleted run shows the label instead.
 - [ ] **Step 2:** Run, expected FAIL.
-- [ ] **Step 3:** Implement with `admin_required`, `require_POST` where a route only takes POST, the existing `admin/confirm.html`. A nav entry "Historie mazání" / "Deletion history" in `base.html`. `can_set_period` false on a deleted run. Rule `.deletion-soon` passes WCAG AA in all five palettes, using an existing token if one does.
+- [ ] **Step 3:** Implement with `admin_required`, `require_POST` where a route only takes POST, the existing `admin/confirm.html`. A nav entry "Deletion history" in `base.html`. `can_set_period` false on a deleted run. Rule `.deletion-soon` passes WCAG AA in all five palettes, using an existing token if one does.
 - [ ] **Step 4:** Run `make messages`, fill cs and uk, run tests, expected PASS; `make wiring`, expected PASS.
 - [ ] **Step 5:** Commit `feat(retention): deletion history, erasure and run page`.
 
@@ -164,7 +164,7 @@ Stages of `purge_run`, each its own transaction:
 - Modify: every row of the table in section 4 of `.claude/skills/kvizotron-milestone/SKILL.md`, plus `docs/privacy.md`, `docs/deployment.md`, `docs/_architecture/providers/retention.md`, `docs/_architecture/architecture.md` (scheduled jobs row), `docs/_architecture/modules/contracts.md`, `app/api/jinja2/public/privacy.html`
 
 - [ ] **Step 1:** ADR-0056: hourly `jobs` service, summary then profile `none` rewrite, held runs, HMAC of the e-mail, the domain and provider split. `privacy.md`: replace each "until D3" and "comes in a later version" sentence, add the fingerprint. `deployment.md`: `jobs` service, the effect of rotating `KVZ_SECRET_KEY`. Public privacy page: say deletion happens, and `make messages`.
-- [ ] **Step 2:** Add AC-110 to AC-119 with Stage D to `acceptance-criteria.md` using the texts in the spec, mark D3 done with `Done 2026-11-09` or the real day in `roadmap.md`, update `CLAUDE.md` Status and "Další je D4".
+- [ ] **Step 2:** Add AC-110 to AC-119 with Stage D to `acceptance-criteria.md` using the texts in the spec, mark D3 done with `Done 2026-11-09` or the real day in `roadmap.md`, update `CLAUDE.md` Status and "Next is D4".
 - [ ] **Step 3:** Run `make tech-debt-resolve id=TD-067`.
 - [ ] **Step 4:** Run `make quality`, expected all PASS including `tests/test_docs.py`.
 - [ ] **Step 5:** Commit `docs(retention): D3 documents`.

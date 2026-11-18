@@ -3,59 +3,59 @@ name: kvizotron-milestone
 description: Use when starting, designing, planning or closing a roadmap milestone of Kvízotron (A1 to D5), including "co je další krok", "pokračuj" or "spusť brainstorming" when the next step is a milestone.
 ---
 
-# Milník Kvízotronu
+# Kvízotron milestone
 
-Doplňuje obecné skilly `superpowers:*` o to, jak se milníky dělají tady. Pořadí: návrh → plán → stavba → ověření → dokumenty → merge. Každý krok začíná až po souhlasu s předchozím.
+It supplements the general `superpowers:*` skills with how milestones are done here. The order: design → plan → build → verification → documents → merge. Each step starts only after agreement with the previous one.
 
-## 1. Návrh
+## 1. Design
 
-Nejdřív si přečti řádek milníku v `docs/_architecture/roadmap.md` a jeho `FR-xx`, ADR a `OQ-xx`. Na to, co je tam rozhodnuté, se neptej. ADR se statusem `proposed` rozhoduje člověk.
+First read the milestone's row in `docs/_architecture/roadmap.md` and its `FR-xx`, ADRs and `OQ-xx`. Do not ask about what is decided there. An ADR with status `proposed` is decided by the person.
 
-Pak **REQUIRED SUB-SKILL:** `superpowers:brainstorming`, s těmito pravidly:
+Then **REQUIRED SUB-SKILL:** `superpowers:brainstorming`, with these rules:
 
-- Otázky přes `AskUserQuestion`, doporučená volba první, s krátkým příkladem, co která volba znamená.
-- Poznámka u odpovědi je rozhodnutí, i když se liší od nabídky. Když z ní nejde poznat volba, polož jednu krátkou otázku.
-- Holé „ano“ není přeskočení otázek. Bez otázek se staví až po výslovném „bez otázek“ nebo „rovnou“.
-- Bezpečnost přiměřená kvízu: nejjednodušší mechanismus, který zastaví reálné podvádění.
-- Nové nastavení: **REQUIRED SUB-SKILL:** `kvizotron-add-setting`.
+- Questions through `AskUserQuestion`, the recommended choice first, with a short example of what each choice means.
+- A note on an answer is a decision, even if it differs from the offer. If you cannot tell the choice from it, ask one short question.
+- A bare "ano" is not skipping the questions. Build without questions only after an explicit "bez otázek" or "rovnou".
+- Security proportionate to a quiz: the simplest mechanism that stops real cheating.
+- A new setting: **REQUIRED SUB-SKILL:** `kvizotron-add-setting`.
 
 ## 2. Spec
 
-Soubor v `docs/superpowers/specs/` se jménem `RRRR-MM-DD-<milník>-<téma>-design.md`, anglicky, s oddíly v tomto pořadí: Why, Goals, Non-goals, Anti-goals, Behaviour, Constraints, Risks, Left to the builder, Verification.
+A file in `docs/superpowers/specs/` named `YYYY-MM-DD-<milestone>-<topic>-design.md`, in English, with sections in this order: Why, Goals, Non-goals, Anti-goals, Behaviour, Constraints, Risks, Left to the builder, Verification.
 
-Každé rozhodnutí má značku: **[user]** řekl uživatel, **[docs]** už je v `docs/_architecture`, **[call]** tvoje volba, kterou může opravit. Domněnka nikdy nedostane **[user]**.
+Every decision has a tag: **[user]** the user said it, **[docs]** it is already in `docs/_architecture`, **[call]** your choice, which they may correct. An assumption never gets **[user]**.
 
-Po schválení specu **REQUIRED SUB-SKILL:** `superpowers:writing-plans`. Větev `feat/<milník>-<téma>`, způsob stavby volí uživatel.
+After the spec is approved **REQUIRED SUB-SKILL:** `superpowers:writing-plans`. The branch is `feat/<milestone>-<topic>`, the user chooses how it is built.
 
-## 3. Ověření před předáním
+## 3. Verification before handover
 
-Všechno na sloučeném stromu, výsledek hlas s výstupem:
+Everything on the merged tree, announce the result with the output:
 
 1. `make quality`
-2. `make smoke`. Když běží `kvizotron-browser`, s `SMOKE_HTTP_PORT=18180 SMOKE_HTTPS_PORT=18543`.
-3. **REQUIRED SUB-SKILL:** `kvizotron-browser-walkthrough`, pokud se změnilo cokoli, co uvidí člověk.
+2. `make smoke`. When `kvizotron-browser` is running, with `SMOKE_HTTP_PORT=18180 SMOKE_HTTPS_PORT=18543`.
+3. **REQUIRED SUB-SKILL:** `kvizotron-browser-walkthrough`, if anything a person sees has changed.
 4. **REQUIRED SUB-SKILL:** `kvizotron-check-applied`.
-5. Závěrečná kontrola celé větve čerstvým recenzentem, s výstupem z předchozího kroku. Nálezy Critical a Important oprav testem, který nejdřív selže.
+5. A final check of the whole branch by a fresh reviewer, with the output from the previous step. Fix Critical and Important findings with a test that fails first.
 
-## 4. Dokumenty milníku
+## 4. Milestone documents
 
-Každý bod projdi, i když se nakonec nezmění:
+Go through every point, even if it ends up unchanged:
 
-| Místo | Co |
+| Place | What |
 |---|---|
-| `docs/_architecture/roadmap.md` | řádek milníku, jeho AC a `Done RRRR-MM-DD` |
-| `docs/_architecture/acceptance-criteria.md` | nová AC od dalšího volného čísla; test je musí jmenovat, jinak spadne `tests/test_docs.py` |
-| `docs/_architecture/adr/README.md` | nové ADR a jeho řádek |
-| `docs/_architecture/modules/api-ui.md` | adresy a tabulka „Where things are set“ |
-| `docs/_architecture/modules/domain.md`, `docs/_architecture/data-model.md` | stavy a tabulky |
-| `CLAUDE.md` | seznam milníků v úvodu, odstavec Stav a „Další je …“ |
-| `CLAUDE.md` v dotčených adresářích | co v nich přibylo a na co si dát pozor |
-| `.claude/skills/kvizotron-check-integration/flows.md` | nový tok nebo článek |
+| `docs/_architecture/roadmap.md` | the milestone's row, its AC and `Done YYYY-MM-DD` |
+| `docs/_architecture/acceptance-criteria.md` | new AC from the next free number; a test must name them, otherwise `tests/test_docs.py` fails |
+| `docs/_architecture/adr/README.md` | the new ADR and its row |
+| `docs/_architecture/modules/api-ui.md` | URLs and the "Where things are set" table |
+| `docs/_architecture/modules/domain.md`, `docs/_architecture/data-model.md` | states and tables |
+| `CLAUDE.md` | the list of milestones in the intro, the Status paragraph and "Next is …" |
+| `CLAUDE.md` in the affected directories | what was added in them and what to watch out for |
+| `.claude/skills/kvizotron-check-integration/flows.md` | a new flow or link |
 
-Odložené drobnosti se zapisují přes `make tech-debt-create title="…"`, ne ručně, a uživatel je vidí v závěrečné zprávě.
+Deferred minor items are recorded through `make tech-debt-create title="…"`, not by hand, and the user sees them in the final report.
 
-## 5. Předání
+## 5. Handover
 
-Rozhodnutí, která jsi udělal za uživatele, a odložené drobnosti vypiš celé. Na konci nabídni možnosti ze `superpowers:finishing-a-development-branch` a čekej. Merge, push a mazání větví dělá až souhlas; repozitář nemá remote.
+List in full the decisions you made for the user and the deferred minor items. At the end offer the options from `superpowers:finishing-a-development-branch` and wait. Merge, push and deleting branches happen only with consent; the repository has no remote.
 
-Do `kvizotron-browser` se nesahá jinak, než říká `kvizotron-browser-walkthrough`.
+`kvizotron-browser` is not touched except as `kvizotron-browser-walkthrough` says.

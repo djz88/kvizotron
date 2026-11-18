@@ -1,23 +1,23 @@
+Česky: [README.cs.md](README.cs.md)
+
 # Kvízotron
 
-„Zapni mozek. Spusť Kvízotron.“
+"Switch on your brain. Start Kvízotron."
 
-Self-hosted platforma pro vícejazyčné kvízy (cs/en/uk) a soutěže. Veřejnost hraje bez registrace přes
-URL nebo QR kód. Lokální admini tvoří kvízy, spouštějí soutěžní běhy se žebříčkem a odměnami a
-provádějí auditovatelné losování.
+A self-hosted platform for multilingual quizzes (cs/en/uk) and competitions. The public plays without registration via a URL or a QR code. Local admins create quizzes, start competitive runs with a leaderboard and rewards, and carry out auditable drawings.
 
-**Stav:** hotové jsou všechny etapy A až D. Admin napíše kvíz v cs/en/uk (typy otázek Výběr, Přiřazení, Číslo, Text a Fotka), publikuje ho a otevře běh s QR kódem; účastník hraje bez registrace a skóre spočítá server. Běžící kvíz jde bezpečně změnit. K tomu patří žebříčky, odměny a losování, export výsledků, mazání dat po uplynutí doby uchování, správa modulů, limity požadavků, denní záloha s ruční obnovou a zátěžový test 50 účastníků. Aplikace je určena i na veřejné nasazení, ale jen v topologii Compose s Caddy a jedním procesem aplikace ([nasazení](docs/deployment.md)). Před verzí 1.0 zbývají kontroly vydání a třídění technického dluhu.
+**Status:** all stages A to D are done. An admin writes a quiz in cs/en/uk (question types Choice, Matching, Number, Text and Photo), publishes it and opens a run with a QR code; a participant plays without registration and the server computes the score. A running quiz can be changed safely. This comes with leaderboards, rewards and drawings, results export, deleting data after the retention period, module management, request limits, a daily backup with a manual restore and a load test of 50 participants. The application is also meant for public deployment, but only in the Compose topology with Caddy and a single application process ([deployment](docs/deployment.md)). Before version 1.0, the release checks and the triage of technical debt remain.
 
-## Dokumentace
+## Documentation
 
-- [Architektura](docs/_architecture/README.md) — začni tady
-- [Roadmapa](docs/_architecture/roadmap.md)
-- [Rozhodnutí (ADR)](docs/_architecture/adr/README.md)
-- [Plugin API](docs/plugin-api.md), [nasazení](docs/deployment.md), [konfigurace](docs/configuration.md), [soukromí](docs/privacy.md)
+- [Architecture](docs/_architecture/README.md) — start here
+- [Roadmap](docs/_architecture/roadmap.md)
+- [Decisions (ADR)](docs/_architecture/adr/README.md)
+- [Plugin API](docs/plugin-api.md), [deployment](docs/deployment.md), [configuration](docs/configuration.md), [privacy](docs/privacy.md)
 
-## Instalace a použití
+## Installation and use
 
-Vyzkoušení v Dockeru na vlastním stroji:
+Trying it out in Docker on your own machine:
 
 ```sh
 export KVZ_DOMAIN=localhost KVZ_SECRET_KEY=$(openssl rand -hex 32) KVZ_HTTP_PORT=18080 KVZ_HTTPS_PORT=18443
@@ -25,23 +25,23 @@ docker compose -f deploy/compose.yaml up --build -d --wait
 docker compose -f deploy/compose.yaml run --rm -it app python manage.py init_admin admin
 ```
 
-Potom otevři <https://localhost:18443/admin/login>. Prohlížeč upozorní na lokální certifikát Caddy. `KVZ_SECRET_KEY` si nech pro další spuštění, jinak přestanou platit přihlášení a rozehrané pokusy.
+Then open <https://localhost:18443/admin/login>. The browser will warn about Caddy's local certificate. Keep `KVZ_SECRET_KEY` for the next start, otherwise logins and attempts in progress stop being valid.
 
-Ostré nasazení popisuje [docs/deployment.md](docs/deployment.md).
+Production deployment is described in [docs/deployment.md](docs/deployment.md).
 
-## Vývoj
+## Development
 
-- `make help` — seznam cílů
-- `make env-update` — nainstaluje verze nástrojů, které projekt deklaruje (uv, Python a balíčky, pre-commit s hooky, Docker image)
-- `make setup` — nainstaluje závislosti (vyžaduje uv z `pyproject.toml`, viz `make env-update`)
-- `make hooks` — nainstaluje git hooky pro commit, zprávu commitu a push: gitleaks a kontrolu lokálních stop (`tools/private_traces.py`: domovský adresář, dočasné adresáře agenta, odkazy na sezení agenta)
-- `make private-traces` — založí prázdný `.git/info/private-traces`, kam si každý napíše svá osobní slova (jméno, adresu domácí sítě, e-mail; jedno na řádek; výjimka `allow TEXT [CESTA…]` povolí text jen v daných souborech, bez cesty všude). Soubor je v `.git/`, takže ho git nikdy necommitne ani nepushne; bez něj hooky osobní slova nekontrolují a připomenou ho
-- `make lint`, `make test`, `make secrets` — jednotlivé kontroly
-- `make quality` — všechny kontroly; totéž běží v CI
-- `make smoke` — ověří celé nasazení v Dockeru
-- `make load` — zátěž v Dockeru: 50 účastníků s fotkami, záloha, obnova a zkouška adres
-- `make messages` — vytáhne texty k překladu a zkompiluje katalogy
+- `make help` — list of targets
+- `make env-update` — installs the tool versions the project declares (uv, Python and packages, pre-commit with hooks, Docker images)
+- `make setup` — installs dependencies (requires uv from `pyproject.toml`, see `make env-update`)
+- `make hooks` — installs git hooks for commit, commit message and push: gitleaks and a check for local traces (`tools/private_traces.py`: home directory, the agent's temporary directories, links to an agent session)
+- `make private-traces` — creates an empty `.git/info/private-traces`, where everyone writes their own personal words (name, home network address, e-mail; one per line; the exception `allow TEXT [PATH…]` allows a text only in the given files, without a path everywhere). The file is in `.git/`, so git never commits or pushes it; without it the hooks do not check personal words and remind you of it
+- `make lint`, `make test`, `make secrets` — the individual checks
+- `make quality` — all checks; the same runs in CI
+- `make smoke` — verifies the whole deployment in Docker
+- `make load` — load test in Docker: 50 participants with photos, a backup, a restore and an address check
+- `make messages` — extracts texts for translation and compiles the catalogs
 
-## Licence
+## License
 
-[GNU GPL](LICENSE). Bezpečnostní problémy hlaste podle [SECURITY.md](SECURITY.md).
+[GNU GPL](LICENSE). Report security problems according to [SECURITY.md](SECURITY.md).

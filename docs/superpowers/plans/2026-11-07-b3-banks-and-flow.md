@@ -26,8 +26,8 @@
 
 1. An attempt already in progress at the upgrade, with empty `selection_json` and `settings_json`: it submits, switches and scores as before, all questions in revision order (Task 1).
 2. One bank question in two rows with different points: it is scored with the points of the row that drew it (Task 8).
-3. A locked answer after Zkontrolovat: it is still in the final submission, because a disabled input would not be sent (Task 6, checked in the browser in Task 9).
-4. A pairs question left with every select on the placeholder: the reveal says Bez odpovědi, not Špatně (Task 5).
+3. A locked answer after Check the answer: it is still in the final submission, because a disabled input would not be sent (Task 6, checked in the browser in Task 9).
+4. A pairs question left with every select on the placeholder: the reveal says No answer, not Wrong (Task 5).
 5. A language added to a quiz after publication, and a quiz with draw rows and no own question: the usable count falls and publication says so when too few remain; the second one publishes and does not report "no questions" (Task 7).
 
 ---
@@ -126,7 +126,7 @@ def test_rerender_after_a_refused_form_keeps_the_order(): ...  # API, no-JS try-
 - Produces:
   - `class QuizFlowPlugin(Protocol): id; version; def modes(self) -> Sequence[str]; def client_options(self, mode: str, moment: str) -> JSON`, returning `{"step": bool, "back": bool, "check": bool}`. Port `"quiz_flow"`, plugin id `flow.basic`.
   - `rendering.flow_options(flow: Mapping) -> dict`; when the plugin is unavailable it returns `{"step": False, "back": False, "check": False}`, the all-at-once page.
-  - Markup: `<form data-flow-step data-flow-back data-flow-check data-progress-step="Otázka {current} z {total}" data-progress-all="Zodpovězeno {current} z {total}">`; each question in `<section class="flow-question" data-question="<id>">`; `<div class="flow-progress" role="status" hidden><span></span><progress></progress></div>`; `<div class="flow-nav" hidden>` with Back and Next.
+  - Markup: `<form data-flow-step data-flow-back data-flow-check data-progress-step="Question {current} of {total}" data-progress-all="Answered {current} of {total}">`; each question in `<section class="flow-question" data-question="<id>">`; `<div class="flow-progress" role="status" hidden><span></span><progress></progress></div>`; `<div class="flow-nav" hidden>` with Back and Next.
 
 - [ ] **Step 1: Write the failing tests.**
 
@@ -261,7 +261,7 @@ def test_start_page_contains_no_correct_answer_or_explanation(): ...
 ```
 
 - [ ] **Step 2: Run.** Expected: FAIL.
-- [ ] **Step 3: Implement the endpoint and the buttons.** Zkontrolovat starts `hidden`, and `flow.js` shows it when `data-flow-check`, disabled until the section has had a `change` event.
+- [ ] **Step 3: Implement the endpoint and the buttons.** Check the answer starts `hidden`, and `flow.js` shows it when `data-flow-check`, disabled until the section has had a `change` event.
 - [ ] **Step 4: Implement the lock in `flow.js`.** After a successful swap into a reveal box: for each input and select in that section with a value to send, append a hidden input with the same name and value, then disable all of them and the sortable handles. A disabled input would drop the answer from the submission. Going back shows the locked state.
 - [ ] **Step 5: Run.** `make test` Expected: pass.
 - [ ] **Step 6: Commit.** `feat: reveal after each question, locked on the page`
@@ -331,7 +331,7 @@ def test_archived_quiz_cannot_get_a_row(): ...
 - [ ] **Step 2: Run.** Expected: FAIL.
 - [ ] **Step 3: Implement models and bank services.** `tests/test_layers.py` holds for all of them. `banks.save_question` uses `questions.apply_fields` and all of `PUBLIC_LOCALES` passed by the view. The stored question id is the row's uuid as text.
 - [ ] **Step 4: Implement rows in authoring.** `future_snapshot` adds `"draws"` with pools, so `snapshot_hash` and the change overview see bank edits. `get_draft`, `use_as_draft` and `duplicate_quiz` copy rows without pools. `_freeze` records versions for pool questions in `plugins_json` and adds row maxima to `max_score`, as `count * strategy.max_score(pool[0]["settings"])`. `publish` calls `get_draft` when there is no draft and `banks_changed` is true, then behaves as today. `quiz_state.of` uses `has_changes`; `can_discard` stays `has_draft and published`. `_publication_problems` uses `has_changes`. `validate_for_publication` reports `no_questions` only with neither questions nor rows, and always reads `.get("draws", [])`.
-- [ ] **Step 5: Implement the admin.** Top-level item Banky between Kvízy and Nastavení. `admin_banks.py` reuses `_form_with_uploads`, `_strategies`, `_enabled_plugin` and `_add_menu` from `admin_quizzes.py`. `question_form.html` gets a `back_url` and a tags field. The multipart gate allows `/admin/banks/<id>/questions/...`. The draw form has bank, tag (free text with a `datalist` of existing tags), count, points, and "Po otázce" for position. On the quiz page rows sit among questions by `position` and link to their form, showing "usable N of M".
+- [ ] **Step 5: Implement the admin.** Top-level item Banks between Quizzes and Settings. `admin_banks.py` reuses `_form_with_uploads`, `_strategies`, `_enabled_plugin` and `_add_menu` from `admin_quizzes.py`. `question_form.html` gets a `back_url` and a tags field. The multipart gate allows `/admin/banks/<id>/questions/...`. The draw form has bank, tag (free text with a `datalist` of existing tags), count, points, and "After question N" for position. On the quiz page rows sit among questions by `position` and link to their form, showing "usable N of M".
 - [ ] **Step 6: Run.** `make test` Expected: pass.
 - [ ] **Step 7: Commit.** `feat: question banks and draw rows`
 

@@ -1,15 +1,15 @@
-# Modul: app/plugins/drawings
+# Module: app/plugins/drawings
 
-Plugin `drawings.manual`, port `drawing`: čistá pravidla losování (FR-37, ADR-0013). Deterministické pořadí snímku (`order`: seřazená a jedinečná id), otisk snímku (`fingerprint`: sha256 z id spojených `\n`) a výběr přes `secrets.SystemRandom().sample` (`select`). Jméno algoritmu je v `algorithm` a ukládá se u losování.
+Plugin `drawings.manual`, port `drawing`: pure drawing rules (FR-37, ADR-0013). Deterministic snapshot order (`order`: sorted and unique ids), snapshot fingerprint (`fingerprint`: sha256 of the ids joined by `\n`) and selection through `secrets.SystemRandom().sample` (`select`). The algorithm name is in `algorithm` and is stored with the drawing.
 
-## Co modul obsahuje
+## What the module contains
 
-`selection.py` (`ManualDrawing`), `manifest.py` bez nastavení, `apps.py`.
+`selection.py` (`ManualDrawing`), `manifest.py` without settings, `apps.py`.
 
-## Co modul není
+## What the module is not
 
-Nesahá do databáze ani do požadavku. Kdo je oprávněný, záznamy losování, náhradníci a audit jsou v doméně; plugin dostane id účastníků (ne jména) a vrátí pořadí nebo výběr.
+It touches neither the database nor the request. Who is eligible, the drawing records, substitutes and the audit are in the domain; the plugin receives participant ids (not names) and returns the order or the selection.
 
-## Zakázáno
+## Forbidden
 
-Importovat z `app/domain`, `app/api` nebo z jiného pluginu: smí jen `app.contracts`. Náhoda jen ze `secrets`, nikdy `random` s vlastním semínkem.
+Importing from `app/domain`, `app/api` or from another plugin: only `app.contracts` is allowed. Randomness only from `secrets`, never `random` with its own seed.

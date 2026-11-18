@@ -3,65 +3,65 @@ name: kvizotron-check-applied
 description: Use when Kvízotron work looks finished and before saying so, before review-roles, before a merge, or when asked whether everything from a plan or spec was really applied and connected.
 ---
 
-# Kontrola, že je všechno použité a napojené
+# Check that everything is applied and wired
 
-Odpovídá na jednu otázku: **je to, co mělo vzniknout, opravdu v kódu a dá se k tomu dojít?** Dělá se spuštěním, ne čtením.
+It answers one question: **is what was meant to be created really in the code, and can it be reached?** It is done by running, not by reading.
 
-| Tady | V `review-roles` |
+| Here | In `review-roles` |
 |---|---|
-| Fakta z příkazů: soubor se změnil, adresa vede na stránku, funkci někdo volá | Úsudek ze čtení: je to dobře navržené, bezpečné, srozumitelné |
+| Facts from commands: a file changed, a URL leads to a page, someone calls the function | Judgement from reading: is it well designed, safe, understandable |
 
-Kvalitu kódu tady nehodnoť. Výsledek předej do `review-roles` jako vstup, ať ho role nedělají znovu.
+Do not judge code quality here. Pass the result to `review-roles` as input so the roles do not do it again.
 
-## 1. Plán proti gitu
+## 1. Plan against git
 
 ```bash
-make plan-check plan=docs/superpowers/plans/<plán>.md base=main
+make plan-check plan=docs/superpowers/plans/<plan>.md base=main
 ```
 
-- „Plan names it, it did not change“: u každého souboru napiš proč, nebo změnu doplň. Tiše to nepřecházej.
-- „Changed, not committed“: co není v commitu, není hotové.
-- „The plan does not name it“: jedna věta ke každému. Není to chyba, ale neplánovaná změna musí mít důvod.
+- "Plan names it, it did not change": for each file write why, or add the change. Do not pass over it silently.
+- "Changed, not committed": what is not in a commit is not done.
+- "The plan does not name it": one sentence for each. It is not an error, but an unplanned change must have a reason.
 
-Práce bez plánu tenhle krok přeskakuje, a zpráva to řekne.
+Work without a plan skips this step, and the report says so.
 
-Kontrola vidí jen soubory, které plán jmenuje. Ztracenou změnu v souboru mimo plán nenajde, a že je změna v souboru správná, neověří.
+The check sees only the files the plan names. It will not find a lost change in a file outside the plan, and it does not verify that a change in a file is correct.
 
-## 2. Napojení
+## 2. Wiring
 
 ```bash
 make wiring
 ```
 
-Hlídá moduly, šablony, adresy, skripty, styly, nastavení, události a přihlášení do administrace. Seznam výjimek v `tests/test_wiring.py` se jen zmenšuje. Novou položku tam nepřidávej, aby test prošel; oprav napojení.
+It guards modules, templates, URLs, scripts, styles, settings, events and the login to the administration. The list of exceptions in `tests/test_wiring.py` only shrinks. Do not add a new entry there to make the test pass; fix the wiring.
 
-## 3. Spec proti skutečnosti
+## 3. Spec against reality
 
-Vypiš tabulku se řádkem za každý cíl a každou odrážku chování ze specu:
+List a table with a row for every goal and every behaviour bullet from the spec:
 
-| Požadavek | Vstup (adresa, příkaz) | Jak ověřeno | Důkaz |
+| Requirement | Input (URL, command) | How verified | Evidence |
 |---|---|---|---|
 
-Důkaz je jedno z toho:
+Evidence is one of these:
 
-- název testu, který jde přes skutečnou adresu a spadl by bez té změny,
-- řádek z `make smoke`,
-- screenshot z `kvizotron-browser-walkthrough`.
+- the name of a test that goes through a real URL and would fail without that change,
+- a line from `make smoke`,
+- a screenshot from `kvizotron-browser-walkthrough`.
 
-Test funkce není důkaz napojení: funkce může fungovat a nikdo ji nevolá. Dotýká-li se změna víc vrstev, **REQUIRED SUB-SKILL:** `kvizotron-check-integration`; jeho tabulka je důkazem pro dotčené řádky.
+A test of a function is not evidence of wiring: a function can work and nobody calls it. If the change touches several layers, **REQUIRED SUB-SKILL:** `kvizotron-check-integration`; its table is the evidence for the affected rows.
 
-Řádek bez důkazu napiš jako **neověřeno**. Hotovo to není, dokud ho nedoplníš nebo uživatel nerozhodne jinak.
+Write a row without evidence as **unverified**. It is not done until you fill it in or the user decides otherwise.
 
-## 4. Běh mimo testy
+## 4. Running outside tests
 
-| Změna | Ověř |
+| Change | Verify |
 |---|---|
-| Migrace, závislost, Docker, nový modul, nový soubor v `app/api/assets/` | `make smoke` na čistém sestavení |
-| Vzhled, skript, HTMX, překlad | `kvizotron-browser-walkthrough` |
-| Termíny, souběh | `tools/load_deadline.py` nebo test s řízeným časem |
+| Migration, dependency, Docker, new module, new file in `app/api/assets/` | `make smoke` on a clean build |
+| Look, script, HTMX, translation | `kvizotron-browser-walkthrough` |
+| Deadlines, concurrency | `tools/load_deadline.py` or a test with controlled time |
 
-Když běží `kvizotron-browser`, spusť smoke s `SMOKE_HTTP_PORT=18180 SMOKE_HTTPS_PORT=18543`.
+When `kvizotron-browser` is running, run smoke with `SMOKE_HTTP_PORT=18180 SMOKE_HTTPS_PORT=18543`.
 
-## 5. Výstup
+## 5. Output
 
-Výsledky kroků 1 až 4 s výstupem příkazů a tabulkou z kroku 3. Na konci seznam **neověřeno**, i když je prázdný.
+The results of steps 1 to 4 with the command output and the table from step 3. At the end a list of **unverified**, even if it is empty.

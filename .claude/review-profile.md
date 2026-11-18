@@ -1,71 +1,71 @@
-# Review profil
+# Review profile
 
-## Profil: `kvizotron`
+## Profile: `kvizotron`
 
-### Kde co je
+### Where things are
 
-| Co | Kde |
+| What | Where |
 |---|---|
-| Architektura a rozhodnutí | `docs/_architecture/`, `docs/_architecture/adr/` |
-| Kontrakty mezi moduly | `app/contracts/`, `docs/_architecture/modules/contracts.md`, `docs/plugin-api.md` |
-| Dokumentace | `docs/_architecture/README.md` (mapa `FR-xx`), `docs/_architecture/acceptance-criteria.md` |
-| Testy | `tests/`, sdílené sady v `tests/contracts/` |
-| Sdílený kód / kernel | `app/kernel/` |
-| Konfigurace prostředí | `deploy/compose.yaml`, `deploy/.env.example` |
+| Architecture and decisions | `docs/_architecture/`, `docs/_architecture/adr/` |
+| Contracts between modules | `app/contracts/`, `docs/_architecture/modules/contracts.md`, `docs/plugin-api.md` |
+| Documentation | `docs/_architecture/README.md` (the `FR-xx` map), `docs/_architecture/acceptance-criteria.md` |
+| Tests | `tests/`, shared suites in `tests/contracts/` |
+| Shared code / kernel | `app/kernel/` |
+| Environment configuration | `deploy/compose.yaml`, `deploy/.env.example` |
 
-### Co už je ověřené strojově
+### What is already verified by machine
 
-Výstup skillu `kvizotron-check-applied` přijde jako vstup, pokud ho volající předá. Nekontroluj znovu, co hlídají `tests/test_wiring.py` a `tests/test_docs.py`: že modul, šablona, adresa, skript nebo ID existují a jsou napojené. Hodnoť, jestli je to správně, ne jestli to existuje.
+The output of the `kvizotron-check-applied` skill arrives as input if the caller passes it. Do not check again what `tests/test_wiring.py` and `tests/test_docs.py` guard: that a module, template, URL, script or ID exists and is wired in. Judge whether it is correct, not whether it exists.
 
-### Moduly a jejich hranice
+### Modules and their boundaries
 
-| Modul | Vlastní | Nesmí |
+| Module | Owns | Must not |
 |---|---|---|
-| `app/contracts` | protokoly a schémata | importovat Django |
-| `app/kernel` | bootstrap, registr, události, životní cyklus | obsahovat funkce produktu |
-| `app/domain` | kvízy, běhy, pokusy, skóre | importovat `app/api` nebo moduly |
-| `app/api` | adresy, šablony administrace a hraní | počítat skóre |
-| `app/plugins` | typy otázek, bodování, režimy, téma | importovat cokoli kromě `app.contracts` a `app.kernel`; skládat HTML ručně |
-| `app/providers` | přihlášení, databáze, média, CSV | importovat `app/domain`, `app/api`, `app/plugins` |
+| `app/contracts` | protocols and schemas | import Django |
+| `app/kernel` | bootstrap, registry, events, lifecycle | contain product features |
+| `app/domain` | quizzes, runs, attempts, scores | import `app/api` or modules |
+| `app/api` | URLs, admin and play templates | compute scores |
+| `app/plugins` | question types, scoring, flows, theme | import anything except `app.contracts` and `app.kernel`; assemble HTML by hand |
+| `app/providers` | login, database, media, CSV | import `app/domain`, `app/api`, `app/plugins` |
 
-### Závazná rozhodnutí
+### Binding decisions
 
-- ADR-0006: publikovaná revize je neměnná → `docs/_architecture/adr/0006-separate-quiz-revision-run-attempt-immutable-revisions.md`
-- ADR-0007: restart vytvoří nový běh a nepřebírá výsledky → `docs/_architecture/adr/0007-restart-creates-new-run-keeps-history.md`
-- ADR-0009: skóre počítá server, klientovi se nevěří → `docs/_architecture/adr/0009-server-authoritative-scoring-signed-token-idempotent-submit.md`
-- ADR-0025: o čase rozhoduje příjem na serveru, celé sekundy, `<=` → `docs/_architecture/adr/0025-deadline-boundary-second-semantics.md`
-- ADR-0042: nastavení se dědí global → kvíz → otázka, užší rozsah má napsaný důvod → `docs/_architecture/adr/0042-settings-inherited-and-declared.md`
-- ADR-0048: stav běhu se mění až při prvním požadavku po termínu → `docs/_architecture/adr/0048-run-timing.md`
+- ADR-0006: a published revision is immutable → `docs/_architecture/adr/0006-separate-quiz-revision-run-attempt-immutable-revisions.md`
+- ADR-0007: a restart creates a new run and does not carry over results → `docs/_architecture/adr/0007-restart-creates-new-run-keeps-history.md`
+- ADR-0009: the server computes the score, the client is not trusted → `docs/_architecture/adr/0009-server-authoritative-scoring-signed-token-idempotent-submit.md`
+- ADR-0025: time is decided by receipt on the server, whole seconds, `<=` → `docs/_architecture/adr/0025-deadline-boundary-second-semantics.md`
+- ADR-0042: settings are inherited global → quiz → question, a narrower scope has a written reason → `docs/_architecture/adr/0042-settings-inherited-and-declared.md`
+- ADR-0048: a run's state changes only at the first request after the deadline → `docs/_architecture/adr/0048-run-timing.md`
 
-### Kritické cesty
+### Critical paths
 
-- `app/api/play.py`, `app/domain/attempts.py`: co se přijme od účastníka a jak se počítá skóre
-- `app/domain/tokens.py`: podepsané tokeny pokusu a výsledku
-- `app/domain/run_schedule.py`, `app/api/run_clock.py`: otevření a uzavření běhu
-- `app/domain/visibility.py`: kdo vidí odpovědi a fotky
-- `app/api/admin_auth.py`, `app/providers/auth_local/`: přihlášení správců
-- `app/providers/media_local/`: nahrané soubory a stahování z adres
-- `deploy/compose.yaml`, `deploy/Caddyfile`: nasazení
+- `app/api/play.py`, `app/domain/attempts.py`: what is accepted from a participant and how the score is computed
+- `app/domain/tokens.py`: signed attempt and result tokens
+- `app/domain/run_schedule.py`, `app/api/run_clock.py`: opening and closing a run
+- `app/domain/visibility.py`: who sees answers and photos
+- `app/api/admin_auth.py`, `app/providers/auth_local/`: admin login
+- `app/providers/media_local/`: uploaded files and downloads from URLs
+- `deploy/compose.yaml`, `deploy/Caddyfile`: deployment
 
-### Co je v tomhle projektu BLOCKER
+### What counts as a BLOCKER in this project
 
-- Klíč odpovědí ve výstupu `public_payload()`, `render_public` nebo na stránce před odesláním.
-- Skóre, řešení nebo čas převzatý od klienta.
-- Změna publikované revize, nebo nový běh, který přebírá výsledky.
-- Odpověď účastníka, osobní údaj nebo tajný údaj v logu; e-mail ve veřejném výstupu.
-- Odeslání přijaté po `min(deadline_at, started_at + limit)`.
-- Test nebo náhled, který se započítá do výsledků.
-- Nové chování bez testu, nebo oslabený test.
+- The answer key in the output of `public_payload()`, `render_public` or on a page before submission.
+- A score, solution or time taken from the client.
+- A change to a published revision, or a new run that carries over results.
+- A participant's answer, personal data or a secret in a log; an e-mail in public output.
+- A submission accepted after `min(deadline_at, started_at + limit)`.
+- A test or preview that counts toward results.
+- New behaviour without a test, or a weakened test.
 
-### Testovací očekávání
+### Testing expectations
 
-- Každá změna chování má test, oprava chyby začíná testem, který ji ukáže.
-- Každý modul projde sadou v `tests/contracts/`; výjimka je jen v `tests/test_wiring.py` s položkou dluhu.
-- Scénáře, které musí zůstat pokryté: `docs/_architecture/acceptance-criteria.md`.
+- Every change of behaviour has a test, a bug fix starts with a test that shows it.
+- Every module passes the suite in `tests/contracts/`; the only exception is in `tests/test_wiring.py` with a debt entry.
+- Scenarios that must stay covered: `docs/_architecture/acceptance-criteria.md`.
 
-### Konvence, které nejsou vidět z kódu
+### Conventions that are not visible from the code
 
-- Bezpečnost je přiměřená kvízu: pro vstupy od důvěryhodného správce stačí základní kontrola, antivirus ani sanitizéry se nenavrhují.
-- `QuizRun` je v textech běh, nikdy kolo. Dokumentace je anglicky, `CLAUDE.md` česky.
-- `.mo` soubory jsou v gitu záměrně.
-- Odložené drobnosti patří do `docs/_architecture/TECH_DEBT.md`, ne do oprav mimo rozsah.
+- Security is proportionate to a quiz: for input from a trusted admin a basic check is enough, no antivirus or sanitizers are proposed.
+- `QuizRun` is a run in texts, never a round. Documentation, `CLAUDE.md` and agent files are in English; Czech stays in `README.cs.md` and in user-facing texts.
+- `.mo` files are in git on purpose.
+- Deferred minor items belong in `docs/_architecture/TECH_DEBT.md`, not in out-of-scope fixes.

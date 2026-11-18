@@ -91,7 +91,7 @@ def test_production_cookies_secure_and_debug_off(): ...       # DEBUG False, bot
 
 - [x] **Step 2: Verify the gate fails on a planted secret.** Add a fake AWS-style key to an untracked scratch file with `git add -N`, run `make secrets`, expect failure; remove the file. Then `make quality` passes.
 
-- [x] **Step 3: Update docs.** Move TD-006 to RESOLVED with today's date. Record in ADR-0022 Confirmation that the pinned A1 dependencies install and pass tests on 3.15.2, and that dependencies of later milestones are re-verified as they are added. Update `CLAUDE.md` Příkazy and `README.md` Vývoj.
+- [x] **Step 3: Update docs.** Move TD-006 to RESOLVED with today's date. Record in ADR-0022 Confirmation that the pinned A1 dependencies install and pass tests on 3.15.2, and that dependencies of later milestones are re-verified as they are added. Update `CLAUDE.md` Commands and `README.md` Development.
 
 - [x] **Step 4: Commit.**
 
