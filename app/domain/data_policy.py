@@ -174,9 +174,8 @@ def conflicts(
     return found
 
 
-def after_close_conflicts(quiz: Quiz, profile: str) -> list[str]:
+def after_close_conflicts(moment: str, profile: str) -> list[str]:
     """Answers shown after the run closes need a profile that keeps them."""
-    moment = settings.resolve(settings.REVEAL_MOMENT, quiz)
     if moment == settings.RevealMoment.AFTER_CLOSE and not keeps_all_answers(profile):
         return [settings.REVEAL_MOMENT]
     return []
@@ -187,6 +186,8 @@ def ensure_run_allowed(
     data: Mapping[str, str],
     rules: Mapping[str, str],
     snapshot: Mapping[str, Any],
+    *,
+    reveal_moment: str,
 ) -> None:
     """For a run about to be planned or opened. Raises `StatelessConflict`."""
     found = conflicts(
@@ -195,6 +196,6 @@ def ensure_run_allowed(
         settings.resolve(settings.ANSWERS_VISIBILITY, quiz),
         snapshot,
     )
-    found += after_close_conflicts(quiz, data.get(PROFILE, ""))
+    found += after_close_conflicts(reveal_moment, data.get(PROFILE, ""))
     if found:
         raise StatelessConflict(found)

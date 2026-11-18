@@ -18,6 +18,7 @@ from tests.domain.helpers import (
     OPTION_B,
     add_question,
     definition,
+    keep,
     make_quiz,
     open_quiz_run,
 )
@@ -301,8 +302,8 @@ def test_with_retry_gives_up_after_three_tries():
 
 def test_start_freezes_selection_and_settings(db):
     run = open_quiz_run(questions=2)
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
+    keep(run, settings.REVEAL_MOMENT, "at_end")
     attempt = attempts.start(run).attempt
     attempt.refresh_from_db()
     expected = [q["id"] for q in run.current_revision.snapshot_json["questions"]]
@@ -315,7 +316,7 @@ def test_start_freezes_selection_and_settings(db):
 
 def test_a_seed_is_stored_only_with_shuffled_options(db):
     run = open_quiz_run()
-    settings.set_override(settings.SHUFFLE_OPTIONS, run.quiz, "on", admin_id=None)
+    keep(run, settings.SHUFFLE_OPTIONS, "on")
     assert attempts.option_seed(attempts.start(run).attempt)
 
 

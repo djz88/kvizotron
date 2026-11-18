@@ -4,6 +4,12 @@ Full details of resolved items from TECH_DEBT.md. Read only when investigating r
 
 ## RESOLVED
 
+### TD-101 Navigation, reveal, shuffle and sources are read live by an open run — ✅ RESOLVED (2026-11-18)
+- Where: `app/domain/attempts.py:234` (`settings.flow(run.quiz)` at each attempt start), `app/api/rendering.py:237` (`show_sources`), `app/domain/rewards.py:211` (reveal checked against the live quiz)
+- Effect: unlike the time limit, participants, data profile, scoreboard and rewards, which a run copies when it is planned or opened, these values follow the quiz: a settings change or a new quiz type during an open run changes new attempts of that run, and sources also change on result pages of finished attempts. The quiz types overview only warns about it (`docs/superpowers/specs/2026-11-12-quiz-types-design.md`)
+- Solution: copy them onto the run at planning or opening like the other run values, with a migration, and read them from the run
+- Resolution (2026-11-18): `QuizRun.flow_json` holds the seven values (navigation, page size, reveal moment and level, both shuffles, sources) from planning or opening; attempts, result pages and rewards read the run. A quiz settings save or a quiz type change that would change them asks whether the planned or open run takes the change too ([ADR-0069](adr/0069-run-keeps-flow-settings.md)); the global page says that runs keep their values
+
 ### TD-047 C5: rewards ignore the scoreboard revision mode when choosing the official attempt — ✅ RESOLVED (2026-11-17)
 - Where: app/domain/results.py `official_attempt`, app/domain/rewards.py `refresh`.
 - Effect: In a run with several revisions the reward uses the best or first attempt over all revisions, while the scoreboard may show one table per revision or only the latest.

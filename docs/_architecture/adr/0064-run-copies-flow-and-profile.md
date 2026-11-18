@@ -5,6 +5,8 @@ date: 2026-11-16
 
 # ADR-0064: A run copies its flow, sources and answers visibility when planned or opened
 
+> The flow and sources part was decided on 2026-11-18 by [ADR-0069](0069-run-keeps-flow-settings.md). This ADR stays `proposed` for answers visibility.
+
 ## Context and Problem Statement
 
 A run copies most of its behaviour from the settings when it is planned or opened: the time limit (`attempt_limit_sec`, [ADR-0048](0048-run-timing.md)), the participant rules (`participant_rules_json`, [ADR-0049](0049-participants-and-access-code.md)), the data profile (`retention_json`, [ADR-0050](0050-data-profile-and-local-resume.md)), the scoreboard (`results_json`, [ADR-0051](0051-scoreboard-participants-and-official-attempt.md)) and the rewards (`rewards_json`, [ADR-0053](0053-rewards-tiers-alternates-and-draw-history.md)). Five values are still read live from the quiz ([ADR-0041](0041-draw-rows-and-flow-settings.md): "effective for new attempts at once"):

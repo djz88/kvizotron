@@ -23,6 +23,7 @@ from app.domain import (
     data_policy,
     participants,
     requirements,
+    run_flow,
     selection,
     settings,
 )
@@ -483,17 +484,37 @@ def _is_stateless(run: QuizRun) -> bool:
     return data_policy.is_stateless(data_policy.of(run)[data_policy.PROFILE])
 
 
-def stateless_held_back(quiz: Quiz) -> bool:
-    """A running stateless run kept its revision because the newest one has a photo question."""
+HELD_STATELESS = "stateless"
+HELD_REQUIREMENTS = "requirements"
+
+
+def _held_reason(run: QuizRun, snapshot: Mapping[str, Any], quiz: Quiz) -> str | None:
+    """Why the run keeps its revision when `snapshot` is published: a photo question needs a
+    person, or its values miss the revision's requirements (ADR-0034, ADR-0069)."""
+    if data_policy.has_photo_question(snapshot) and _is_stateless(run):
+        return HELD_STATELESS
+    needed = requirements.of_snapshot(snapshot, quiz)
+    if requirements.unmet(quiz, needed, values=run_flow.of(run)):
+        return HELD_REQUIREMENTS
+    return None
+
+
+def _held(run: QuizRun, draft: QuizRevision, quiz: Quiz) -> bool:
+    return _held_reason(run, draft.snapshot_json, quiz) is not None
+
+
+def held_back(quiz: Quiz) -> str | None:
+    """The reason the open run kept an older revision than the latest published one, if any."""
     run = _open_round(quiz)
     latest = latest_published(quiz)
-    return bool(
-        run is not None
-        and latest is not None
-        and run.current_revision_id != latest.id
-        and _is_stateless(run)
-        and data_policy.has_photo_question(latest.snapshot_json)
-    )
+    if run is None or latest is None or run.current_revision_id == latest.id:
+        return None
+    return _held_reason(run, latest.snapshot_json, quiz)
+
+
+def stateless_held_back(quiz: Quiz) -> bool:
+    """A running stateless run kept its revision because the newest one has a photo question."""
+    return held_back(quiz) == HELD_STATELESS
 
 
 def _open_round(quiz: Quiz) -> QuizRun | None:
@@ -600,10 +621,9 @@ def publish(
             raise StalePublication(str(quiz.id))
         open_round = _open_round(quiz)
         _freeze(draft, quiz)
-        keep_stateless = data_policy.has_photo_question(draft.snapshot_json)
         round_decision = None
         if open_round is not None:
-            held = keep_stateless and _is_stateless(open_round)
+            held = _held(open_round, draft, quiz)
             round_decision = Decision.STAY.value if held else _round_decision(quiz, decision)
         quiz.revisions.filter(status=QuizRevision.Status.PUBLISHED).update(
             status=QuizRevision.Status.SUPERSEDED
@@ -614,7 +634,7 @@ def publish(
             _move_round(open_round, draft, round_decision)
         planned = quiz.runs.filter(status=QuizRun.Status.SCHEDULED)
         for planned_run in planned:
-            if not (keep_stateless and _is_stateless(planned_run)):
+            if not _held(planned_run, draft, quiz):
                 QuizRun.objects.filter(pk=planned_run.pk).update(current_revision=draft)
         audit.record(
             actor_type="admin",
@@ -835,9 +855,15 @@ def open_run(
     last = quiz.runs.aggregate(last=Max("run_no"))["last"] or 0
     chosen_rules = participants.snapshot(quiz, rules)
     chosen_data = data_policy.snapshot(quiz, data)
-    data_policy.ensure_run_allowed(quiz, chosen_data, chosen_rules, revision.snapshot_json)
+    kept_flow = run_flow.snapshot(quiz)
+    moment = kept_flow[settings.REVEAL_MOMENT]
+    data_policy.ensure_run_allowed(
+        quiz, chosen_data, chosen_rules, revision.snapshot_json, reveal_moment=moment
+    )
     chosen_results = run_results.snapshot(quiz, results)
-    run_results.ensure_run_allowed(quiz, chosen_results, chosen_data[data_policy.PROFILE])
+    run_results.ensure_run_allowed(
+        chosen_results, chosen_data[data_policy.PROFILE], reveal_moment=moment
+    )
     try:
         with transaction.atomic():
             run = QuizRun.objects.create(
@@ -852,6 +878,7 @@ def open_run(
                 retention_json=chosen_data,
                 results_json=chosen_results,
                 rewards_json=run_rewards.snapshot(quiz, rewards),
+                flow_json=kept_flow,
             )
             RunRevision.objects.create(
                 run=run,

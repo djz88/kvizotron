@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import pytest
 
 from app.contracts import SCOREBOARD_VISIBILITY
-from app.domain import authoring, results, settings
+from app.domain import authoring, results, run_flow, settings
 from tests.domain.helpers import ADMIN_ID, make_quiz, published_quiz
 from tests.support.clock import freeze
 
@@ -76,16 +76,24 @@ def test_scoreboard_form_saves_display_values(logged_in):
     assert results.of(run)[SCOREBOARD_VISIBILITY] == "live"
 
 
-def test_after_each_refused_on_quiz_with_visible_board(logged_in):
-    """AC-18: answers after each question are refused, with a reason, beside a visible board."""
+def test_after_each_on_quiz_with_visible_board_run_is_offered_only_next(logged_in):
+    """AC-18: a run with a visible board cannot take answers after each question: next run only."""
     quiz = published_quiz()
-    authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
-    response = logged_in.post(
-        f"/admin/quizzes/{quiz.id}/settings?lang=en",
-        {"slug": quiz.slug, "navigation_mode": "step_back", "reveal_moment": "after_each"},
-    )
-    assert "Answers after each question cannot go with a visible scoreboard." in text(response)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    fields = {"slug": quiz.slug, "navigation_mode": "step_back", "reveal_moment": "after_each"}
+    response = logged_in.post(f"/admin/quizzes/{quiz.id}/settings?lang=en", fields)
+    html = text(response)
+    assert response.status_code == 200
+    assert "Answers after each question cannot go with a visible scoreboard." in html
+    assert 'value="run"' not in html
     assert settings.quiz_override(settings.REVEAL_MOMENT, quiz) is None
+    saved = logged_in.post(
+        f"/admin/quizzes/{quiz.id}/settings?lang=en", fields | {"flow_choice": "next"}
+    )
+    assert saved.status_code == 302
+    assert settings.quiz_override(settings.REVEAL_MOMENT, quiz) == "after_each"
+    run.refresh_from_db()
+    assert run_flow.of(run)[settings.REVEAL_MOMENT] == "never"
 
 
 def test_after_each_refused_with_visible_board_in_the_same_form(logged_in):
@@ -168,14 +176,17 @@ def test_saving_title_keeps_the_label(logged_in):
     assert quiz.anonymous_label == {"cs": "Tým NN"}
 
 
-def test_global_after_each_refused_while_an_inheriting_run_shows_a_board(logged_in):
+def test_global_after_each_is_saved_while_an_inheriting_run_shows_a_board(logged_in):
+    """AC-18: a global change never reaches a planned or open run, so it is not refused."""
     quiz = published_quiz()
-    authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
     response = logged_in.post(
         "/admin/settings?lang=en", {"navigation_mode": "step_back", "reveal_moment": "after_each"}
     )
-    assert "Answers after each question cannot go with a visible scoreboard." in text(response)
-    assert settings.resolve(settings.REVEAL_MOMENT) != "after_each"
+    assert response.status_code == 302
+    assert settings.resolve(settings.REVEAL_MOMENT) == "after_each"
+    run.refresh_from_db()
+    assert run_flow.of(run)[settings.REVEAL_MOMENT] == "never"
 
 
 def test_global_after_each_allowed_when_the_quiz_overrides_it(logged_in):

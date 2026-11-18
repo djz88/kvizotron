@@ -27,7 +27,7 @@ from app.contracts import (
     RewardPlugin,
     ThresholdRule,
 )
-from app.domain import authoring, data_policy, participants, results, settings
+from app.domain import authoring, data_policy, participants, results, run_flow, settings
 from app.domain.models import Attempt, Participant, Quiz, QuizRun, RewardEntitlement, RewardRule
 from app.kernel import audit, registry
 
@@ -214,7 +214,7 @@ def conflicts(run: QuizRun) -> list[str]:
     found = []
     if data_policy.is_stateless(data_policy.of(run)[data_policy.PROFILE]):
         found.append(PROFILE)
-    if settings.resolve(settings.REVEAL_MOMENT, run.quiz) == settings.RevealMoment.AFTER_EACH:
+    if run_flow.of(run)[settings.REVEAL_MOMENT] == settings.RevealMoment.AFTER_EACH:
         found.append(REVEAL)
     if (
         of(run)[WINNER_CONTACT] == "require_email"

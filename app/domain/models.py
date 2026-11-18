@@ -207,6 +207,8 @@ class QuizRun(models.Model):
     retention_summary_json = models.JSONField(default=dict)  # read instead of the deleted rows
     results_json = models.JSONField(default=dict)  # scoreboard settings and tie seed (ADR-0051)
     rewards_json = models.JSONField(default=dict)  # reward settings fixed when planned or opened
+    # Navigation, page size, reveal, shuffle and sources, copied when planned or opened (ADR-0069)
+    flow_json = models.JSONField(default=dict)
     stateless_submitted = models.PositiveIntegerField(default=0)
     # The last anonymous number given to a participant; never goes down, so no number comes back
     participant_seq = models.PositiveIntegerField(default=0)

@@ -14,10 +14,10 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from app.api.admin_auth import admin_required
 from app.api.admin_forms import clash_message, setting_label, setting_value_label
-from app.api.admin_quizzes import not_archived
+from app.api.admin_quizzes import not_archived, run_offer_context
 from app.api.admin_workspace import quiz_title
 from app.api.rendering import page
-from app.domain import quiz_types, settings
+from app.domain import quiz_types, run_flow_change, settings
 from app.domain.models import Quiz
 
 
@@ -48,7 +48,7 @@ def _overview(
         "adjusted": [_change(change) for change in shown.adjusted],
         "skipped": [setting_label(key) for key in shown.skipped],
         "refused": list(dict.fromkeys(clash_message(clash) for clash in shown.refused)),
-        "live_run": shown.live_run,
+        "run_offer": run_offer_context(shown.run_offer) if shown.run_offer else None,
         "content": [setting_label(key) for key in shown.content],
     }
     return page(
@@ -71,9 +71,20 @@ def quiz_type(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     try:
         if request.method == "POST" and request.POST.get("confirm") == "1":
             try:
-                quiz_types.apply(quiz, type_id, admin_id=str(request.user.pk))
-            except quiz_types.TypeRefused:
-                return _overview(request, quiz, quiz_types.preview(quiz, type_id), status=409)
+                quiz_types.apply(
+                    quiz,
+                    type_id,
+                    admin_id=str(request.user.pk),
+                    flow_choice=request.POST.get(run_flow_change.FIELD),
+                )
+            except (
+                quiz_types.TypeRefused,
+                run_flow_change.ChoiceNeeded,
+                run_flow_change.FlowRefused,
+            ) as refusal:
+                quiz.refresh_from_db()  # apply set the type in memory before the rollback
+                status = 400 if isinstance(refusal, run_flow_change.ChoiceNeeded) else 409
+                return _overview(request, quiz, quiz_types.preview(quiz, type_id), status=status)
             return redirect("admin_quiz_settings", quiz.id)
         return _overview(request, quiz, quiz_types.preview(quiz, type_id))
     except quiz_types.UnknownType as error:

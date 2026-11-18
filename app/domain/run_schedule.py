@@ -12,7 +12,15 @@ from django.db import IntegrityError, transaction
 from django.db.models import F, Max
 from django.utils import timezone
 
-from app.domain import authoring, clock, data_policy, participants, requirements, settings
+from app.domain import (
+    authoring,
+    clock,
+    data_policy,
+    participants,
+    requirements,
+    run_flow,
+    settings,
+)
 from app.domain import results as run_results
 from app.domain import rewards as run_rewards
 from app.domain.models import Attempt, Quiz, QuizRun, RunRevision
@@ -70,7 +78,9 @@ def _open(run: QuizRun, when: datetime) -> bool:
 
 def _unmet(run: QuizRun) -> list[requirements.Requirement]:
     snapshot = run.current_revision.snapshot_json
-    return requirements.unmet(run.quiz, requirements.of_snapshot(snapshot, run.quiz))
+    return requirements.unmet(
+        run.quiz, requirements.of_snapshot(snapshot, run.quiz), values=run_flow.of(run)
+    )
 
 
 def _stateless_conflicts(run: QuizRun) -> list[str]:
@@ -80,7 +90,7 @@ def _stateless_conflicts(run: QuizRun) -> list[str]:
         participants.rules_of(run),
         settings.resolve(settings.ANSWERS_VISIBILITY, run.quiz),
         run.current_revision.snapshot_json,
-    ) + data_policy.after_close_conflicts(run.quiz, profile)
+    ) + data_policy.after_close_conflicts(run_flow.of(run)[settings.REVEAL_MOMENT], profile)
 
 
 def _refuse_opening(run: QuizRun, keys: list[str]) -> None:
@@ -169,9 +179,15 @@ def plan(
     last = quiz.runs.aggregate(last=Max("run_no"))["last"] or 0
     chosen_rules = participants.snapshot(quiz, rules)
     chosen_data = data_policy.snapshot(quiz, data)
-    data_policy.ensure_run_allowed(quiz, chosen_data, chosen_rules, revision.snapshot_json)
+    kept_flow = run_flow.snapshot(quiz)
+    moment = kept_flow[settings.REVEAL_MOMENT]
+    data_policy.ensure_run_allowed(
+        quiz, chosen_data, chosen_rules, revision.snapshot_json, reveal_moment=moment
+    )
     chosen_results = run_results.snapshot(quiz, results)
-    run_results.ensure_run_allowed(quiz, chosen_results, chosen_data[data_policy.PROFILE])
+    run_results.ensure_run_allowed(
+        chosen_results, chosen_data[data_policy.PROFILE], reveal_moment=moment
+    )
     try:
         with transaction.atomic():
             run = QuizRun.objects.create(
@@ -187,6 +203,7 @@ def plan(
                 retention_json=chosen_data,
                 results_json=chosen_results,
                 rewards_json=run_rewards.snapshot(quiz, rewards),
+                flow_json=kept_flow,
             )
             run_rewards.copy_rules(run)
             run_rewards.ensure_allowed(run)
@@ -237,13 +254,20 @@ def update_plan(
     _check_plan(starts_at, deadline_at)
     chosen_rules = participants.snapshot(run.quiz, rules)
     chosen_data = data_policy.snapshot(run.quiz, data)
+    moment = run_flow.of(run)[settings.REVEAL_MOMENT]
     data_policy.ensure_run_allowed(
-        run.quiz, chosen_data, chosen_rules, run.current_revision.snapshot_json
+        run.quiz,
+        chosen_data,
+        chosen_rules,
+        run.current_revision.snapshot_json,
+        reveal_moment=moment,
     )
     chosen_results = run_results.snapshot(run.quiz, results) | {
         run_results.SEED: run_results.of(run)[run_results.SEED]
     }
-    run_results.ensure_run_allowed(run.quiz, chosen_results, chosen_data[data_policy.PROFILE])
+    run_results.ensure_run_allowed(
+        chosen_results, chosen_data[data_policy.PROFILE], reveal_moment=moment
+    )
     with transaction.atomic():
         changed = QuizRun.objects.filter(pk=run.pk, status=QuizRun.Status.SCHEDULED).update(
             starts_at=starts_at,

@@ -2,7 +2,8 @@
 
 import pytest
 
-from app.domain import authoring, requirements, settings
+from app.domain import authoring, requirements, run_flow, run_schedule, settings
+from app.domain.models import QuizRun
 from app.kernel.errors import StartupError
 from app.kernel.manifest import Manifest
 from app.kernel.models import AuditEvent
@@ -203,3 +204,63 @@ def test_applying_is_an_ordinary_audited_override():
         assert requirements.unmet(quiz) == []
     assert settings.quiz_override(KEY, quiz) == "at_end"
     assert AuditEvent.objects.filter(action="setting.changed").exists()
+
+
+def test_unmet_judges_a_given_value_instead_of_the_quiz():
+    """AC-17: a run's kept value is judged, not the quiz's (TD-101)."""
+    quiz = needing_quiz("at_end")
+    with needs_reveal_at_end():
+        assert requirements.unmet(quiz) == []
+        assert [i.key for i in requirements.unmet(quiz, values={KEY: "after_each"})] == [KEY]
+        assert requirements.unmet(quiz, values={"other": "after_each"}) == []
+
+
+def keeping_after_each():
+    """A run opened with `after_each`; the quiz was later changed to `at_end` for the next run."""
+    quiz = published_quiz()
+    settings.set_override(KEY, quiz, "after_each", admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    settings.set_override(KEY, quiz, "at_end", admin_id=ADMIN_ID)
+    assert run_flow.of(run)[KEY] == "after_each"
+    return quiz, run
+
+
+def test_an_open_run_keeping_the_refused_value_stays_on_its_revision():
+    """AC-17: publishing a revision the run's values do not meet does not move the run."""
+    quiz, run = keeping_after_each()
+    before = run.current_revision_id
+    with needs_reveal_at_end():
+        add_question(quiz, prompt="Další")
+        authoring.publish(quiz, admin_id=ADMIN_ID, decision=authoring.Decision.NOTIFY_SWITCH)
+    run.refresh_from_db()
+    assert run.current_revision_id == before
+
+
+def test_an_open_run_whose_values_meet_them_is_moved():
+    quiz = published_quiz()
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    with needs_reveal_at_end():
+        add_question(quiz, prompt="Další")
+        draft = authoring.publish(
+            quiz, admin_id=ADMIN_ID, decision=authoring.Decision.NOTIFY_SWITCH
+        )
+    run.refresh_from_db()
+    assert run.current_revision_id == draft.id
+
+
+def test_a_planned_run_keeping_the_refused_value_keeps_its_revision():
+    """AC-17: the same hold for a planned run."""
+    from datetime import UTC, datetime, timedelta
+
+    quiz = published_quiz()
+    settings.set_override(KEY, quiz, "after_each", admin_id=ADMIN_ID)
+    starts = datetime.now(UTC) + timedelta(days=1)
+    planned = run_schedule.plan(
+        quiz, starts_at=starts, deadline_at=None, limit_sec=None, admin_id=ADMIN_ID
+    )
+    settings.set_override(KEY, quiz, "at_end", admin_id=ADMIN_ID)
+    before = planned.current_revision_id
+    with needs_reveal_at_end():
+        add_question(quiz, prompt="Další")
+        authoring.publish(quiz, admin_id=ADMIN_ID)
+    assert QuizRun.objects.get(pk=planned.pk).current_revision_id == before

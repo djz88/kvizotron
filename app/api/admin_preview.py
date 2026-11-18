@@ -217,7 +217,9 @@ def submit(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         "revealed": revealed,
         "earned": result.earned_points,
         "maximum": result.max_points,
-        "sources": result_sources(attempts.questions_of(attempt), quiz, locale),
+        "sources": result_sources(
+            attempts.questions_of(attempt), settings.resolve(settings.SHOW_SOURCES, quiz), locale
+        ),
         "percentage": result.percentage_display,
         "correct_count": result.correct_count,
         "pending": result.pending,

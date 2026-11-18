@@ -20,13 +20,20 @@ from app.contracts import (
     WINNER_CONTACT,
     QuizTypePlugin,
 )
-from app.domain import authoring, quiz_types, run_schedule, setting_rules, settings
+from app.domain import (
+    authoring,
+    quiz_types,
+    run_flow,
+    run_flow_change,
+    run_schedule,
+    setting_rules,
+    settings,
+)
 from app.domain.models import AppSetting
 from app.domain.quiz_types import Change, TypeRefused, UnknownType
 from app.domain.setting_rules import (
     AFTER_CLOSE_PROFILE,
     FLOW,
-    RUN_BOARD,
     STATELESS,
     VISIBILITY,
 )
@@ -58,8 +65,8 @@ def disable(module_id):
     )
 
 
-def apply(quiz, type_id):
-    return quiz_types.apply(quiz, type_id, admin_id=ADMIN_ID)
+def apply(quiz, type_id, flow_choice=None):
+    return quiz_types.apply(quiz, type_id, admin_id=ADMIN_ID, flow_choice=flow_choice)
 
 
 def test_final_test_on_a_fresh_quiz_writes_its_table_and_remembers_the_type():
@@ -124,29 +131,31 @@ def test_a_clash_with_another_setting_is_adjusted():
     assert settings.quiz_override(settings.ANSWERS_VISIBILITY, quiz) == "admins"
 
 
-def test_a_clash_with_an_open_run_refuses_the_type_and_writes_nothing():
+def test_an_open_run_does_not_refuse_the_type_and_keeps_its_values():
+    """AC-171: a planned or open run keeps its own values, so the type applies to the quiz."""
     quiz = published_quiz()
-    authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
-    assert [clash.reason for clash in quiz_types.preview(quiz, "practice").refused] == [RUN_BOARD]
-    with pytest.raises(TypeRefused) as refused:
-        apply(quiz, "practice")
-    assert [clash.reason for clash in refused.value.clashes] == [RUN_BOARD]
-    assert overrides(quiz) == {}
-    assert not events("quiz.type_applied").exists()
-    quiz.refresh_from_db()
-    assert quiz.quiz_type == ""
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    kept = run_flow.of(run)
+    assert quiz_types.preview(quiz, "practice").refused == []
+    apply(quiz, "practice", "next")
+    assert overrides(quiz) == table("practice")
+    assert events("quiz.type_applied").exists()
+    run.refresh_from_db()
+    assert run_flow.of(run) == kept
 
 
-def test_a_refused_change_from_an_applied_type_keeps_the_old_type_and_its_values():
+def test_a_change_from_an_applied_type_with_an_open_run_applies_and_the_run_keeps_its_values():
+    """AC-171: an open run no longer refuses the change of type; the run keeps what it has."""
     quiz = published_quiz()
     apply(quiz, "pub_quiz")
-    before = overrides(quiz)
-    authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
-    with pytest.raises(TypeRefused):
-        apply(quiz, "practice")
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    kept = run_flow.of(run)
+    apply(quiz, "practice", "next")
     quiz.refresh_from_db()
-    assert quiz.quiz_type == "pub_quiz"
-    assert overrides(quiz) == before
+    assert quiz.quiz_type == "practice"
+    assert overrides(quiz) == table("practice")
+    run.refresh_from_db()
+    assert run_flow.of(run) == kept
 
 
 def test_applying_the_same_type_again_restores_a_deviation():
@@ -217,9 +226,10 @@ def test_content_that_does_not_go_with_the_type_warns_and_the_type_still_applies
     assert settings.quiz_override(settings.REVEAL_MOMENT, quiz) == "after_each"
 
 
-def test_a_planned_run_is_a_live_run():
+def test_a_planned_run_is_offered_what_the_type_changes():
+    """AC-185: the preview carries the offer; none without a live run."""
     quiz = published_quiz()
-    assert quiz_types.preview(quiz, "final_test").live_run is False
+    assert quiz_types.preview(quiz, "final_test").run_offer is None
     run_schedule.plan(
         quiz,
         starts_at=timezone.now() + timedelta(hours=1),
@@ -227,7 +237,9 @@ def test_a_planned_run_is_a_live_run():
         limit_sec=None,
         admin_id=ADMIN_ID,
     )
-    assert quiz_types.preview(quiz, "final_test").live_run is True
+    offer = quiz_types.preview(quiz, "final_test").run_offer
+    assert offer is not None
+    assert settings.NAVIGATION_MODE in {change.key for change in offer.changes}
 
 
 def test_an_unknown_type_or_one_of_a_disabled_module_is_refused():
@@ -357,7 +369,7 @@ def test_several_clashes_keep_rule_order():
         ASK_NAME: "required",
         SCOREBOARD_VISIBILITY: "hidden",
     }
-    found = setting_rules.clashes(values, None)
+    found = setting_rules.clashes(values)
     assert [clash.reason for clash in found] == [FLOW, VISIBILITY, STATELESS]
 
 
@@ -374,3 +386,19 @@ def test_resit_exam_preview_on_a_default_quiz_has_no_refused_clash():
     shown = quiz_types.preview(make_quiz("opravny"), "resit_exam")
     assert shown.refused == []
     assert Change(settings.REVEAL_MOMENT, "never", "after_close") in shown.changes
+
+
+def test_a_type_that_changes_the_run_needs_an_answer_and_writes_nothing():
+    """AC-185: without an answer the whole application is rolled back."""
+    quiz = published_quiz()
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    kept = run_flow.of(run)
+    with pytest.raises(run_flow_change.ChoiceNeeded):
+        apply(quiz, "practice")
+    quiz.refresh_from_db()
+    assert quiz.quiz_type == "" and overrides(quiz) == {}
+    run.refresh_from_db()
+    assert run_flow.of(run) == kept
+    apply(quiz, "practice", "run")
+    run.refresh_from_db()
+    assert run_flow.of(run)[settings.NAVIGATION_MODE] == "step_no_back"

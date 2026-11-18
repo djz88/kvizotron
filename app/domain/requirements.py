@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings as django_settings
+from django.db import transaction
 from django.utils.translation import gettext
 
 from app.domain import banks, settings
@@ -91,9 +92,19 @@ def of_snapshot(snapshot: Mapping[str, Any], quiz: Quiz) -> list[Requirement]:
     )
 
 
-def unmet(quiz: Quiz, requirements: Sequence[Requirement] | None = None) -> list[Requirement]:
+def unmet(
+    quiz: Quiz,
+    requirements: Sequence[Requirement] | None = None,
+    values: Mapping[str, str] | None = None,
+) -> list[Requirement]:
+    """A key in `values` is judged by that value: a run's own (ADR-0069), not the quiz's."""
     needed = of_quiz(quiz) if requirements is None else requirements
-    return [item for item in needed if settings.resolve(item.key, quiz) in item.refuse]
+    held = values or {}
+    return [
+        item
+        for item in needed
+        if (held[item.key] if item.key in held else settings.resolve(item.key, quiz)) in item.refuse
+    ]
 
 
 def contradiction(
@@ -123,5 +134,16 @@ def named(key: str, quiz: Quiz) -> Requirement | None:
     return None
 
 
-def apply(requirement: Requirement, quiz: Quiz, *, admin_id: str) -> None:
-    settings.set_override(requirement.key, quiz, requirement.use, admin_id=admin_id)
+def apply(
+    requirement: Requirement, quiz: Quiz, *, admin_id: str, flow_choice: str | None = None
+) -> None:
+    """A quiz settings change like any other: a live run is asked whether it takes it (ADR-0069).
+
+    Raises `ChoiceNeeded` or `FlowRefused` with nothing saved.
+    """
+    from app.domain import run_flow, run_flow_change  # they would import this module back
+
+    with transaction.atomic():
+        before = run_flow.snapshot(quiz)
+        settings.set_override(requirement.key, quiz, requirement.use, admin_id=admin_id)
+        run_flow_change.settle(quiz, before, flow_choice, admin_id=admin_id)

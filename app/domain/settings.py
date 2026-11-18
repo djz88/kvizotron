@@ -529,19 +529,35 @@ def photo_level(quiz: Quiz, question: Mapping[str, Any] | None = None) -> str:
     return resolve(PHOTO_VISIBILITY, quiz, question)
 
 
-def flow(quiz: Quiz) -> Flow:
-    navigation = resolve(NAVIGATION_MODE, quiz)
-    moment = resolve(REVEAL_MOMENT, quiz)
+# `show_sources` is per question and lives only in `run_flow.KEYS`; a new flow key goes in both.
+FLOW_KEYS = (
+    NAVIGATION_MODE,
+    PAGE_SIZE,
+    REVEAL_MOMENT,
+    REVEAL_LEVEL,
+    SHUFFLE_QUESTIONS,
+    SHUFFLE_OPTIONS,
+)
+
+
+def flow_of(values: Mapping[str, str]) -> Flow:
+    """The flow of the given resolved values, as a run keeps them (ADR-0069)."""
+    navigation = values[NAVIGATION_MODE]
+    moment = values[REVEAL_MOMENT]
     conflict = is_flow_conflict(navigation, moment)
     return Flow(
         navigation=navigation,
         moment=RevealMoment.AT_END.value if conflict else moment,
-        level=resolve(REVEAL_LEVEL, quiz),
-        shuffle_questions=resolve(SHUFFLE_QUESTIONS, quiz) == Switch.ON,
-        shuffle_options=resolve(SHUFFLE_OPTIONS, quiz) == Switch.ON,
+        level=values[REVEAL_LEVEL],
+        shuffle_questions=values[SHUFFLE_QUESTIONS] == Switch.ON,
+        shuffle_options=values[SHUFFLE_OPTIONS] == Switch.ON,
         conflict=conflict,
-        page_size=int(resolve(PAGE_SIZE, quiz)),
+        page_size=int(values[PAGE_SIZE]),
     )
+
+
+def flow(quiz: Quiz) -> Flow:
+    return flow_of({key: resolve(key, quiz) for key in FLOW_KEYS})
 
 
 def quiz_override(key: str, quiz: Quiz) -> str | None:

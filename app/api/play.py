@@ -54,6 +54,8 @@ from app.domain import (
     results,
     reveal,
     rewards,
+    run_flow,
+    settings,
     tokens,
     visibility,
 )
@@ -707,7 +709,9 @@ def submit(request: HttpRequest, attempt_id: UUID) -> HttpResponse:
         "revealed": revealed,
         "earned": result.earned_points,
         "maximum": result.max_points,
-        "sources": result_sources(attempts.questions_of(attempt), attempt.run.quiz, locale),
+        "sources": result_sources(
+            attempts.questions_of(attempt), run_flow.of(attempt.run)[settings.SHOW_SOURCES], locale
+        ),
         "percentage": result.percentage_display,
         "correct_count": result.correct_count,
         "pending": result.pending,

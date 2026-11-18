@@ -917,6 +917,10 @@ msgid "The running stateless run keeps its revision: the new one has a photo que
 msgstr "Běžící běh, který nic neukládá, ponechá svou revizi: nová má otázku s fotkou."
 
 #: admin_quizzes.py
+msgid "The running run keeps its revision: it keeps settings that the new questions do not allow."
+msgstr "Probíhající běh zůstává na své revizi: drží nastavení, které nové otázky nedovolují."
+
+#: admin_quizzes.py
 msgid "A run is in progress. End it before archiving the quiz."
 msgstr "Běh právě probíhá. Před archivací kvízu ho ukončete."
 
@@ -1709,9 +1713,9 @@ msgstr "Další nastavení ve Vše: %(count)s"
 
 #: jinja2/admin/_branding_fields.html jinja2/admin/_inline_name.html
 #: jinja2/admin/draw_form.html jinja2/admin/question_form.html
-#: jinja2/admin/quiz_settings.html jinja2/admin/run_plan.html
-#: jinja2/admin/settings.html jinja2/admin/users.html
-#: jinja2/public/_identity_form.html
+#: jinja2/admin/quiz_settings.html jinja2/admin/quiz_settings_confirm.html
+#: jinja2/admin/run_plan.html jinja2/admin/settings.html
+#: jinja2/admin/users.html jinja2/public/_identity_form.html
 msgid "Save"
 msgstr "Uložit"
 
@@ -2012,7 +2016,8 @@ msgstr "Zpráva"
 
 #: jinja2/admin/_inline_name.html jinja2/admin/bank_folder_move.html
 #: jinja2/admin/confirm.html jinja2/admin/erasure.html
-#: jinja2/admin/quiz_duplicate.html jinja2/admin/quiz_type_confirm.html
+#: jinja2/admin/quiz_duplicate.html jinja2/admin/quiz_settings_confirm.html
+#: jinja2/admin/quiz_type_confirm.html
 msgid "Cancel"
 msgstr "Zrušit"
 
@@ -2241,6 +2246,35 @@ msgstr "Udělit"
 #: jinja2/admin/_rewards_sections.html
 msgid "Nobody has submitted an attempt yet."
 msgstr "Zatím nikdo neodeslal pokus."
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Apply the change to run %(number)s too?"
+msgstr "Použít změnu i pro běh %(number)s?"
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Run %(number)s (%(status)s) was planned or opened with these values:"
+msgstr "Běh %(number)s (%(status)s) byl naplánován nebo otevřen s těmito hodnotami:"
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Run %(number)s cannot take this change:"
+msgstr "Běh %(number)s tuto změnu převzít nemůže:"
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Also for run %(number)s: its new attempts, and the sources on its result pages"
+msgstr "I pro běh %(number)s: jeho nové pokusy a zdroje na stránkách jeho výsledků"
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Only from the next run; run %(number)s keeps its values"
+msgstr "Až od dalšího běhu; běh %(number)s si nechá své hodnoty"
+
+#: jinja2/admin/_run_flow_choice.html
+msgid "Attempts already started keep the navigation, reveal and shuffle they started with."
+msgstr "Pokusy, které už začaly, si nechají průchod, odhalení a míchání, se kterými začaly."
 
 #: jinja2/admin/_run_header.html
 msgid "Parts of this run"
@@ -3117,6 +3151,10 @@ msgstr "Odpovědi po každé otázce vyžadují režim po jedné, ale tento kví
 msgid "Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only."
 msgstr "Zobrazení odpovědí komukoli kromě adminů potřebuje profil, který ukládá všechny odpovědi, a tento kvíz ukládá méně. Odpovědi vidí jen admini."
 
+#: jinja2/admin/quiz_settings_confirm.html
+msgid "Save the quiz settings"
+msgstr "Uložit nastavení kvízu"
+
 #: jinja2/admin/quiz_type_confirm.html
 #, python-format
 msgid "Apply the type %(name)s again"
@@ -3146,10 +3184,6 @@ msgstr "Změní se také, aby nastavení šla dohromady"
 #: jinja2/admin/quiz_type_confirm.html
 msgid "Left as they are, because their module is off"
 msgstr "Zůstanou beze změny, protože jejich modul je vypnutý"
-
-#: jinja2/admin/quiz_type_confirm.html
-msgid "A planned or running run uses navigation, reveal and shuffle for new attempts at once; the rest applies to new runs."
-msgstr "Naplánovaný nebo běžící běh použije průchod, odhalení odpovědí a míchání pro nové pokusy hned; zbytek platí pro nové běhy."
 
 #: jinja2/admin/quiz_type_confirm.html
 #, python-format
@@ -3618,6 +3652,10 @@ msgstr "Skrýt archivované běhy"
 #: jinja2/admin/runs.html
 msgid "Show archived runs"
 msgstr "Zobrazit archivované"
+
+#: jinja2/admin/settings.html
+msgid "Navigation, answer reveal, shuffling and sources changed here apply from each quiz's next run; planned and open runs keep their values."
+msgstr "Průchod, odhalení odpovědí, míchání a zdroje změněné tady platí od dalšího běhu každého kvízu; naplánované a otevřené běhy si nechají své hodnoty."
 
 #: jinja2/admin/settings.html
 msgid "These values apply to every quiz that does not set its own."

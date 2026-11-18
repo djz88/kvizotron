@@ -38,7 +38,7 @@ from app.contracts import (
     ResultViewPlugin,
     ScoreEntry,
 )
-from app.domain import attempts, authoring, data_policy, settings
+from app.domain import attempts, authoring, data_policy, run_flow, settings
 from app.domain.models import Attempt, Participant, Quiz, QuizRun, RunRevision
 from app.kernel import audit, registry
 
@@ -162,9 +162,9 @@ def _check(chosen: Mapping[str, str], *, profile: str, reveal_moment: str) -> No
         raise ResultConflict(conflicts(chosen, profile=profile, reveal_moment=reveal_moment), why)
 
 
-def ensure_run_allowed(quiz: Quiz, chosen: Mapping[str, str], profile: str) -> None:
+def ensure_run_allowed(chosen: Mapping[str, str], profile: str, *, reveal_moment: str) -> None:
     """For a run about to be planned or opened. Raises `ResultConflict`."""
-    _check(chosen, profile=profile, reveal_moment=settings.resolve(settings.REVEAL_MOMENT, quiz))
+    _check(chosen, profile=profile, reveal_moment=reveal_moment)
 
 
 def set_display(run: QuizRun, chosen: Mapping[str, str], *, admin_id: str) -> None:
@@ -190,7 +190,7 @@ def set_display(run: QuizRun, chosen: Mapping[str, str], *, admin_id: str) -> No
         _check(
             after,
             profile=data_policy.of(current)[data_policy.PROFILE],
-            reveal_moment=settings.resolve(settings.REVEAL_MOMENT, current.quiz),
+            reveal_moment=run_flow.of(current)[settings.REVEAL_MOMENT],
         )
         changed = {key: value for key, value in given.items() if before[key] != value}
         if not changed:

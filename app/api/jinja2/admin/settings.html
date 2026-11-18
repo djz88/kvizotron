@@ -7,6 +7,7 @@
 {% include "admin/_section_panel.html" %}
 <div class="panel-main">
 <h1>{{ _("Settings") }}</h1>
+<p id="runs-keep">{{ _("Navigation, answer reveal, shuffling and sources changed here apply from each quiz's next run; planned and open runs keep their values.") }}</p>
 {% include "admin/_colour_notice.html" %}
 {% set search_page = url("admin_settings") %}
 {% include "admin/_settings_search.html" %}

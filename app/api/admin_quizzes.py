@@ -27,16 +27,20 @@ from app.api.admin_forms import (
     QuizContentForm,
     QuizForm,
     QuizNameForm,
+    clash_message,
     conflict_messages,
     free_slug,
     result_messages,
     setting_initial,
+    setting_label,
+    setting_value_label,
     title_taken_message,
 )
 from app.api.admin_workspace import image_check, name_field, quiz_title, type_bar, workspace
 from app.api.i18n import PUBLIC_LOCALES
 from app.api.inline_name import NameField, render_field, wants_partial
 from app.api.rendering import media_storage, page, question_label, with_media_urls
+from app.api.run_tabs import status_label
 from app.contracts import (
     EXTERNAL_IMAGE_MODE,
     IMAGE_MODE_COPY,
@@ -61,6 +65,8 @@ from app.domain import (
     results,
     revision_diff,
     rewards,
+    run_flow,
+    run_flow_change,
     selection,
     settings,
 )
@@ -338,6 +344,51 @@ def image_check_view(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     return page(request, "admin/_image_warning.html", context, request.locale)  # type: ignore[attr-defined]
 
 
+def run_offer_context(offer: run_flow_change.Offer) -> dict[str, Any]:
+    """What `admin/_run_flow_choice.html` shows about the run a quiz change is offered to."""
+    return {
+        "number": offer.run.run_no,
+        "status": status_label(offer.run),
+        "changes": [
+            {
+                "label": setting_label(change.key),
+                "kept": setting_value_label(change.key, change.kept),
+                "new": setting_value_label(change.key, change.new),
+            }
+            for change in offer.changes
+        ],
+        "refused": list(dict.fromkeys(clash_message(clash) for clash in offer.refused)),
+    }
+
+
+def _run_question(
+    request: HttpRequest,
+    quiz: Quiz,
+    offer: run_flow_change.Offer,
+    status: int,
+    *,
+    action: str,
+    back: str,
+) -> HttpResponse:
+    """Nothing is saved: the posted fields come back so that the answer saves them (AC-185)."""
+    quiz.refresh_from_db()  # the rolled-back form changed it in memory
+    skipped = ("csrfmiddlewaretoken", run_flow_change.FIELD)
+    posted = [
+        (name, value)
+        for name, values in request.POST.lists()
+        if name not in skipped
+        for value in values
+    ]
+    context = {
+        **workspace(quiz, "settings"),
+        "posted": posted,
+        "run_offer": run_offer_context(offer),
+        "action": action,
+        "back": back,
+    }
+    return page(request, "admin/quiz_settings_confirm.html", context, request.locale, status)  # type: ignore[attr-defined]
+
+
 @admin_required
 def quiz_settings(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     """What applies immediately. A behaviour setting is not part of a revision."""
@@ -349,17 +400,32 @@ def quiz_settings(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     form = QuizBehaviourForm(request.POST, quiz=quiz)
     if not form.is_valid():
         return settings_page(request, quiz, behaviour_form=form)
+    admin_id = str(request.user.pk)
     try:
         with transaction.atomic():
+            before = run_flow.snapshot(quiz)
             form.apply_to(quiz)
+            for key in settings.keys_for("quiz"):
+                value = form.cleaned_data[key]
+                if (value or None) != settings.quiz_override(key, quiz):
+                    settings.set_override(key, quiz, value or None, admin_id=admin_id)
+            form.save_colours(admin_id)
+            run_flow_change.settle(
+                quiz, before, request.POST.get(run_flow_change.FIELD), admin_id=admin_id
+            )
     except IntegrityError:  # another admin took the identifier at the same moment
         form.add_error("slug", _("Another quiz already uses this identifier."))
         return settings_page(request, quiz, behaviour_form=form)
-    for key in settings.keys_for("quiz"):
-        value = form.cleaned_data[key]
-        if (value or None) != settings.quiz_override(key, quiz):
-            settings.set_override(key, quiz, value or None, admin_id=str(request.user.pk))
-    form.save_colours(str(request.user.pk))
+    except (run_flow_change.ChoiceNeeded, run_flow_change.FlowRefused) as asked:
+        refused = isinstance(asked, run_flow_change.FlowRefused)
+        return _run_question(
+            request,
+            quiz,
+            asked.offer,
+            status=409 if refused else 200,
+            action=reverse("admin_quiz_settings", args=[quiz.id]),
+            back=reverse("admin_quiz_settings", args=[quiz.id]),
+        )
     return redirect("admin_quiz_settings", quiz.id)
 
 
@@ -600,13 +666,29 @@ def requirement_use(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
     requirement = requirements.named(request.POST.get("key", ""), quiz)
     if requirement is None:
         return HttpResponseBadRequest()
-    requirements.apply(requirement, quiz, admin_id=str(request.user.pk))
-    back = request.POST.get("next", "")
-    if url_has_allowed_host_and_scheme(
-        back, allowed_hosts={request.get_host()}, require_https=request.is_secure()
-    ):
-        return redirect(back)
-    return redirect("admin_quiz_edit", quiz.id)
+    posted_next = request.POST.get("next", "")
+    allowed = url_has_allowed_host_and_scheme(
+        posted_next, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    )
+    back = posted_next if allowed else reverse("admin_quiz_edit", args=[quiz.id])
+    try:
+        requirements.apply(
+            requirement,
+            quiz,
+            admin_id=str(request.user.pk),
+            flow_choice=request.POST.get(run_flow_change.FIELD),
+        )
+    except (run_flow_change.ChoiceNeeded, run_flow_change.FlowRefused) as asked:
+        refused = isinstance(asked, run_flow_change.FlowRefused)
+        return _run_question(
+            request,
+            quiz,
+            asked.offer,
+            status=409 if refused else 200,
+            action=reverse("admin_requirement_use", args=[quiz.id]),
+            back=back,
+        )
+    return redirect(back)
 
 
 def problem_text(problem: authoring.Problem) -> str:
@@ -742,9 +824,16 @@ def quiz_publish(request: HttpRequest, quiz_id: UUID) -> HttpResponse:
         return _publish_page(request, quiz, _("Choose what happens to the running run."))
     except _OPEN_REFUSAL_TYPES as error:
         return _publish_page(request, quiz, _open_refusal(error))
-    if authoring.stateless_held_back(quiz):
+    held = authoring.held_back(quiz)
+    if held == authoring.HELD_STATELESS:
         notice = _(
             "The running stateless run keeps its revision: the new one has a photo question."
+        )
+        return edit_page(request, quiz, run_error=notice)
+    if held == authoring.HELD_REQUIREMENTS:
+        notice = _(
+            "The running run keeps its revision: it keeps settings that the new questions "
+            "do not allow."
         )
         return edit_page(request, quiz, run_error=notice)
     if _then_plan(request):

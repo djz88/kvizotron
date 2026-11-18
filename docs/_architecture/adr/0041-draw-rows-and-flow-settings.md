@@ -48,6 +48,7 @@ Publication copies each row's usable questions into the revision. A bank questio
 ### Confirmation
 
 `tests/domain/test_draws.py`, `tests/domain/test_flow_settings.py`, `tests/integration/test_banks_and_flow.py`.
+* **Runs keep these values (addendum 2026-11-18).** For a planned or open run the flow settings no longer apply to new attempts at once: a run keeps the values from planning or opening, and a change reaches it only when the admin answers so ([ADR-0069](0069-run-keeps-flow-settings.md)). Test runs and the preview still follow the quiz.
 
 ## More Information
 

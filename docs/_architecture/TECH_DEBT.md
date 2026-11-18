@@ -327,11 +327,6 @@ postponed; resolved items are moved to TECH_DEBT_archive.md after some time.
 - Effect: an admin who tuned a quiz cannot reuse its settings as a type for other quizzes, other than duplicating the quiz
 - Solution: "Save as type" on the quiz settings page storing the quiz's overrides under a name, listed with the plugin types, with rename and delete
 
-### TD-101 Navigation, reveal, shuffle and sources are read live by an open run — OPEN
-- Where: `app/domain/attempts.py:234` (`settings.flow(run.quiz)` at each attempt start), `app/api/rendering.py:237` (`show_sources`), `app/domain/rewards.py:211` (reveal checked against the live quiz)
-- Effect: unlike the time limit, participants, data profile, scoreboard and rewards, which a run copies when it is planned or opened, these values follow the quiz: a settings change or a new quiz type during an open run changes new attempts of that run, and sources also change on result pages of finished attempts. The quiz types overview only warns about it (`docs/superpowers/specs/2026-11-12-quiz-types-design.md`)
-- Solution: copy them onto the run at planning or opening like the other run values, with a migration, and read them from the run
-
 ### TD-102 Review fixes 2026-11-16: deferred minors — OPEN
 - Where: `app/domain/rate_limit.py`, `app/api/admin_runs.py`, `app/domain/rewards.py`, `app/domain/participants.py`, `app/api/play_switch.py`, `app/api/admin_forms.py`, `app/api/assets/countdown.js`, the deploy gunicorn command, and tests under `tests/`
 - Effect: minor leftovers of the 2026-11-16 final review, none changes behaviour today:

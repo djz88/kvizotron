@@ -240,9 +240,12 @@ def question_label(question: Mapping[str, Any], locale: str) -> str:
 
 
 def result_sources(
-    questions: Sequence[Mapping[str, Any]], quiz: Quiz, locale: str
+    questions: Sequence[Mapping[str, Any]], sources: str, locale: str
 ) -> list[dict[str, Any]]:
-    """Only a whole `https://` address becomes a link; anything else stays text."""
+    """Only a whole `https://` address becomes a link; anything else stays text.
+
+    `sources` is the quiz-level value (the run's in play, the quiz's in preview); a question's wins.
+    """
     return [
         {
             "question": question_label(question, locale),
@@ -253,7 +256,8 @@ def result_sources(
         }
         for question in questions
         if question.get("sources")
-        and settings.resolve(settings.SHOW_SOURCES, quiz, question) == settings.ShowSources.ON
+        and (settings.question_value(settings.SHOW_SOURCES, question) or sources)
+        == settings.ShowSources.ON
     ]
 
 

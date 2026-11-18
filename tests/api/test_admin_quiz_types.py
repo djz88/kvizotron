@@ -4,13 +4,14 @@ AC-171, ADR-0062.
 """
 
 import re
+from decimal import Decimal
 from typing import cast
 
 import pytest
 from django.utils import translation
 
 from app.contracts import REWARD_SOURCE, SCOREBOARD_VISIBILITY, QuizTypePlugin
-from app.domain import authoring, quiz_types, settings
+from app.domain import authoring, quiz_types, rewards, run_flow, settings
 from app.domain.models import AppSetting, Quiz
 from app.kernel import registry
 from app.kernel.models import PluginInstallation
@@ -240,12 +241,14 @@ def test_overview_names_adjusted_and_skipped_settings(english):
     assert label(REWARD_SOURCE) in skipped and "module is off" in skipped
 
 
-def test_overview_warns_about_a_live_run_and_the_content(english):
+def test_overview_warns_about_the_content_and_offers_the_run(english):
+    """AC-185: the content warning stays; the run part is the choice."""
     quiz = published_quiz()
     authoring.open_run(quiz, admin_id=ADMIN_ID)
     add_photo(quiz)
     html = text(english.get(type_url(quiz, "practice")))
-    assert "new attempts at once" in section(html, "live-run")
+    assert 'id="live-run"' not in html
+    assert 'name="flow_choice" value="run"' in html
     assert label(settings.REVEAL_MOMENT) in section(html, "content-warning")
     assert 'name="confirm" value="1"' in html  # a warning does not refuse
     unique_ids(html)
@@ -277,18 +280,25 @@ def test_confirmed_post_applies_the_type(logged_in):
     assert overrides(quiz) == table("final_test")
 
 
-def test_a_clash_with_a_run_refuses_with_the_forms_message_and_changes_nothing(english):
+def test_an_open_run_does_not_refuse_the_type_and_keeps_its_values(english):
+    """AC-171: a planned or open run keeps its values; the type applies to the quiz only."""
     quiz = published_quiz()
-    authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID, results={SCOREBOARD_VISIBILITY: "live"})
+    kept = run_flow.of(run)
     shown = text(english.get(type_url(quiz, "practice")))
-    assert 'name="confirm"' not in shown
-    response = english.post(type_url(quiz), {"type": "practice", "confirm": "1"})
-    assert response.status_code == 409
-    html = text(response)
-    assert "Answers after each question cannot go with a visible scoreboard." in html
-    assert 'name="confirm"' not in html
+    assert 'name="confirm"' in shown
+    assert 'value="run"' not in shown  # the run cannot take it: only "next" is offered
+    assert "Answers after each question cannot go with a visible scoreboard." in section(
+        shown, "refused"
+    )
+    response = english.post(
+        type_url(quiz), {"type": "practice", "confirm": "1", "flow_choice": "next"}
+    )
+    assert response.status_code == 302
     quiz.refresh_from_db()
-    assert quiz.quiz_type == "" and overrides(quiz) == {}
+    assert quiz.quiz_type == "practice"
+    run.refresh_from_db()
+    assert run_flow.of(run) == kept
 
 
 def test_an_unknown_or_disabled_type_is_not_found(logged_in):
@@ -368,3 +378,122 @@ def test_new_quiz_with_a_type_gone_meanwhile_says_so(logged_in, monkeypatch):
     notice = re.search(shown, text(response))
     assert notice is not None and notice.group(1) == "status"  # information, not an error
     assert Quiz.objects.get(slug="kviz").quiz_type == ""
+
+
+def live_quiz():
+    quiz = published_quiz()
+    return quiz, authoring.open_run(quiz, admin_id=ADMIN_ID)
+
+
+def test_type_overview_offers_the_run(english):
+    """AC-185: a live run gets the radios on the overview, inside the confirm form."""
+    quiz, run = live_quiz()
+    html = text(english.get(type_url(quiz, "practice")))
+    assert f"Apply the change to run {run.run_no} too?" in html
+    assert 'name="flow_choice" value="next"' in html
+    assert 'id="live-run"' not in html
+    assert html.index('name="flow_choice"') > html.index('name="confirm"')
+
+
+def test_type_apply_with_run_applies_to_the_run(english):
+    """AC-185: "run" writes the type's values to the run."""
+    quiz, run = live_quiz()
+    response = english.post(
+        type_url(quiz), {"type": "practice", "confirm": "1", "flow_choice": "run"}
+    )
+    assert response.status_code == 302
+    run.refresh_from_db()
+    assert run_flow.of(run)[settings.NAVIGATION_MODE] == "step_no_back"
+    assert run_flow.of(run)[settings.REVEAL_MOMENT] == "after_each"
+
+
+def test_type_apply_without_an_answer_writes_nothing(english):
+    """AC-185: no answer is a 400 and the quiz is untouched."""
+    quiz, run = live_quiz()
+    before = dict(run.flow_json)
+    response = english.post(type_url(quiz), {"type": "practice", "confirm": "1"})
+    assert response.status_code == 400
+    html = text(response)
+    assert f"Apply the change to run {run.run_no} too?" in html
+    assert "Use the type" in html and "Apply the type" not in html
+    quiz.refresh_from_db()
+    run.refresh_from_db()
+    assert quiz.quiz_type == "" and overrides(quiz) == {}
+    assert run.flow_json == before
+
+
+def test_type_refused_for_the_run_is_409_and_saves_nothing(english):
+    """AC-185: a run that cannot take the change gets the reason and nothing is written."""
+    quiz = published_quiz()
+    texts = {"cs": {"name": "Cena", "description": "", "claim": ""}}
+    rule = rewards.RuleData(
+        kind="threshold", texts=texts, threshold_unit="percent", threshold_value=Decimal(50)
+    )
+    rewards.save_rule(quiz, rule, rule=None, admin_id=ADMIN_ID)
+    settings.set_override(REWARD_SOURCE, quiz, "quiz", admin_id=ADMIN_ID)
+    run = authoring.open_run(quiz, admin_id=ADMIN_ID)
+    before_overrides = overrides(quiz)
+    before = dict(run.flow_json)
+    response = english.post(
+        type_url(quiz), {"type": "practice", "confirm": "1", "flow_choice": "run"}
+    )
+    html = text(response)
+    assert response.status_code == 409
+    assert f"Run {run.run_no} cannot take this change:" in html
+    assert "Use the type" in html
+    assert 'name="type" value="practice"' in html and 'name="confirm" value="1"' in html
+    quiz.refresh_from_db()
+    run.refresh_from_db()
+    assert quiz.quiz_type == "" and overrides(quiz) == before_overrides
+    assert run.flow_json == before
+
+
+def test_type_next_keeps_the_run(english):
+    """AC-185: "next" applies the type to the quiz only."""
+    quiz, run = live_quiz()
+    before = dict(run.flow_json)
+    response = english.post(
+        type_url(quiz), {"type": "practice", "confirm": "1", "flow_choice": "next"}
+    )
+    assert response.status_code == 302
+    run.refresh_from_db()
+    assert run.flow_json == before
+    quiz.refresh_from_db()
+    assert quiz.quiz_type == "practice"
+
+
+def test_type_without_a_change_for_the_run_asks_nothing(english):
+    """AC-185: no live run, or values the run already has, ask nothing."""
+    quiz = make_quiz()
+    html = text(english.get(type_url(quiz, "practice")))
+    assert 'name="flow_choice"' not in html
+    quiz.delete()
+    quiz, run = live_quiz()
+    run.flow_json = (
+        run_flow.of(run)
+        | table("practice")
+        | {key: run_flow.of(run)[key] for key in run_flow.KEYS if key not in table("practice")}
+    )
+    run.save(update_fields=["flow_json"])
+    html = text(english.get(type_url(quiz, "practice")))
+    assert 'name="flow_choice"' not in html
+    response = english.post(type_url(quiz), {"type": "practice", "confirm": "1"})
+    assert response.status_code == 302
+
+
+def test_type_remove_asks_nothing(english):
+    """AC-185: forgetting the type writes no value."""
+    quiz, run = live_quiz()
+    quiz_types.apply(quiz, "practice", admin_id=ADMIN_ID, flow_choice="next")
+    before = dict(run.flow_json)
+    response = english.post(f"/admin/quizzes/{quiz.id}/type/remove")
+    assert response.status_code == 302
+    run.refresh_from_db()
+    assert run.flow_json == before
+
+
+def test_global_page_says_runs_keep_their_values(english):
+    """AC-185: one sentence under the heading."""
+    html = text(english.get("/admin/settings?lang=en"))
+    assert 'id="runs-keep"' in html
+    assert "planned and open runs keep their values" in section(html, "runs-keep")

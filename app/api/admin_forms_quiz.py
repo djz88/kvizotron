@@ -326,12 +326,12 @@ def clash_message(clash: setting_rules.Clash) -> str:
     return result_messages([clash.reason])[0]
 
 
-def _refuse_clashes(form: forms.Form, quiz: Quiz | None) -> None:
+def _refuse_clashes(form: forms.Form) -> None:
     """Empty fields mean the global value, in both forms. The rules are in the domain (AC-18)."""
     values = {
         key: value for key, value in form.cleaned_data.items() if isinstance(value, str) and value
     }
-    for clash in setting_rules.clashes(values, quiz):
+    for clash in setting_rules.clashes(values):
         form.add_error(clash.key if clash.key in form.fields else None, clash_message(clash))
 
 
@@ -418,7 +418,7 @@ class GlobalSettingsForm(forms.Form):
 
     def clean(self) -> dict[str, Any] | None:
         cleaned = super().clean()
-        _refuse_clashes(self, getattr(self, "quiz", None))
+        _refuse_clashes(self)
         _clean_colours(self, self.palette())
         return cleaned
 
@@ -497,7 +497,7 @@ class QuizBehaviourForm(forms.Form):
 
     def clean(self) -> dict[str, Any] | None:
         cleaned = super().clean()
-        _refuse_clashes(self, getattr(self, "quiz", None))
+        _refuse_clashes(self)
         _clean_colours(self, self.palette())
         return cleaned
 

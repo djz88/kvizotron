@@ -5,7 +5,7 @@ import pytest
 
 from app.domain import settings
 from app.kernel import registry
-from tests.domain.helpers import open_quiz_run
+from tests.domain.helpers import keep, open_quiz_run
 
 pytestmark = pytest.mark.django_db
 HTMX = {"HX-Request": "true"}
@@ -23,20 +23,20 @@ def run():
 
 
 def test_page_carries_the_mode(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "all_at_once", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "all_at_once")
     assert "data-flow-step" not in start_page(client, run)
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
     html = start_page(client, run)
     assert "data-flow-step" in html
     assert "data-flow-back" in html
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_no_back", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_no_back")
     html = start_page(client, run)
     assert "data-flow-step" in html
     assert "data-flow-back" not in html
 
 
 def test_controls_start_hidden_so_the_page_works_without_script(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
     html = start_page(client, run)
     sections = re.findall(r'<section class="flow-question"[^>]*>', html)
     assert len(sections) == 3
@@ -70,7 +70,7 @@ def test_progress_texts_are_translated(client, lang, text):
 
 
 def test_unavailable_flow_plugin_gives_the_one_page_form(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
     real = registry.get
 
     def without_flow(capability, *args, **kwargs):
@@ -91,16 +91,16 @@ def test_result_shows_from_its_top_after_a_long_form(client, run):
 
 
 def test_check_button_does_not_inherit_the_jump_to_the_top(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "after_each", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
+    keep(run, settings.REVEAL_MOMENT, "after_each")
     html = start_page(client, run)
     assert re.search(r'<button[^>]*data-flow-check-button[^>]*hx-swap="innerHTML"', html)
 
 
 def test_pages_mode_carries_the_page_size(client, run):
     """AC-88: pages step by N questions and allow going back."""
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "pages", admin_id=None)
-    settings.set_override(settings.PAGE_SIZE, run.quiz, "2", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "pages")
+    keep(run, settings.PAGE_SIZE, "2")
     html = start_page(client, run, "uk")
     assert "data-flow-step" in html and "data-flow-back" in html
     assert 'data-flow-page="2"' in html
@@ -108,12 +108,12 @@ def test_pages_mode_carries_the_page_size(client, run):
 
 
 def test_page_size_is_fixed_when_the_attempt_starts(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "pages", admin_id=None)
-    settings.set_override(settings.PAGE_SIZE, run.quiz, "3", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "pages")
+    keep(run, settings.PAGE_SIZE, "3")
     html = start_page(client, run)
     token = re.search(r'name="attempt_token" value="([^"]+)"', html).group(1)
     attempt_id = re.search(r'data-attempt="([^"]+)"', html).group(1)
-    settings.set_override(settings.PAGE_SIZE, run.quiz, "7", admin_id=None)
+    keep(run, settings.PAGE_SIZE, "7")
     resumed = client.post(
         f"/r/{run.id}/resume", {"attempt_id": attempt_id, "attempt_token": token}, headers=HTMX
     )
@@ -121,7 +121,7 @@ def test_page_size_is_fixed_when_the_attempt_starts(client, run):
 
 
 def test_one_question_steps_carry_page_one(client, run):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, "step_back", admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
     assert 'data-flow-page="1"' in start_page(client, run)
 
 
@@ -139,7 +139,7 @@ def test_flow_script_moves_focus_after_start():
 
 @pytest.mark.parametrize("mode", ["all_at_once", "step_back", "step_no_back"])
 def test_every_question_section_can_take_focus(client, run, mode):
-    settings.set_override(settings.NAVIGATION_MODE, run.quiz, mode, admin_id=None)
+    keep(run, settings.NAVIGATION_MODE, mode)
     sections = re.findall(r'<section class="flow-question"[^>]*>', start_page(client, run))
     assert len(sections) == 3
     assert all('tabindex="-1"' in section for section in sections)

@@ -917,6 +917,10 @@ msgid "The running stateless run keeps its revision: the new one has a photo que
 msgstr "Поточний запуск, що нічого не зберігає, залишає свою ревізію: нова містить питання з фото."
 
 #: admin_quizzes.py
+msgid "The running run keeps its revision: it keeps settings that the new questions do not allow."
+msgstr ""
+
+#: admin_quizzes.py
 msgid "A run is in progress. End it before archiving the quiz."
 msgstr ""
 
@@ -1709,9 +1713,9 @@ msgstr "Інші налаштування в «Усе»: %(count)s"
 
 #: jinja2/admin/_branding_fields.html jinja2/admin/_inline_name.html
 #: jinja2/admin/draw_form.html jinja2/admin/question_form.html
-#: jinja2/admin/quiz_settings.html jinja2/admin/run_plan.html
-#: jinja2/admin/settings.html jinja2/admin/users.html
-#: jinja2/public/_identity_form.html
+#: jinja2/admin/quiz_settings.html jinja2/admin/quiz_settings_confirm.html
+#: jinja2/admin/run_plan.html jinja2/admin/settings.html
+#: jinja2/admin/users.html jinja2/public/_identity_form.html
 msgid "Save"
 msgstr "Зберегти"
 
@@ -2012,7 +2016,8 @@ msgstr "Повідомлення"
 
 #: jinja2/admin/_inline_name.html jinja2/admin/bank_folder_move.html
 #: jinja2/admin/confirm.html jinja2/admin/erasure.html
-#: jinja2/admin/quiz_duplicate.html jinja2/admin/quiz_type_confirm.html
+#: jinja2/admin/quiz_duplicate.html jinja2/admin/quiz_settings_confirm.html
+#: jinja2/admin/quiz_type_confirm.html
 msgid "Cancel"
 msgstr "Скасувати"
 
@@ -2240,6 +2245,35 @@ msgstr ""
 
 #: jinja2/admin/_rewards_sections.html
 msgid "Nobody has submitted an attempt yet."
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Apply the change to run %(number)s too?"
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Run %(number)s (%(status)s) was planned or opened with these values:"
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Run %(number)s cannot take this change:"
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Also for run %(number)s: its new attempts, and the sources on its result pages"
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+#, python-format
+msgid "Only from the next run; run %(number)s keeps its values"
+msgstr ""
+
+#: jinja2/admin/_run_flow_choice.html
+msgid "Attempts already started keep the navigation, reveal and shuffle they started with."
 msgstr ""
 
 #: jinja2/admin/_run_header.html
@@ -3117,6 +3151,10 @@ msgstr "Відповіді після кожного питання потреб
 msgid "Showing answers to anyone but admins needs a profile that keeps all answers, and this quiz keeps less. Answers stay visible to admins only."
 msgstr "Показ відповідей будь-кому, крім адміністраторів, потребує профілю, який зберігає всі відповіді, а цей квіз зберігає менше. Відповіді бачать лише адміністратори."
 
+#: jinja2/admin/quiz_settings_confirm.html
+msgid "Save the quiz settings"
+msgstr ""
+
 #: jinja2/admin/quiz_type_confirm.html
 #, python-format
 msgid "Apply the type %(name)s again"
@@ -3145,10 +3183,6 @@ msgstr ""
 
 #: jinja2/admin/quiz_type_confirm.html
 msgid "Left as they are, because their module is off"
-msgstr ""
-
-#: jinja2/admin/quiz_type_confirm.html
-msgid "A planned or running run uses navigation, reveal and shuffle for new attempts at once; the rest applies to new runs."
 msgstr ""
 
 #: jinja2/admin/quiz_type_confirm.html
@@ -3618,6 +3652,10 @@ msgstr "Сховати архівні запуски"
 #: jinja2/admin/runs.html
 msgid "Show archived runs"
 msgstr "Показати архівні"
+
+#: jinja2/admin/settings.html
+msgid "Navigation, answer reveal, shuffling and sources changed here apply from each quiz's next run; planned and open runs keep their values."
+msgstr ""
 
 #: jinja2/admin/settings.html
 msgid "These values apply to every quiz that does not set its own."

@@ -24,7 +24,7 @@ from app.contracts import (
     ScoreBreakdown,
     ScoringStrategyPlugin,
 )
-from app.domain import clock, data_policy, participants, selection, settings, tokens
+from app.domain import clock, data_policy, participants, run_flow, selection, settings, tokens
 from app.domain import questions as question_rules
 from app.domain.models import (
     Attempt,
@@ -234,7 +234,7 @@ def _begin_attempt(run: QuizRun, participant: Participant | None, unlocked: bool
         )
     revision = run.current_revision
     _require_modules(revision)
-    flow = settings.flow(run.quiz)
+    flow = run_flow.flow(run)
     attempt = Attempt(
         run=run,
         participant=participant,

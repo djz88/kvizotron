@@ -10,7 +10,14 @@ from app.domain import authoring, data_policy, quiz_state, run_schedule, setting
 from app.domain.models import QuizRun
 from app.kernel import events
 from app.kernel.models import AuditEvent
-from tests.domain.helpers import ADMIN_ID, add_question, make_quiz, open_quiz_run, published_quiz
+from tests.domain.helpers import (
+    ADMIN_ID,
+    add_question,
+    keep,
+    make_quiz,
+    open_quiz_run,
+    published_quiz,
+)
 from tests.support.clock import freeze
 from tests.support.requirements import needs_reveal_at_end
 
@@ -84,6 +91,20 @@ def test_a_plan_stays_planned_when_requirements_are_unmet():
     with needs_reveal_at_end():
         run_schedule.settle(START)
         assert stored(run).status == QuizRun.Status.SCHEDULED
+    run_schedule.settle(START)
+    assert stored(run).status == QuizRun.Status.OPEN
+
+
+def test_a_planned_run_is_judged_by_the_value_it_keeps():
+    """AC-17: the quiz meets the requirement, the run's own value does not (TD-101)."""
+    quiz = reveal_after_each(published_quiz())
+    run = planned(quiz)
+    settings.set_override(settings.REVEAL_MOMENT, quiz, "at_end", admin_id=ADMIN_ID)
+    with needs_reveal_at_end():
+        run_schedule.settle(START)
+        assert stored(run).status == QuizRun.Status.SCHEDULED
+        with pytest.raises(authoring.RequirementUnmet):
+            run_schedule.start_now(run, admin_id=ADMIN_ID)
     run_schedule.settle(START)
     assert stored(run).status == QuizRun.Status.OPEN
 
@@ -386,7 +407,7 @@ def test_open_run_refuses_after_close_with_score_profile():
 def test_start_now_refuses_when_the_moment_changed_to_after_close_under_score():
     quiz = published_quiz()
     run = planned(quiz)
-    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    keep(run, settings.REVEAL_MOMENT, "after_close")
     with pytest.raises(data_policy.StatelessConflict) as caught:
         run_schedule.start_now(run, admin_id=ADMIN_ID)
     assert settings.REVEAL_MOMENT in caught.value.keys
@@ -395,7 +416,7 @@ def test_start_now_refuses_when_the_moment_changed_to_after_close_under_score():
 def test_automatic_opening_refuses_and_audits_when_the_moment_changed():
     quiz = published_quiz()
     run = planned(quiz)
-    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_close", admin_id=ADMIN_ID)
+    keep(run, settings.REVEAL_MOMENT, "after_close")
     run_schedule.settle(START)
     run_schedule.settle(START)
     assert stored(run).status == QuizRun.Status.SCHEDULED

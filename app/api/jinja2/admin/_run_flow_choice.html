@@ -1,0 +1,19 @@
+{# The question a quiz change asks about the planned or open run (AC-185). #}
+<h2>{{ _("Apply the change to run %(number)s too?", number=run_offer.number) }}</h2>
+<p>{{ _("Run %(number)s (%(status)s) was planned or opened with these values:", number=run_offer.number, status=run_offer.status) }}</p>
+<ul class="type-changes">
+  {% for change in run_offer.changes %}<li><strong>{{ change.label }}</strong>: {{ change.kept }} → {{ change.new }}</li>{% endfor %}
+</ul>
+{% if run_offer.refused %}
+<div class="notice" id="refused" role="alert">
+  <p>{{ _("Run %(number)s cannot take this change:", number=run_offer.number) }}</p>
+  <ul>{% for message in run_offer.refused %}<li>{{ message }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+<fieldset>
+  {% if not run_offer.refused %}
+  <label><input type="radio" name="flow_choice" value="run" required> {{ _("Also for run %(number)s: its new attempts, and the sources on its result pages", number=run_offer.number) }}</label>
+  {% endif %}
+  <label><input type="radio" name="flow_choice" value="next" required{% if run_offer.refused %} checked{% endif %}> {{ _("Only from the next run; run %(number)s keeps its values", number=run_offer.number) }}</label>
+</fieldset>
+<p>{{ _("Attempts already started keep the navigation, reveal and shuffle they started with.") }}</p>

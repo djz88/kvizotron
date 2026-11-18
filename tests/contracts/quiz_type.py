@@ -31,12 +31,11 @@ class QuizTypeContract:
 
     @pytest.mark.django_db
     def test_values_do_not_clash(self):
-        """The rules of the settings forms; clashes with planned or open runs depend on runs."""
+        """The rules of the settings forms; a planned or open run keeps its own values."""
         defaults = {key: definition.default for key, definition in settings.CATALOGUE.items()}
-        of_runs = (setting_rules.RUN_BOARD, setting_rules.RUN_REWARDS)
         for plugin in self.plugins:
-            found = setting_rules.clashes(defaults | plugin.values(), None)
-            reasons = [c.reason for c in found if c.reason not in of_runs]
+            found = setting_rules.clashes(defaults | plugin.values())
+            reasons = [c.reason for c in found]
             assert reasons == [], plugin.id
 
     def test_reset_type_has_no_values(self):

@@ -3,7 +3,7 @@
 The forms map each `Clash` to a message; a quiz type is checked by the same rules (ADR-0062).
 """
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from app.contracts import (
@@ -14,7 +14,7 @@ from app.contracts import (
     SCOREBOARD_VISIBILITY,
 )
 from app.domain import data_policy, results, rewards, settings
-from app.domain.models import Quiz, QuizRun
+from app.domain.models import QuizRun
 
 __all__ = [
     "ADJUSTABLE",
@@ -31,6 +31,7 @@ __all__ = [
     "VISIBILITY",
     "Clash",
     "clashes",
+    "run_clashes",
 ]
 
 FLOW = "flow"  # answers after each question in a mode without a next question
@@ -63,21 +64,10 @@ class Clash:
     detail: str | None = None  # the participant key for STATELESS, or data_policy.PHOTO_QUESTION
 
 
-def _live_runs(quiz: Quiz | None) -> Iterator[QuizRun]:
-    """For the global values, the runs of every quiz that takes the global answers setting."""
-    live = (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN)
-    if quiz is not None:
-        yield from quiz.runs.filter(status__in=live)
-        return
-    for run in QuizRun.objects.filter(status__in=live).select_related("quiz"):
-        if settings.quiz_override(settings.REVEAL_MOMENT, run.quiz) is None:
-            yield run
-
-
-def clashes(values: Mapping[str, str], quiz: Quiz | None) -> list[Clash]:
+def clashes(values: Mapping[str, str]) -> list[Clash]:
     """`values` are resolved values; a missing or empty key takes the global value.
 
-    `quiz` None judges global values. Runs already planned or open count too (AC-18).
+    A planned or open run keeps its own values and is judged by `run_clashes` (AC-18, TD-101).
     """
 
     def value(key: str) -> str:
@@ -112,17 +102,25 @@ def clashes(values: Mapping[str, str], quiz: Quiz | None) -> list[Clash]:
             found.append(Clash(AFTER_CLOSE_PROFILE, settings.DATA_PROFILE))
         elif visibility == settings.AnswersVisibility.ADMINS:
             found.append(Clash(AFTER_CLOSE_VISIBILITY, settings.ANSWERS_VISIBILITY))
-        if any(
-            not data_policy.keeps_all_answers(data_policy.of(run)[data_policy.PROFILE])
-            for run in _live_runs(quiz)
-        ):
-            found.append(Clash(RUN_PROFILE, settings.REVEAL_MOMENT))
-    if moment != settings.RevealMoment.AFTER_EACH:
-        return found
-    runs = list(_live_runs(quiz))
-    if RESULT_AFTER_EACH not in why and any(results.needs_participant(run) for run in runs):
-        found.append(Clash(RUN_BOARD, settings.REVEAL_MOMENT))
-    # Answers after each question would tell a player what the next attempt needs.
-    if any(rewards.has_rules(run) for run in runs):
-        found.append(Clash(RUN_REWARDS, settings.REVEAL_MOMENT))
+    return found
+
+
+def run_clashes(run: QuizRun, values: Mapping[str, str]) -> list[Clash]:
+    """What would stop one run from keeping these values: the checks that need the run (TD-101).
+
+    The settings clashes in `clashes` are not repeated here; this only offers or refuses the run.
+    """
+    moment = values[settings.REVEAL_MOMENT]
+    found: list[Clash] = []
+    if settings.is_flow_conflict(values[settings.NAVIGATION_MODE], moment):
+        found.append(Clash(FLOW, settings.REVEAL_MOMENT))
+    if moment == settings.RevealMoment.AFTER_CLOSE and not data_policy.keeps_all_answers(
+        data_policy.of(run)[data_policy.PROFILE]
+    ):
+        found.append(Clash(RUN_PROFILE, settings.REVEAL_MOMENT))
+    if moment == settings.RevealMoment.AFTER_EACH:
+        if results.needs_participant(run):
+            found.append(Clash(RUN_BOARD, settings.REVEAL_MOMENT))
+        if rewards.has_rules(run):
+            found.append(Clash(RUN_REWARDS, settings.REVEAL_MOMENT))
     return found

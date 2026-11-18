@@ -34,17 +34,19 @@
   <ul>{% for name in skipped %}<li>{{ name }}</li>{% endfor %}</ul>
 </section>
 {% endif %}
-{% if live_run %}<p class="notice" id="live-run" role="status">{{ _("A planned or running run uses navigation, reveal and shuffle for new attempts at once; the rest applies to new runs.") }}</p>{% endif %}
 {% if content %}<p class="notice" id="content-warning" role="status">{{ _("The questions of this quiz do not go with these values: %(names)s. A run cannot be planned or opened until the questions or the settings change.", names=content|join(", ")) }}</p>{% endif %}
 {% if refused %}
 <p class="actions"><a href="{{ back }}" role="button" class="secondary">{{ _("Back to the settings") }}</a></p>
 {% else %}
-<form method="post" action="{{ url('admin_quiz_type', args=[quiz.id]) }}" class="actions">
+<form method="post" action="{{ url('admin_quiz_type', args=[quiz.id]) }}">
   {{ csrf_input }}
   <input type="hidden" name="type" value="{{ type_id }}">
   <input type="hidden" name="confirm" value="1">
-  <button type="submit">{% if again %}{{ _("Apply again") }}{% else %}{{ _("Use type") }}{% endif %}</button>
-  <a href="{{ back }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+  {% if run_offer %}{% include "admin/_run_flow_choice.html" %}{% endif %}
+  <p class="actions">
+    <button type="submit">{% if again %}{{ _("Apply again") }}{% else %}{{ _("Use type") }}{% endif %}</button>
+    <a href="{{ back }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+  </p>
 </form>
 {% endif %}
 {% endblock %}

@@ -85,3 +85,9 @@ def add_row(
         points=points,
         position=len(authoring.editable_questions(quiz)) if position is None else position,
     )
+
+
+def keep(run: QuizRun, key: str, value: str) -> None:
+    """Changes what the run kept (ADR-0069); a quiz change no longer reaches an opened run."""
+    run.flow_json = run.flow_json | {key: value}
+    run.save(update_fields=["flow_json"])

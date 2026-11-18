@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{# A quiz change that a planned or open run could take (`action` saves it, `back` is Cancel); nothing is saved until the admin answers (AC-185). #}
+{% block content %}
+<p class="crumb"><a href="{{ back }}">{{ title }}</a></p>
+<h1>{{ _("Save the quiz settings") }}</h1>
+<form method="post" action="{{ action }}">
+  {{ csrf_input }}
+  {% for name, value in posted %}<input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
+  {% include "admin/_run_flow_choice.html" %}
+  <p class="actions">
+    <button type="submit">{{ _("Save") }}</button>
+    <a href="{{ back }}" role="button" class="secondary">{{ _("Cancel") }}</a>
+  </p>
+</form>
+{% endblock %}

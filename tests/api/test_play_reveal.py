@@ -144,14 +144,18 @@ def test_sources_hidden_on_one_question_only(db):
     run = _two_questions({settings.SHOW_SOURCES: "off"}, {})
     attempt = attempts.start(run).attempt
     questions = attempts.questions_of(attempt)
-    assert len(result_sources(questions, run.quiz, "cs")) == 1
+    assert (
+        len(result_sources(questions, settings.resolve(settings.SHOW_SOURCES, run.quiz), "cs")) == 1
+    )
 
 
 def test_sources_shown_on_one_question_when_the_quiz_hides_them(db):
     run = _two_questions({settings.SHOW_SOURCES: "on"}, {})
     settings.set_override(settings.SHOW_SOURCES, run.quiz, "off", admin_id=ADMIN_ID)
     questions = attempts.questions_of(attempts.start(run).attempt)
-    assert len(result_sources(questions, run.quiz, "cs")) == 1
+    assert (
+        len(result_sources(questions, settings.resolve(settings.SHOW_SOURCES, run.quiz), "cs")) == 1
+    )
 
 
 def test_none_option_set_on_one_question_only(client, db):

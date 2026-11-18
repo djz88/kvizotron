@@ -13,14 +13,13 @@ from django.conf import settings as django_settings
 from django.db import transaction
 
 from app.contracts import QuizTypePlugin
-from app.domain import authoring, requirements, settings
-from app.domain.models import AppSetting, Quiz, QuizRun
+from app.domain import authoring, requirements, run_flow, run_flow_change, settings
+from app.domain.models import AppSetting, Quiz
 from app.domain.setting_rules import ADJUSTABLE, Clash, clashes
 from app.kernel import audit, registry
 from app.kernel.registry import ModuleDisabled, UnknownPort
 
 QUIZ_TYPE = "quiz_type"
-_LIVE = (QuizRun.Status.SCHEDULED, QuizRun.Status.OPEN)
 
 
 class TypeRefused(Exception):
@@ -54,7 +53,7 @@ class Preview:
     adjusted: list[Change]  # clash fixes on other settings
     skipped: list[str]  # keys of disabled modules
     refused: list[Clash]  # non-adjustable clashes; non-empty = cannot apply
-    live_run: bool  # a planned or open run exists
+    run_offer: run_flow_change.Offer | None  # the planned or open run, when the type changes it
     content: list[str]  # requirement keys the quiz content does not meet
 
 
@@ -158,7 +157,7 @@ def _plan(quiz: Quiz, type_id: str) -> tuple[Preview, dict[str, str | None]]:
     def resolved() -> dict[str, str]:
         return {key: target.get(key, globals_[key]) for key in settings.CATALOGUE}
 
-    found = clashes(resolved(), quiz)
+    found = clashes(resolved())
     adjust: dict[str, str] = {}
     # A fix can uncover the next clash (the profile first, then who may see the answers), so the
     # step repeats until nothing new is adjusted. Each key is adjusted once, so it ends.
@@ -178,7 +177,7 @@ def _plan(quiz: Quiz, type_id: str) -> tuple[Preview, dict[str, str | None]]:
             break
         adjust |= fresh
         target |= fresh
-        found = clashes(resolved(), quiz)
+        found = clashes(resolved())
     final = resolved()
 
     removals = [key for key in removals if key not in adjust]
@@ -198,7 +197,9 @@ def _plan(quiz: Quiz, type_id: str) -> tuple[Preview, dict[str, str | None]]:
         adjusted=adjusted,
         skipped=list(dict.fromkeys(left_alone)),
         refused=found,
-        live_run=quiz.runs.filter(status__in=_LIVE).exists(),
+        run_offer=run_flow_change.offer_for(
+            quiz, run_flow.snapshot(quiz), {key: final[key] for key in run_flow.KEYS}
+        ),
         content=list(dict.fromkeys(content)),
     )
     return shown, writes
@@ -208,11 +209,16 @@ def preview(quiz: Quiz, type_id: str) -> Preview:
     return _plan(quiz, type_id)[0]
 
 
-def apply(quiz: Quiz, type_id: str, *, admin_id: str) -> Preview:
-    """Recomputes the preview from the database; nothing is written when the type is refused."""
+def apply(quiz: Quiz, type_id: str, *, admin_id: str, flow_choice: str | None = None) -> Preview:
+    """Recomputes the preview from the database; nothing is written when the type is refused.
+
+    A planned or open run that the type changes needs `flow_choice`: `run_flow_change` raises
+    `ChoiceNeeded` or `FlowRefused` and the transaction writes nothing.
+    """
     with transaction.atomic():
         authoring.ensure_editable(quiz)
         quiz.refresh_from_db(fields=["quiz_type"])
+        before = run_flow.snapshot(quiz)
         shown, writes = _plan(quiz, type_id)
         if shown.refused:
             raise TypeRefused(shown.refused)
@@ -220,6 +226,7 @@ def apply(quiz: Quiz, type_id: str, *, admin_id: str) -> Preview:
             settings.set_override(key, quiz, value, admin_id=admin_id)
         quiz.quiz_type = shown.type_id
         quiz.save(update_fields=["quiz_type"])
+        run_flow_change.settle(quiz, before, flow_choice, admin_id=admin_id)
         _audit("quiz.type_applied", quiz, admin_id, shown.type_id)
     return shown
 

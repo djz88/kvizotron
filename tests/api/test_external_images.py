@@ -17,7 +17,7 @@ from app.domain.models import QuizRevision
 from app.providers.media_local import remote
 from app.providers.media_local.provider import LocalMediaStorage
 from tests.api.test_play import Play
-from tests.domain.helpers import ADMIN_ID, OPTION_A, definition, make_bank, make_quiz
+from tests.domain.helpers import ADMIN_ID, OPTION_A, definition, keep, make_bank, make_quiz
 
 pytestmark = pytest.mark.django_db
 URL = "https://obrazky.example/a.png"
@@ -332,8 +332,8 @@ def test_changing_the_quiz_mode_creates_no_draft():
 
 def test_a_solution_follows_the_same_mode(client):
     run = run_with(copy_image())
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=ADMIN_ID)
-    settings.set_override(settings.REVEAL_LEVEL, run.quiz, "answers", admin_id=ADMIN_ID)
+    keep(run, settings.REVEAL_MOMENT, "at_end")
+    keep(run, settings.REVEAL_LEVEL, "answers")
     settings.set_override(EXTERNAL_IMAGE_MODE, run.quiz, "external", admin_id=ADMIN_ID)
     html = Play(client, run, "cs").submit(OPTION_A).content.decode()
     assert f'src="{URL}"' in html
@@ -341,8 +341,8 @@ def test_a_solution_follows_the_same_mode(client):
 
 def test_a_solution_in_copy_mode_hides_the_address(client):
     run = run_with(copy_image())
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=ADMIN_ID)
-    settings.set_override(settings.REVEAL_LEVEL, run.quiz, "answers", admin_id=ADMIN_ID)
+    keep(run, settings.REVEAL_MOMENT, "at_end")
+    keep(run, settings.REVEAL_LEVEL, "answers")
     html = Play(client, run, "cs").submit(OPTION_A).content.decode()
     assert "/media/" in html
     assert URL not in html

@@ -12,6 +12,7 @@ from tests.domain.helpers import (
     add_question,
     add_row,
     bank_with,
+    keep,
     make_quiz,
 )
 
@@ -93,12 +94,12 @@ def test_a_tampered_selection_breaks_the_token():
 def test_switch_keeps_answers_to_kept_questions_and_settings():
     bank = bank_with(3)
     run = run_with_rows((bank, 2, 1), own=1)
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "at_end", admin_id=None)
+    keep(run, settings.REVEAL_MOMENT, "at_end")
     started = attempts.start(run)
     answers = correct_answers(started.attempt, OPTION_B)
     add_bank_question(bank, prompt="Nová")
     authoring.publish(run.quiz, admin_id=ADMIN_ID, decision=authoring.Decision.NOTIFY_SWITCH)
-    settings.set_override(settings.REVEAL_MOMENT, run.quiz, "never", admin_id=None)
+    keep(run, settings.REVEAL_MOMENT, "never")
     moved = attempts.switch(started.attempt.id, started.token, answers)
     assert set(moved.answers) == set(answers)
     assert not moved.changed

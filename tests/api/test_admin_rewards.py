@@ -13,9 +13,17 @@ from decimal import Decimal
 import pytest
 
 from app.contracts import ASK_EMAIL, REWARD_SOURCE, REWARD_THRESHOLDS, WINNER_CONTACT
-from app.domain import attempts, authoring, participants, rewards, run_schedule, settings
+from app.domain import (
+    attempts,
+    authoring,
+    participants,
+    rewards,
+    run_flow,
+    run_schedule,
+    settings,
+)
 from app.domain.models import Attempt, Quiz, QuizRun, RewardEntitlement, RewardRule
-from tests.domain.helpers import ADMIN_ID, OPTION_A, published_quiz
+from tests.domain.helpers import ADMIN_ID, OPTION_A, keep, published_quiz
 from tests.support.client import FormClient
 from tests.support.clock import freeze
 
@@ -244,9 +252,9 @@ def test_conflict_messages_shown_on_plan(logged_in):
         f"/admin/runs/{run.id}/plan?lang=en", {"starts_at": START, ASK_EMAIL: "off"}
     )
     assert edited.status_code == 409 and CONTACT_REFUSAL in text(edited)
-    # Start now when the quiz changed after planning.
-    settings.set_override(settings.NAVIGATION_MODE, quiz, "step_back", admin_id=ADMIN_ID)
-    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_each", admin_id=ADMIN_ID)
+    # Start now when the plan kept a reveal that clashes with its rewards.
+    keep(run, settings.NAVIGATION_MODE, "step_back")
+    keep(run, settings.REVEAL_MOMENT, "after_each")
     started = logged_in.post(f"/admin/runs/{run.id}/plan/start?lang=en")
     assert started.status_code == 409
     assert "Answers after each question cannot go with rewards." in text(started)
@@ -386,8 +394,8 @@ def test_advanced_fields_shown_with_showing_all(showing_all):
 def test_refused_start_now_still_shows_the_rewards(logged_in):
     quiz = with_template(rule_data("draw", name="Cena"))
     run = a_plan(quiz)
-    settings.set_override(settings.NAVIGATION_MODE, quiz, "step_back", admin_id=ADMIN_ID)
-    settings.set_override(settings.REVEAL_MOMENT, quiz, "after_each", admin_id=ADMIN_ID)
+    keep(run, settings.NAVIGATION_MODE, "step_back")
+    keep(run, settings.REVEAL_MOMENT, "after_each")
     refused = logged_in.post(f"/admin/runs/{run.id}/plan/start?lang=en")
     assert refused.status_code == 409
     html = text(refused)
@@ -405,23 +413,34 @@ def test_archived_quiz_template_offers_no_save(logged_in):
     assert "Odznak" in html and "Save the reward" not in html
 
 
-def test_global_reveal_after_each_is_refused_while_a_live_run_has_rules(logged_in):
-    # `_refuse_reward_conflict` without a quiz: judged over every planned or open run.
+def test_after_each_on_a_quiz_with_a_planned_run_with_rules_asks_and_offers_only_next(logged_in):
+    """AC-18: a planned run with rewards cannot take answers after each question: next run only."""
     quiz = with_template(rule_data())
     a_plan(quiz)
-    refused = logged_in.post("/admin/settings?lang=en", {settings.REVEAL_MOMENT: "after_each"})
-    assert refused.status_code == 200
-    assert "Answers after each question cannot go with rewards." in text(refused)
-    assert settings.resolve(settings.REVEAL_MOMENT) != "after_each"
-    # A quiz with its own reveal setting is judged by its own form, not by the global one.
-    settings.set_override(settings.REVEAL_MOMENT, quiz, "never", admin_id=ADMIN_ID)
-    settings.set_override(settings.NAVIGATION_MODE, quiz, "step_back", admin_id=ADMIN_ID)
-    allowed = logged_in.post(
-        "/admin/settings",
-        {settings.REVEAL_MOMENT: "after_each", settings.NAVIGATION_MODE: "step_back"},
+    asked = logged_in.post(
+        f"/admin/quizzes/{quiz.id}/settings?lang=en",
+        {
+            "slug": quiz.slug,
+            settings.NAVIGATION_MODE: "step_back",
+            settings.REVEAL_MOMENT: "after_each",
+        },
     )
-    assert allowed.status_code == 302
+    assert asked.status_code == 200
+    assert "Answers after each question cannot go with rewards." in text(asked)
+    assert 'value="run"' not in text(asked)
+    assert settings.quiz_override(settings.REVEAL_MOMENT, quiz) is None
+
+
+def test_global_reveal_after_each_is_saved_and_a_live_run_with_rules_keeps_its_value(logged_in):
+    """AC-18: a global change never changes a planned or open run, so it is not refused."""
+    quiz = with_template(rule_data())
+    run = a_plan(quiz)
+    kept = run_flow.of(run)
+    saved = logged_in.post("/admin/settings?lang=en", {settings.REVEAL_MOMENT: "after_each"})
+    assert saved.status_code == 302
     assert settings.resolve(settings.REVEAL_MOMENT) == "after_each"
+    run.refresh_from_db()
+    assert run_flow.of(run) == kept
 
 
 def test_global_reveal_after_each_is_allowed_without_runs_with_rules(logged_in):

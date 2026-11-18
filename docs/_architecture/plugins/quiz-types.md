@@ -51,7 +51,7 @@ Names (en / cs): Practice / Procvičování, Final test / Závěrečný test, Ex
 
 ## Contract suite
 
-`tests/contracts/quiz_type.py` (`QuizTypeContract`): each key is a quiz setting, each value one of its choices, the values pass the clash rules of the settings forms, `app/domain/setting_rules.py` (with the defaults where the type sets nothing; clashes with planned or open runs depend on runs and are left out), a type with `resets_all` has no values, and orders are unique. `tests/contracts/test_quiz_types.py` checks the table above exactly.
+`tests/contracts/quiz_type.py` (`QuizTypeContract`): each key is a quiz setting, each value one of its choices, the values pass the clash rules of the settings forms, `app/domain/setting_rules.py` (with the defaults where the type sets nothing), a type with `resets_all` has no values, and orders are unique. `tests/contracts/test_quiz_types.py` checks the table above exactly.
 
 ## Not here
 
