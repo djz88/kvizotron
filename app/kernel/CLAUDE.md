@@ -1,23 +1,23 @@
-# Modul: app/kernel
+# Module: app/kernel
 
-Start aplikace a správa modulů. Kernel neví, co je kvíz; proto je malý a má takový zůstat.
+Application startup and module management. The kernel does not know what a quiz is; that is why it is small and has to stay small.
 
-## Odpovědnosti
+## Responsibilities
 
-- `discovery.py`, `manifest.py`, `bootstrap.py`: najde moduly přes entry pointy, ověří manifesty a závislosti, naplní `INSTALLED_APPS`.
-- `registry.py`: porty aktivních modulů. `lifecycle.py`: zapnutí, vypnutí, ověření při startu.
-- `events.py`: události v procesu. `audit.py`, `models.py`: `AuditEvent`, `AdminUser` (s volitelným `email`, který se může ukázat v patičce kvízu jako kontakt, ADR-0054), instalace modulů.
-- `middleware.py`: brána vypnutých modulů, odmítnutí multipart a strop těla požadavku podle `Content-Length` (`BodyLimitMiddleware`, v `MIDDLEWARE` hned po middlewaru s bezpečnostními hlavičkami, aby je nesla i odmítnutí: 16 MiB, 101 MiB pro import a veřejné odeslání, 413; bez délky 411; stejné hodnoty v MiB drží `deploy/Caddyfile`, hlídá to test, ADR-0066).
+- `discovery.py`, `manifest.py`, `bootstrap.py`: finds modules through entry points, verifies manifests and dependencies, fills `INSTALLED_APPS`.
+- `registry.py`: ports of the active modules. `lifecycle.py`: enabling, disabling, verification at startup.
+- `events.py`: in-process events. `audit.py`, `models.py`: `AuditEvent`, `AdminUser` (with an optional `email`, which may appear in the quiz footer as a contact, ADR-0054), module installations.
+- `middleware.py`: the gate for disabled modules, rejection of multipart and a cap on the request body by `Content-Length` (`BodyLimitMiddleware`, in `MIDDLEWARE` right after the security-headers middleware so that the rejections carry the headers too: 16 MiB, 101 MiB for import and public submission, 413; without a length 411; the same values in MiB are held by `deploy/Caddyfile`, a test guards it, ADR-0066).
 
-Pozor: `blockers` vrací texty v aktivním jazyce, `set_enabled` je počítá v angličtině. Plugin s `always_on` nejde vypnout, jen zapnout.
+Watch out: `blockers` returns texts in the active language, `set_enabled` counts them in English. A plugin with `always_on` cannot be disabled, only enabled.
 
-## Zakázáno
+## Forbidden
 
-- Importovat z `app/domain`, `app/api`, `app/plugins`, `app/providers`. Doména se přihlásí sama přes `register_usage_check` a `register_startup_check`.
-- Přidat sem funkci kvízu: nová funkce patří do modulu za kontraktem.
-- Django signály místo `events`: vypnutý modul by je dostal dál.
-- `events._dispatch` nesmí pustit chybu handleru ven: operace už je uložená. Do logu jde jen typ chyby.
+- Importing from `app/domain`, `app/api`, `app/plugins`, `app/providers`. The domain registers itself through `register_usage_check` and `register_startup_check`.
+- Adding a quiz feature here: a new feature belongs in a module behind a contract.
+- Django signals instead of `events`: a disabled module would still receive them.
+- `events._dispatch` must not let a handler error out: the operation is already saved. Only the error type goes to the log.
 
-## Veřejné API
+## Public API
 
 `registry.get`, `keys`, `is_enabled`, `owned_by`; `events.emit`, `subscribe`; `audit.record`; `lifecycle.set_enabled`, `blockers`, `verify_startup`; `StartupError`.

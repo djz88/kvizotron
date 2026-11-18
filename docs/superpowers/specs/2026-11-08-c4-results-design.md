@@ -44,7 +44,7 @@ All are settings inherited global → quiz, copied onto the run when it is plann
 | Scoreboard visibility | hidden, live, after the run ends | hidden **[user]** |
 | Names during the run | shown, anonymised | shown **[call]** |
 | Participant without a nickname | anonymous, not listed | anonymous **[user]** |
-| Anonymous label | text per quiz language with `NN` for the number | "Hráč NN" / "Player NN" / "Гравець NN" **[user]** |
+| Anonymous label | text per quiz language with `NN` for the number | "Player NN" / "Hráč NN" / "Гравець NN" **[user]** |
 | Official attempt | best valid, first valid | best valid **[user]** |
 | Columns | score, percent, submission time, duration (each on or off) | score and percent on **[user]**, **[call]** |
 | Second sort | submission time, duration | submission time **[user]**, **[call]** |

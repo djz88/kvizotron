@@ -46,7 +46,7 @@ services:
     command: ["python", "manage.py", "jobs"]
     # A pass started before SIGTERM may be copying the database and the media.
     stop_grace_period: 120s
-    # Zálohy vidí jen `jobs`; seznam se v YAML nesčítá, proto je celý.
+    # Only `jobs` sees the backups; lists are not merged in YAML, so the list is complete.
     volumes:
       - db:/data/db
       - media:/data/media

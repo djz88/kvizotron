@@ -3,63 +3,63 @@ name: kvizotron-add-setting
 description: Use when adding, moving or changing the scope of a setting in Kvízotron, including a request phrased as a switch, an option, or "let the admin choose", and when a module needs a value an admin can set.
 ---
 
-# Přidání nastavení
+# Adding a setting
 
-Pravidla jsou v ADR-0042. Tady je pořadí a místa, která test sám nepřipomene.
+The rules are in ADR-0042. Here are the order and the places the test does not remind you of by itself.
 
-## 1. Než začneš psát kód
+## 1. Before you write code
 
-Je to vůbec nastavení? Hodnota, která se dědí, ano. Obsah otázky (body, zdroje, strategie) ne.
+Is it a setting at all? A value that is inherited is. The content of a question (points, sources, strategy) is not.
 
-Zeptej se uživatele přes `AskUserQuestion`, pokud to zadání výslovně neříká:
+Ask the user through `AskUserQuestion`, unless the request says it explicitly:
 
-- **Rozsah.** Výchozí je global → kvíz → otázka. Užší nabídni jen s konkrétním důvodem, který pak půjde do `scope_reason`.
-- **Výchozí hodnota**, pokud mění chování stávajících kvízů.
+- **Scope.** The default is global → quiz → question. Offer a narrower one only with a concrete reason, which then goes into `scope_reason`.
+- **Default value**, if it changes the behaviour of existing quizzes.
 
-Skupinu a úroveň (`group`, `level`) zvol sám a napiš je do zprávy: skupina podle toho, čeho se nastavení týká (`playing`, `answers`, `participants`, `scoreboard`, `rewards`, `data`, `look`, `technical`), úroveň `basic` jen pro to, co admin mění u většiny kvízů. Bez nich je nastavení `technical` a `advanced` (ADR-0052).
+Choose the group and level (`group`, `level`) yourself and state them in the message: the group by what the setting concerns (`playing`, `answers`, `participants`, `scoreboard`, `rewards`, `data`, `look`, `technical`), the level `basic` only for what an admin changes in most quizzes. Without them the setting is `technical` and `advanced` (ADR-0052).
 
-Spěch ani „pak na to mrknu“ tuhle otázku neruší. Rozsah se v uložených datech a importech mění špatně. Nemůžeš-li se zeptat, zastav se a napiš otázku; rozsah nevybírej za uživatele.
+Haste or "I'll look at it later" does not cancel this question. Scope is changed badly in stored data and imports. If you cannot ask, stop and write the question; do not choose the scope for the user.
 
-## 2. Kam to patří
+## 2. Where it belongs
 
-| Vlastník | Kde |
+| Owner | Where |
 |---|---|
-| Doména | konstanta, případně `StrEnum`, a položka `CATALOGUE` v `app/domain/settings.py` s `group=` a případně `level=BASIC` |
-| Modul | pole `settings` v jeho `manifest.py`, vzor je v `app/plugins/questions/image_answer/manifest.py` |
+| Domain | a constant, possibly a `StrEnum`, and a `CATALOGUE` entry in `app/domain/settings.py` with `group=` and possibly `level=BASIC` |
+| Module | the `settings` field in its `manifest.py`, the pattern is in `app/plugins/questions/image_answer/manifest.py` |
 
-Rozsah otázky ještě potřebuje jedno z toho:
+Question scope needs one more of these:
 
-- typ otázky klíč vrací v `question_settings()`,
-- platí pro všechny typy: `ALL_TYPES_QUESTION_SETTINGS`.
+- a question type returns the key in `question_settings()`,
+- it applies to all types: `ALL_TYPES_QUESTION_SETTINGS`.
 
-## 3. Čtení hodnoty
+## 3. Reading the value
 
-- Vždy `settings.resolve(key, quiz, question)`. `AppSetting` se přímo nečte.
-- Plugin nastavení nečte: dostane je v `quiz_settings` od API.
-- Rozhodni, kdy se hodnota čte, a napiš to: při každém načtení stránky, při losování (`none_option`), nebo se kopíruje na běh (`attempt_limit`).
+- Always `settings.resolve(key, quiz, question)`. `AppSetting` is not read directly.
+- A plugin does not read settings: it receives them in `quiz_settings` from the API.
+- Decide when the value is read and write it down: on every page load, at the draw (`none_option`), or copied to the run (`attempt_limit`).
 
-## 4. Co projít podle toho, na co nastavení působí
+## 4. What to go through, depending on what the setting affects
 
-| Otázka | Kde |
+| Question | Where |
 |---|---|
-| Účastník to vidí? | `app/api/play.py`, a stejně i náhled: `app/domain/preview.py`, `app/api/admin_preview.py` |
-| Testovací odkaz se má chovat stejně? | `app/domain/run_links.py` |
-| Hodnota jiného druhu než výběr? | formuláře v `app/api/admin_forms.py` mají výjimky, vzor je `ATTEMPT_LIMIT` |
-| Vylučuje se s jiným nastavením? | `is_flow_conflict`, `is_visibility_conflict` v `settings.py`; modul přes `settings_requirements` |
-| Je na otázce? | Patří k revizi, změna dělá koncept. Projdi `app/domain/revision_diff.py`, `app/domain/question_import.py`, `app/domain/question_export.py` |
+| Does the participant see it? | `app/api/play.py`, and likewise the preview: `app/domain/preview.py`, `app/api/admin_preview.py` |
+| Should a test link behave the same? | `app/domain/run_links.py` |
+| A value of a kind other than a choice? | the forms in `app/api/admin_forms.py` have exceptions, the pattern is `ATTEMPT_LIMIT` |
+| Does it exclude another setting? | `is_flow_conflict`, `is_visibility_conflict` in `settings.py`; a module through `settings_requirements` |
+| Is it on a question? | It belongs to the revision, a change makes a draft. Go through `app/domain/revision_diff.py`, `app/domain/question_import.py`, `app/domain/question_export.py` |
 
-## 5. Hotovo je, když
+## 5. It is done when
 
-- Testy ukazují dědění na každém nabízeném rozsahu, smazání přepsání a skutečný účinek na stránce, nejen uloženou hodnotu.
-- `make messages` proběhl a `msgstr` v cs i uk jsou vyplněné.
-- `docs/_architecture/modules/api-ui.md` uvádí nastavení v tabulce „Where things are set“. Modul navíc ve svém souboru v `docs/_architecture/plugins/` nebo `providers/`. Nové chování má řádek `AC-xx`.
-- `make quality` prošel. `tests/contracts/test_settings_rule.py` hlídá rozsahy i pole formulářů, `tests/test_wiring.py` že hodnotu někdo čte. Jestli má účinek, ověř přes `kvizotron-check-applied`.
+- Tests show inheritance at every offered scope, deleting an override, and the real effect on the page, not just the stored value.
+- `make messages` ran and `msgstr` in cs and uk are filled.
+- `docs/_architecture/modules/api-ui.md` lists the setting in the "Where things are set" table. A module also in its file in `docs/_architecture/plugins/` or `providers/`. New behaviour has an `AC-xx` row.
+- `make quality` passed. `tests/contracts/test_settings_rule.py` guards the scopes and form fields, `tests/test_wiring.py` that someone reads the value. Whether it has an effect, verify through `kvizotron-check-applied`.
 
-## Časté chyby
+## Common mistakes
 
-| Chyba | Správně |
+| Mistake | Correct |
 |---|---|
-| Užší rozsah, protože je to rychlejší | Rychlost není důvod pro `scope_reason`. Zeptej se. |
-| Volba bez štítku v `value_labels` | Validace ji odmítne. Každá volba má přeložený štítek. |
-| Účinek jen v `play.py` | Náhled ukáže jiné chování než běh. |
-| Test jen na `resolve` | Test musí vidět i stránku, kterou nastavení mění. |
+| A narrower scope because it is faster | Speed is not a reason for `scope_reason`. Ask. |
+| A choice without a label in `value_labels` | Validation rejects it. Every choice has a translated label. |
+| An effect only in `play.py` | The preview shows different behaviour than the run. |
+| A test only on `resolve` | The test must also see the page the setting changes. |

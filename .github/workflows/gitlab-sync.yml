@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,8 +20,10 @@ jobs:
     steps:
       - name: Clone GitHub repository
         env:
-          GH_TOKEN: ${{ github.token }};
+          GH_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: "0"
         run: |
+          set -euo pipefail
           AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c http.extraheader="Authorization: Basic $AUTH" \
             clone --bare \
@@ -29,10 +32,33 @@ jobs:
 
       - name: Mirror to GitLab
         env:
-          SYNC_SECRET: ${{ secrets.SYNC_SECRET}}
-          SYNC_URL: ${{ secrets.SYNC_URL}}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          SYNC_URL: ${{ secrets.SYNC_URL }}
+          GIT_TERMINAL_PROMPT: "0"
         run: |
+          set -euo pipefail
+          if [ -z "${SYNC_SECRET:-}" ] || [ -z "${SYNC_URL:-}" ]; then
+            echo "::error::Secrets SYNC_SECRET and SYNC_URL must be set in the repository settings."
+            exit 1
+          fi
           cd mirror.git
           AUTH=$(printf 'oauth2:%s' "$SYNC_SECRET" | base64 -w0)
-          git -c http.extraheader="Authorization: Basic $AUTH" \
-          git push gitlab "$SYNC_URL" main:main
+          gitlab() { git -c http.extraheader="Authorization: Basic $AUTH" "$@"; }
+
+          # Report a failure as an annotation, so the reason shows in the run summary.
+          fail() {
+            msg=$(printf '%s' "$2" | tail -n 15 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=$1::$msg"
+            exit 1
+          }
+
+          echo "Local main: $(git rev-parse main)"
+          if ! out=$(gitlab ls-remote "$SYNC_URL" 2>&1); then
+            fail "GitLab not reachable or token rejected (ls-remote)" "$out"
+          fi
+          echo "GitLab refs:"; echo "$out"
+
+          if ! out=$(gitlab push --verbose --porcelain "$SYNC_URL" main:main 2>&1); then
+            fail "GitLab rejected the push" "$out"
+          fi
+          echo "$out"

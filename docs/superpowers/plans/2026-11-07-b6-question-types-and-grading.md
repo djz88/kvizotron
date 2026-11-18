@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add types Číslo, Text and Fotka, grading of photos, chosen storage and visibility of answers, a private result link, a public walkthrough, and working module requirements.
+**Goal:** Add types Number, Text and Photo, grading of photos, chosen storage and visibility of answers, a private result link, a public walkthrough, and working module requirements.
 
 **Architecture:** Three plugins behind `QuestionTypePlugin`, extended with `file_fields`, `needs_grading` and `summarize`. A new `attempt_answer` table and `app/domain/grading.py` hold what a person judges; the score recalculates there. Requirements are declared in manifests and checked by `app/domain/requirements.py`. Photos are private assets of the media provider, served only through routes that check the right.
 

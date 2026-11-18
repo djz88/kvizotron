@@ -1,4 +1,4 @@
-# Začne fungovat, až bude repozitář na GitHubu (TD-008).
+# Starts working once the repository is on GitHub (TD-008).
 version: 2
 updates:
   - package-ecosystem: uv

@@ -15,7 +15,7 @@
 - Project rules in `CLAUDE.md`: features live in modules, not the kernel; `QuizRun` is "běh" in Czech UI, never "kolo"; every behaviour change has a test; tests are never weakened; secrets never enter code or logs.
 - Settings inherit global → quiz → question (ADR-0042); a new setting needs the `kvizotron-add-setting` skill and a manifest `settings` entry.
 - An ADR with status `proposed` is not decided: Phase C stops for a human before any code.
-- Profile `kvizotron` for dev-workflow: `app/domain/models.py` + migrations, `app/api/play.py`, `app/domain/attempts.py` are VELKÁ/STŘEDNÍ; Phase C is VELKÁ.
+- Profile `kvizotron` for dev-workflow: `app/domain/models.py` + migrations, `app/api/play.py`, `app/domain/attempts.py` are VELKÁ/STŘEDNÍ (the tier names the dev-workflow skill uses); Phase C is VELKÁ.
 - Translations: every new user-facing string goes through `_()` and `make messages` updates `cs` and `uk` catalogs (`.po` and `.mo` in git until Task D1 changes that).
 - Commit after each task; `make quality` green before each commit.
 
@@ -239,7 +239,7 @@ Keep the deliberate rule "no record yet is healthy" (`test_jobs_healthy_with_no_
 - Modify: `app/domain/models.py:257-281` (`Participant.number: PositiveIntegerField(null=True)`), new migration `app/domain/migrations/00NN_participant_number.py` (data migration fills existing rows in `created_at, id` order per run), `app/domain/participants.py` (assign at creation inside the run's IMMEDIATE transaction: `max(number) + 1`), `app/domain/results.py:348-365` (`_numbers`, `participant_numbers` read the column; loose attempts keep the derived order after the last participant number)
 - Test: `tests/domain/test_results_board.py`, `tests/domain/test_migration_00NN.py` (pattern: `tests/domain/test_migration_0020.py`)
 
-- [ ] **Step 1: Failing tests** — `test_a_label_number_survives_the_erasure_of_an_earlier_participant`: three participants, erase the first (`retention.erase_participant` or the function `test_retention_erasure.py` uses), board still shows "Účastník 3" for the third. Migration test: existing rows get 1..n in creation order.
+- [ ] **Step 1: Failing tests** — `test_a_label_number_survives_the_erasure_of_an_earlier_participant`: three participants, erase the first (`retention.erase_participant` or the function `test_retention_erasure.py` uses), board still shows "Participant 3" for the third. Migration test: existing rows get 1..n in creation order.
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** model, migration, assignment, readers. Fix the docstring at `results.py:349`.
 - [ ] **Step 4: Run, expect PASS**; `uv run pytest tests/domain tests/api -q -k "results or scoreboard or retention or migration"`; commit — `fix(results): anonymous numbers are stored on the participant`
@@ -303,7 +303,7 @@ def test_new_quiz_form_shows_the_quiz_type_open(admin_client)
 - [ ] **Step 1: Failing test** — `test_flow_script_moves_focus_after_start`: `flow.js` contains the start-swap hook (assert on the exact function name chosen, e.g. `focusFirstStep`), and `_questions.html` renders `tabindex="-1"` on the progress heading.
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** in `flow.js`: listen to `htmx:afterSwap` on `#play`; when `event.detail.requestConfig.elt` is `[data-start-form]` or the resume form, call `show(first, true)`.
-- [ ] **Step 4: Run, expect PASS**; walkthrough per `kvizotron-browser-walkthrough`: after Enter on "Začít" the active element is the question section or heading; Shift+Tab goes to the skip link (Review Focus 4).
+- [ ] **Step 4: Run, expect PASS**; walkthrough per `kvizotron-browser-walkthrough`: after Enter on "Start" the active element is the question section or heading; Shift+Tab goes to the skip link (Review Focus 4).
 - [ ] **Step 5: Commit** — `fix(play): focus the first question after start`
 
 ### Task B4: Submitting with unanswered questions asks first

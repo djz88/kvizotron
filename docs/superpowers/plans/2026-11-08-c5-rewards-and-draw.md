@@ -189,7 +189,7 @@
 
 **Files:**
 - Create: `docs/_architecture/adr/0053-rewards-tiers-alternates-and-draw-history.md` (accepted; tiers setting, participation and manual as the direct entitlement, alternates and move-up, append-only draw rows, structure fixed at open, plugin/domain split)
-- Modify: `docs/_architecture/adr/README.md`, `roadmap.md` (C5 row, AC-90 to AC-93, `Done 2026-11-…`), `acceptance-criteria.md` (AC-90 to AC-93), `plugins/rewards.md`, `plugins/drawing.md`, `modules/contracts.md` (ports `reward`, `drawing`), `modules/api-ui.md` (addresses, "Where things are set"), `modules/domain.md`, `data-model.md` (columns as built), `docs/privacy.md`, `CLAUDE.md` (milestones, Stav, „Další je D1“), `app/domain/CLAUDE.md`, `app/api/CLAUDE.md`, `app/plugins/CLAUDE.md`, `.claude/skills/kvizotron-check-integration/flows.md` (submission → entitlement, close → draw)
+- Modify: `docs/_architecture/adr/README.md`, `roadmap.md` (C5 row, AC-90 to AC-93, `Done 2026-11-…`), `acceptance-criteria.md` (AC-90 to AC-93), `plugins/rewards.md`, `plugins/drawing.md`, `modules/contracts.md` (ports `reward`, `drawing`), `modules/api-ui.md` (addresses, "Where things are set"), `modules/domain.md`, `data-model.md` (columns as built), `docs/privacy.md`, `CLAUDE.md` (milestones, Status, "Next is D1"), `app/domain/CLAUDE.md`, `app/api/CLAUDE.md`, `app/plugins/CLAUDE.md`, `.claude/skills/kvizotron-check-integration/flows.md` (submission → entitlement, close → draw)
 - Test: `tests/test_docs.py` (existing)
 
 - [ ] **Step 1: Write** the ADR and AC rows; AC-90 rules and sources, AC-91 entitlements and what the participant sees, AC-92 draw with alternates and repeats, AC-93 contacting winners.

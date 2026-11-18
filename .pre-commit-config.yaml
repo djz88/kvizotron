@@ -1,7 +1,7 @@
-# Konfigurace pre-commit. Hook gitleaks hledá tajné údaje jen ve staged změnách.
-# Hook gitleaks-history prochází celou historii gitu; spouští ho make secrets.
-# Hook private-traces odmítne commit i push s lokální cestou, odkazem na sezení agenta nebo slovem
-# ze seznamu v .git/info/private-traces (tools/private_traces.py).
+# pre-commit configuration. The gitleaks hook looks for secrets in staged changes only.
+# The gitleaks-history hook scans the whole git history; make secrets runs it.
+# The private-traces hook rejects a commit and a push containing a local path, an agent session link or a word
+# from the list in .git/info/private-traces (tools/private_traces.py).
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 default_stages: [pre-commit]
 repos:

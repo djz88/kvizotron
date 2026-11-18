@@ -25,7 +25,7 @@
 2. A shared board where one member run uses `latest`: its older-revision attempts do not appear — test in Task 3.
 3. A member run with grading pending: the main run's public board says results are pending — test in Task 3.
 4. Unlinking a shared board immediately changes the cached public board — test in Task 3.
-5. An anonymous row in a shared board shows the run number, so two "Hráč 3" are distinguishable — test in Task 3.
+5. An anonymous row in a shared board shows the run number, so two "Player 3" are distinguishable — test in Task 3.
 
 ---
 
@@ -91,7 +91,7 @@ def test_migration_switches_separate_and_merged_runs_to_percent()  # separate→
   - `_forget(run)` also drops the cache of `run.board_main` when set.
 - Consumes: `PERCENT` ranking from Task 2.
 
-- [ ] **Step 1: Failing tests** — `test_shared_board_ranks_all_runs_by_percent`, `test_member_with_latest_mode_contributes_only_its_current_revision`, `test_pending_grading_in_a_member_holds_the_shared_board`, `test_anonymous_rows_show_the_run_number_when_shared` (label contains "Běh 2"), `test_split_restores_the_main_board_at_once` (cache dropped), `test_share_refuses` parametrized over every `ShareRefused.code`, `test_archived_quiz_refuses_sharing`, `test_member_keeps_its_own_board`, `test_place_of_stays_within_the_own_run`, migration test for 0026.
+- [ ] **Step 1: Failing tests** — `test_shared_board_ranks_all_runs_by_percent`, `test_member_with_latest_mode_contributes_only_its_current_revision`, `test_pending_grading_in_a_member_holds_the_shared_board`, `test_anonymous_rows_show_the_run_number_when_shared` (label contains "Run 2"), `test_split_restores_the_main_board_at_once` (cache dropped), `test_share_refuses` parametrized over every `ShareRefused.code`, `test_archived_quiz_refuses_sharing`, `test_member_keeps_its_own_board`, `test_place_of_stays_within_the_own_run`, migration test for 0026.
 - [ ] **Step 2:** Run `uv run pytest tests/domain/test_shared_board.py -q` → FAIL.
 - [ ] **Step 3: Implement** — in `_build`, when `shared_runs(run)` has more than one run and audience is public or admin of the main run: candidates from each run filtered by that run's `revision_mode`, official attempt by each run's own rule (`_rank` grouping per run key), then one percent table ranked with the main run's tie rules; `_pending` is true if any linked run is pending; anonymous label gets the run number (new msgid "Run %(no)s · %(label)s", cs "Běh %(no)s · %(label)s").
 - [ ] **Step 4:** Focused tests PASS; `make lint`; `make test`.
@@ -100,7 +100,7 @@ def test_migration_switches_separate_and_merged_runs_to_percent()  # separate→
 ### Task 4: Shared board in the admin and on the public page
 
 **Files:**
-- Modify: `app/api/admin_runs.py` (`runs_page` context gets each run's `board_main` and selectable runs; new views `board_share` and `board_split`, POST only, `@admin_required`, `@not_archived`, map `ShareRefused` codes to messages), `app/api/admin_urls.py` (`quizzes/<uuid:quiz_id>/board/share`, `runs/<uuid:run_id>/board/split`), `app/api/jinja2/admin/runs.html` (checkbox column "Do společného žebříčku", radio "Hlavní běh", button "Uložit společný žebříček", per shared main a "Zrušit společný žebříček" button), `app/api/jinja2/admin/run.html` (note "Společný žebříček běhů 1, 2, 3" on the main run, "Je součástí společného žebříčku běhu N" on a member), `app/api/jinja2/public/scoreboard.html` (note naming the runs)
+- Modify: `app/api/admin_runs.py` (`runs_page` context gets each run's `board_main` and selectable runs; new views `board_share` and `board_split`, POST only, `@admin_required`, `@not_archived`, map `ShareRefused` codes to messages), `app/api/admin_urls.py` (`quizzes/<uuid:quiz_id>/board/share`, `runs/<uuid:run_id>/board/split`), `app/api/jinja2/admin/runs.html` (checkbox column "Run %(no)s to the shared scoreboard", radio "Run %(no)s as the main run", button "Save the shared scoreboard", per shared main a "Cancel the shared scoreboard" button), `app/api/jinja2/admin/run.html` (note "Shared scoreboard of runs 1, 2, 3" on the main run, "Part of the shared scoreboard of run N" on a member), `app/api/jinja2/public/scoreboard.html` (note naming the runs)
 - Test: `tests/api/test_admin_runs.py`, `tests/api/test_scoreboard.py`; add both routes to the request-limit/CSRF route audit if `tests/api/test_request_limits.py` lists admin POST routes
 
 - [ ] **Step 1: Failing tests** — share via the Runs page form → 302 and members linked; refusal codes show their Czech message with 200/409 as the page's other refusals do; split → board back to one run; public board of the main run lists rows of all linked runs and the note; member page note; archived quiz → 409.

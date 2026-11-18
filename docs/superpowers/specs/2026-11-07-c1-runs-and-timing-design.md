@@ -47,7 +47,7 @@ Today a run opens with one click and ends with another. Restart already works: a
 ### Starting and planning
 
 - `Spustit` keeps opening a run in one click, with the inherited limit and no deadline. A deadline can be added to the running run afterwards **[user]**, **[call]**.
-- `Naplánovat…` beside it opens a form: start, deadline, limit **[user]**. The limit is prefilled with the inherited value and can be overridden or emptied **[user]**. An empty start opens the run immediately, which is also how to start at once with a deadline or a different limit **[call]**.
+- `Plan…` beside it opens a form: start, deadline, limit **[user]**. The limit is prefilled with the inherited value and can be overridden or emptied **[user]**. An empty start opens the run immediately, which is also how to start at once with a deadline or a different limit **[call]**.
 - Refused with a message: a start or deadline in the past; a deadline not after the start; a plan when a run is already running or planned; a plan with no published revision or unmet module requirements **[user]**, **[call]**.
 - A planned run can be edited, cancelled, or started now. Cancelling removes it and frees its number, because no attempt can exist yet **[call]**.
 - At the start moment the run takes the newest published revision **[user]**. The run page says which revision that is **[user]**. Publishing while a run is planned does not ask anything about it **[user]**.
@@ -80,7 +80,7 @@ Today a run opens with one click and ends with another. Restart already works: a
 - A planned quiz's address and QR code always show the title, description and start time, without a start button **[user]**. Starting before the start moment is refused by the server **[call]**.
 - The planned page does not poll. It knows the seconds remaining from the server and reloads once at the start moment, each page with a random delay of up to 5 s, so the start button appears for people waiting in a room **[call]**.
 - If the start moment has passed and the run could not open, the page says the quiz has not started yet, without a time **[call]**.
-- With the setting on, the public list shows it under `Chystá se` **[user]**. The setting's scopes are global and quiz; a question has no use for it **[user]**.
+- With the setting on, the public list shows it under `Coming up` **[user]**. The setting's scopes are global and quiz; a question has no use for it **[user]**.
 - Before starting, the page states the limit and the deadline. When the deadline shortens the limit, it states the real time **[user]**. Starting is never blocked **[user]**.
 - During play a countdown is always visible when any time applies **[user]**. It is announced to screen readers at 5 minutes and 1 minute, not every second **[call]**.
 - About 5 s before the end the page submits what it has **[docs]**. Unanswered questions count as unanswered and do not block this submission, in all three navigation modes **[call]**. The result says the time ran out **[call]**.
@@ -96,7 +96,7 @@ Today a run opens with one click and ends with another. Restart already works: a
 ### Archiving a run
 
 - Only an ended run can be archived, and it can be restored **[user]**, **[call]**. Nothing is deleted **[user]**.
-- It disappears from the main list of runs, behind `Zobrazit archivované` **[user]**. The public walkthrough stops working **[user]**.
+- It disappears from the main list of runs, behind `Show archived runs` **[user]**. The public walkthrough stops working **[user]**.
 - A participant's private result link keeps working **[user]**. Attempts waiting for grading can still be graded **[call]**.
 - Audited **[call]**.
 

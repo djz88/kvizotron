@@ -10,7 +10,7 @@ While deciding where that choice lives, the user set a rule for the whole projec
 
 ## Goals
 
-1. An image takes a file or an `https://` address, wherever an image can be added today (question and option images of type Výběr, in quizzes and banks).
+1. An image takes a file or an `https://` address, wherever an image can be added today (question and option images of type Choice, in quizzes and banks).
 2. Two modes decide what a participant gets: `copy` (default) or `external`. The mode is inherited global → quiz → question **[user]**.
 3. The source address of a copy stays visible to admins only **[user]**.
 4. A quiz that loads images from elsewhere tells its admin when a check of those addresses failed, at most once an hour **[user]**.
@@ -25,7 +25,7 @@ While deciding where that choice lives, the user set a rule for the whole projec
 - A scheduler or job process. The check runs when an admin opens a quiz **[user]**.
 - Noticing that an external picture changed. The check asks only whether a usable image is still there **[call]**.
 - Addresses in CSV import: B5 (`AC-13`) **[docs]**.
-- Images in type Přiřazení: it has none today **[call]**.
+- Images in type Matching: it has none today **[call]**.
 
 ## Anti-goals
 
@@ -145,7 +145,7 @@ The reasons for the six are written by the builder from what each setting does: 
 
 ### Admin UI
 
-The global page, quiz page and question editor offer each setting according to its scopes. On a question: a select in the common settings, with a first option following the quiz and naming the current value **[call]**. A question-level setting is offered only on types it affects: `none_option` and `external_image_mode` on Výběr, `shuffle_options` on types that shuffle, `show_sources` on all. How a type states this is left to the builder, through its contract **[call]**.
+The global page, quiz page and question editor offer each setting according to its scopes. On a question: a select in the common settings, with a first option following the quiz and naming the current value **[call]**. A question-level setting is offered only on types it affects: `none_option` and `external_image_mode` on Choice, `shuffle_options` on types that shuffle, `show_sources` on all. How a type states this is left to the builder, through its contract **[call]**.
 
 Changing a question-level value is a change of the question, so it creates a draft and appears in the change overview **[call]**.
 

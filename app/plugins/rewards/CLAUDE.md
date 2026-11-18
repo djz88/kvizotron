@@ -1,15 +1,15 @@
-# Modul: app/plugins/rewards
+# Module: app/plugins/rewards
 
-Plugin `rewards.threshold`, port `reward`: čistá pravidla odměn za práh. Podíl prahu z pokusu (`share`), zda pokus práh dosáhl (`reached`, `>=` na přesných `Decimal`) a které prahy účastník dostane podle nastavení `reward_thresholds` (`qualifies`: `highest` jen největší podíl, shoda podle pořadí pravidel; `all` všechny dosažené).
+Plugin `rewards.threshold`, port `reward`: pure rules for threshold rewards. The share of the threshold from an attempt (`share`), whether an attempt reached the threshold (`reached`, `>=` on exact `Decimal`s) and which thresholds a participant gets according to the `reward_thresholds` setting (`qualifies`: `highest` only the largest share, a tie decided by the order of the rules; `all` all reached ones).
 
-## Co modul obsahuje
+## What the module contains
 
-`thresholds.py` (`ThresholdReward`), `manifest.py` se třemi nastaveními odměn (`reward_source`, `reward_thresholds`, `winner_contact`; rozsah global a kvíz, platí pro celý běh), `apps.py`.
+`thresholds.py` (`ThresholdReward`), `manifest.py` with three reward settings (`reward_source`, `reward_thresholds`, `winner_contact`; scope global and quiz, they apply to the whole run), `apps.py`.
 
-## Co modul není
+## What the module is not
 
-Nesahá do databáze ani do požadavku. Pravidla, nároky, kopie na běh a transakce řeší doména; plugin dostane `ThresholdRule` a `AttemptFigures` a vrátí id pravidel. Losování je v `app/plugins/drawings/`.
+It touches neither the database nor the request. Rules, claims, copies onto a run and transactions are handled by the domain; the plugin receives `ThresholdRule` and `AttemptFigures` and returns rule ids. Drawing is in `app/plugins/drawings/`.
 
-## Zakázáno
+## Forbidden
 
-Importovat z `app/domain`, `app/api` nebo z jiného pluginu: smí jen `app.contracts`. Porovnávat zaokrouhlená čísla nebo `float`.
+Importing from `app/domain`, `app/api` or from another plugin: only `app.contracts` is allowed. Comparing rounded numbers or `float`.

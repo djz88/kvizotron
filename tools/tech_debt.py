@@ -1,8 +1,8 @@
-"""Nástroj pro TECH_DEBT.md: kontrola, úklid, založení a uzavření položky.
+"""Tool for TECH_DEBT.md: check, tidy, create and resolve an item.
 
-Použití: tech_debt.py --doc CESTA {check | tidy | create NÁZEV | resolve ID}
+Usage: tech_debt.py --doc PATH {check | tidy | create TITLE | resolve ID}
 
-Archiv je TECH_DEBT_archive.md vedle dokumentu. Jen standardní knihovna, žádná síť.
+The archive is TECH_DEBT_archive.md next to the document. Standard library only, no network.
 """
 
 from __future__ import annotations
@@ -47,13 +47,13 @@ def _safe(path: str, *, must_exist: bool) -> Path:
     """A document path inside the repository, never a symlink."""
     candidate = Path(path)
     if candidate.is_symlink():
-        raise Failure(f"{path}: symbolický odkaz se nesleduje")
+        raise Failure(f"{path}: symbolic link is not followed")
     resolved = candidate.resolve()
     root = _repo_root()
     if root != resolved and root not in resolved.parents:
-        raise Failure(f"{path}: cesta je mimo repozitář")
+        raise Failure(f"{path}: path is outside the repository")
     if must_exist and not resolved.is_file():
-        raise Failure(f"{path}: soubor neexistuje")
+        raise Failure(f"{path}: file does not exist")
     return resolved
 
 
@@ -121,10 +121,10 @@ def check_problems(name: str, text: str, archive_name: str, archive: str | None)
     first_resolved = resolved[0] if resolved else None
     layout = first_open is not None and first_resolved is not None
     if layout and first_open > first_resolved:
-        out.append((name, first_open + 1, "sekce OPEN není poslední před sekcí RESOLVED"))
+        out.append((name, first_open + 1, "OPEN section is not the last one before RESOLVED"))
     for _, index in sections:
         if layout and first_open < first_resolved and first_open < index < first_resolved:
-            out.append((name, index + 1, "sekce mezi OPEN a RESOLVED"))
+            out.append((name, index + 1, "section between OPEN and RESOLVED"))
     starts = [i for i in (first_open, first_resolved) if i is not None]
     for heading, index in headings:
         if (
@@ -132,23 +132,23 @@ def check_problems(name: str, text: str, archive_name: str, archive: str | None)
             and index > min(starts)
             and not (_OPEN_FORM.match(heading) or _RESOLVED_FORM.match(heading))
         ):
-            out.append((name, index + 1, "nadpis není ani OPEN, ani RESOLVED položka"))
+            out.append((name, index + 1, "heading is neither an OPEN nor a RESOLVED item"))
         ident = _ITEM.match(heading)
         if layout and first_open < index < first_resolved and ident and _is_resolved(heading):
-            out.append((name, index + 1, f"vyřešená položka {ident.group(1)} je v OPEN"))
+            out.append((name, index + 1, f"resolved item {ident.group(1)} is in OPEN"))
     for heading, index in headings:
         ident = _ITEM.match(heading)
         if not ident:
             continue
         if ident.group(1) in seen:
-            out.append((name, index + 1, f"duplicitní id {ident.group(1)}"))
+            out.append((name, index + 1, f"duplicate id {ident.group(1)}"))
         seen.add(ident.group(1))
     if archive is not None:
         archive_seen: set[str] = set()
         for index, line in enumerate(_split(archive)):
             match = _ITEM.match(line)
             if match and match.group(1) in archive_seen:
-                out.append((archive_name, index + 1, f"duplicitní id {match.group(1)}"))
+                out.append((archive_name, index + 1, f"duplicate id {match.group(1)}"))
             if match:
                 archive_seen.add(match.group(1))
     out.sort(key=lambda item: (item[0] != name, item[1]))
@@ -162,7 +162,7 @@ def _open_range(lines: list[str]) -> tuple[int, int]:
         if name == "OPEN":
             end = sections[position + 1][1] if position + 1 < len(sections) else len(lines)
             return index, end
-    raise Failure("v dokumentu chybí sekce ## OPEN")
+    raise Failure("the document has no ## OPEN section")
 
 
 def _item_ranges(lines: list[str], start: int, end: int) -> list[tuple[int, int, str]]:
@@ -208,7 +208,7 @@ def _move(text: str, archive: str | None, wanted) -> tuple[str, str, list[str]]:
     arch = (
         _split(archive)
         if archive is not None
-        else _split("# Technický dluh — archiv\n\n## RESOLVED\n")
+        else _split("# Technical Debt — Archive\n\n## RESOLVED\n")
     )
     sections, _ = _scan(arch)
     heads = [index for name, index in sections if name == "RESOLVED"]
@@ -271,7 +271,7 @@ def cmd_tidy(doc: str) -> int:
 def cmd_create(doc: str, title: str) -> int:
     title = " ".join(title.split())
     if not title:
-        raise Failure("název položky je prázdný")
+        raise Failure("item title is empty")
     main, archive_path = _paths(doc)
     text = _read(main) or ""
     numbers = [
@@ -307,11 +307,11 @@ def cmd_resolve(doc: str, ident: str) -> int:
         if (m := _ITEM.match(r[2])) and m.group(1) == ident
     ]
     if not found:
-        raise Failure(f"{ident}: položka v OPEN neexistuje")
+        raise Failure(f"{ident}: item does not exist in OPEN")
     first, _, heading = found[0]
     if not _is_resolved(heading):
         if not _OPEN_TAIL.search(lines[first]):
-            raise Failure(f"{ident}: nadpis položky nemá tvar „— OPEN“")
+            raise Failure(f"{ident}: item heading does not end in “— OPEN”")
         lines[first] = _OPEN_TAIL.sub(f" — ✅ RESOLVED ({_today()})\\1", lines[first])
     new_text, new_archive, ids = _move(
         "".join(lines),

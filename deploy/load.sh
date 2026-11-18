@@ -1,6 +1,6 @@
 #!/bin/sh
-# Zátěž: 50 účastníků odešle odpovědi s fotkou naráz, během toho běží záloha. Pak se spočítá, co je
-# v databázi, zkouší se obnova ze zálohy a adresy klientů. Po sobě uklidí jen vlastní projekty.
+# Load test: 50 participants submit answers with a photo at once while a backup runs. Then it counts what is
+# in the database, and the restore from a backup and the client addresses are tried. Cleans up only its own projects afterwards.
 set -u
 
 PROJECT=kvizotron-load
@@ -11,10 +11,10 @@ CLIENTS=50
 FILE=deploy/compose.yaml
 SECRET=$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')
 
-# Soubor deploy/.env provozovatele se sem nesmí dostat.
+# The operator's deploy/.env file must not get in here.
 export COMPOSE_DISABLE_ENV_FILE=1
-# Limity a doba uchování záloh z prostředí provozovatele by se přes compose dostaly do zkušebního
-# nasazení a 50 klientů z jedné adresy by dostalo 429.
+# Limits and backup retention from the operator's environment would reach the test
+# deployment through compose, and 50 clients from one address would get 429.
 unset KVZ_LOGIN_ATTEMPTS_PER_MINUTE KVZ_CODE_ATTEMPTS_PER_MINUTE KVZ_SUBMITS_PER_MINUTE \
     KVZ_STARTS_PER_MINUTE KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE KVZ_BACKUP_RETENTION_DAYS
 export KVZ_DOMAIN=localhost KVZ_SECRET_KEY="$SECRET" KVZ_HTTP_PORT="$HTTP_PORT" KVZ_HTTPS_PORT="$HTTPS_PORT"
@@ -32,8 +32,8 @@ check() { # check <name> <actual> <expected>
 
 WORK=$(mktemp -d)
 backup_pid=""
-# Druhý projekt se nezakládá (obnova běží v tomto), úklid ho jen pro jistotu zná. Maže se jen
-# `kvizotron-load` a `kvizotron-load-restore`, nikdy cizí projekt.
+# The second project is not created (the restore runs in this one); cleanup knows it only to be safe. Only
+# `kvizotron-load` and `kvizotron-load-restore` are deleted, never a foreign project.
 cleanup() {
     [ -n "$backup_pid" ] && kill "$backup_pid" 2>/dev/null
     rm -rf "$WORK"
@@ -51,9 +51,9 @@ if ! compose up --build --wait --wait-timeout 180 >/dev/null 2>&1; then
     exit 1
 fi
 
-# Kvíz s otázkou na výběr a s fotkou, průchod po otázce, odhalení na konci se vším (fotku musí
-# hodnotit člověk, takže aplikace odhalení po každé otázce u kvízu s fotkou odmítá; `check` se tu
-# zkouší jen u kvízu `reveal` bez fotky), profil dat s odpověďmi. Kvíz `reveal` bez fotky s odhalením po každé otázce, kvíz `probe` jen pro zkoušku adres (každý start dělá pokus).
+# A quiz with a choice question and a photo, one question per page, reveal at the end with everything (a person has to
+# grade the photo, so the application refuses reveal after each question for a quiz with a photo; `check` is
+# tried only on the `reveal` quiz without a photo), data profile with answers. The `reveal` quiz has no photo and reveals after each question; the `probe` quiz is only for the address check (every start makes an attempt).
 seeded=$(compose exec -T app python manage.py shell -v 0 -c '
 from app.domain import authoring
 from app.domain import settings as app_settings
@@ -78,7 +78,7 @@ def seed(slug, photo, moment):
 
 print(seed("load", True, "at_end").id, seed("reveal", False, "after_each").id, seed("probe", False, "never").id)
 ' | tail -n 1 | tr -d '\r')
-# Přesně tři různá id běhů.
+# Exactly three distinct run ids.
 # shellcheck disable=SC2086
 set -- $seeded
 distinct=$(printf '%s\n' "$@" | sort -u | grep -Ec '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
@@ -92,8 +92,8 @@ reveal_run=$2
 probe_run=$3
 echo "INFO runs: load $run_id, reveal $reveal_run, probe $probe_run"
 
-# Co je v databázi: počty u běhu a otisk všech pokusů, odpovědí, souborů a fotek.
-snapshot() { # snapshot <běh>
+# What is in the database: counts for the run and a fingerprint of all attempts, answers, files and photos.
+snapshot() { # snapshot <run>
     compose exec -T app python manage.py shell -v 0 -c "
 import hashlib, os
 from django.conf import settings
@@ -126,8 +126,8 @@ expected="total=$CLIENTS finished=$CLIENTS keys=$CLIENTS photo_answers=$CLIENTS 
 
 BASE="https://localhost:$HTTPS_PORT"
 
-# Skutečná fotka (šum 1600x1200, asi 700 kB), vyrobená Pillow v kontejneru: dekódování a převod na
-# WebP stojí na serveru nejvíc. Soubor je v dočasném adresáři na hostiteli.
+# A real photo (1600x1200 noise, about 700 kB), made by Pillow in the container: decoding and conversion to
+# WebP cost the server the most. The file is in a temporary directory on the host.
 compose exec -T app python -c "
 import os, sys
 from PIL import Image
@@ -139,9 +139,9 @@ if [ "$photo_bytes" -lt 100000 ]; then
     exit 1
 fi
 
-# Zálohy běží v jednom dlouhém procesu v `jobs` po celou dobu odesílání: každé volání vypíše
-# začátek a konec (epoch), aby šlo ověřit, že se překrývá s okénkem odesílání. Záloha téhož dne
-# nahrazuje předchozí. Zastaví ji soubor /tmp/load-stop, jinak po 150 s sama.
+# Backups run in one long process in `jobs` for the whole submission: each call prints
+# its start and end (epoch) so that overlap with the submission window can be verified. A backup of the same day
+# replaces the previous one. The file /tmp/load-stop stops it, otherwise it stops by itself after 150 s.
 loop=$(cat <<'EOF'
 import os, time
 from django.utils import timezone
@@ -174,7 +174,7 @@ backup_pid=""
 cat "$WORK/participants"
 [ "$participants_code" -eq 0 ] || failed=1
 
-# Okénko odesílání proti zálohám: aspoň jedno volání zálohy musí běžet v okénku a žádné nesmí selhat.
+# Submission window against backups: at least one backup call must run in the window and none may fail.
 window=$(grep '^WINDOW ' "$WORK/participants")
 first=${window#*first=}; first=${first%% *}
 last=${window##*last=}
@@ -192,12 +192,12 @@ logs=$(compose logs app 2>&1)
 check "app log has no 'database is locked'" "$(printf '%s\n' "$logs" | grep -c 'database is locked')" "0"
 check "app log has no traceback" "$(printf '%s\n' "$logs" | grep -c Traceback)" "0"
 
-# Odhalení po každé otázce: stránka volá `check` před odesláním (kvíz bez fotky, 20 účastníků).
+# Reveal after each question: the page calls `check` before submitting (quiz without a photo, 20 participants).
 python3 -m tools.load_participants --base "$BASE" --run "$reveal_run" --clients 20 || failed=1
 logs=$(compose logs app 2>&1)
 check "app log has no traceback after the reveal pass" "$(printf '%s\n' "$logs" | grep -c Traceback)" "0"
 
-# Zkouška adres: odděluje aplikace zdrojové adresy (limit startů je na adresu)?
+# Address check: does the application separate source addresses (the start limit is per address)?
 unmeasured=0
 lan=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^127\.' | grep -m 1 '^[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*$')
 limit=$(compose exec -T app python manage.py shell -v 0 -c "
@@ -211,9 +211,9 @@ else
         --probe-from "$lan" --probe-limit "$limit" || failed=1
 fi
 
-# Nácvik obnovy. Nejdřív čerstvá záloha všeho, co teď v databázi je. Pak se živá data ZMĚNÍ (smažou
-# se pokusy běhu a jeden soubor médií), ověří se, že se otisk změnil, a teprve pak se obnoví. Obnova,
-# která nic nedělá, by tak neprošla.
+# Restore rehearsal. First a fresh backup of everything now in the database. Then the live data is CHANGED (the attempts
+# of the run and one media file are deleted), it is verified that the fingerprint changed, and only then is it restored. A restore
+# that does nothing would not pass.
 complete='^(total=.* files=[0-9]+|checksum [0-9a-f]{64})$'
 before=$(snapshot "$run_id")
 check "snapshot before the restore is complete" "$(printf '%s\n' "$before" | grep -Ec "$complete")" "2"
@@ -263,7 +263,7 @@ check "snapshot after the restore is complete" "$(printf '%s\n' "$after" | grep 
 check "counts after the restore equal the counts before" "$(printf '%s\n' "$after" | head -n 1)" "$(printf '%s\n' "$before" | head -n 1)"
 check "checksum of attempts, answers and photo contents after the restore equals the one before" "$(printf '%s\n' "$after" | tail -n 1)" "$(printf '%s\n' "$before" | tail -n 1)"
 
-# Důkaz k TD-056: počet dotazů do databáze na jednu veřejnou stránku kvízu (bez zahřátí a po něm).
+# Evidence for TD-056: number of database queries per public quiz page (cold and warmed up).
 queries=$(compose exec -T app python manage.py shell -v 0 -c "
 from django.db import connection
 from django.test import Client

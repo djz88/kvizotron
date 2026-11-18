@@ -221,7 +221,7 @@ def main(argv: list[str]) -> int:
         print(f"Local trace: {problem}", file=sys.stderr)
     if problems:
         print(
-            "Replace it with <repo>, <scratchpad> or an example address (CLAUDE.md, Pravidla).",
+            "Replace it with <repo>, <scratchpad> or an example address (CLAUDE.md, Rules).",
             file=sys.stderr,
         )
     return 1 if problems else 0

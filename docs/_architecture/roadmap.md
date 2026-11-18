@@ -31,7 +31,7 @@ in parallel. Each stage ends when its exit criteria pass. Requirement → stage 
 |---|---|---|
 | B1 Revisions | Immutable revisions, `DRAFT → PUBLISHED → SUPERSEDED/ARCHIVED`, translation validation; settings with quiz override, a new revision during an open round, change overview, return to an older revision, discard, duplicate and archive a quiz | Done 2026-11-06 |
 | B1.5 UI foundation | Navigation, quiz header with a state-driven main button, tabs, a fixed place for each setting, quiz description, five colour palettes (FR-53), public menu and information pages | Done 2026-11-06 |
-| B2 Question types | Types Výběr (one, several or no correct answers, yes/no) and Přiřazení (pairs, ordering), images in questions and answers (FR-21 admin upload), scoring strategies including partial, points and sources per question (FR-54), unsaved changes warning, [TD-010](TECH_DEBT.md) | Done 2026-11-06 |
+| B2 Question types | Types Choice (one, several or no correct answers, yes/no) and Matching (pairs, ordering), images in questions and answers (FR-21 admin upload), scoring strategies including partial, points and sources per question (FR-54), unsaved changes warning, [TD-010](TECH_DEBT.md) | Done 2026-11-06 |
 | B3 Banks & flow | Question bank, random selection, navigation modes with a progress indicator, answer-reveal policy, translated explanation of the correct answer | Done 2026-11-07 |
 | B4 Media | External HTTPS image addresses as a copy or from their source (local upload came with B2); settings inherited global → quiz → question and declared by every module | Done 2026-11-07 |
 | B5 Testing & import | Preview, test links, CSV import and export of questions | Done 2026-11-07 |

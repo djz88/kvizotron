@@ -1,18 +1,18 @@
-# Modul: app/contracts
+# Module: app/contracts
 
-Rozhraní mezi kernelem a moduly. Jeden soubor, jen typy: `Protocol`, dataclassy a konstanty. Žádná implementace.
+The interface between the kernel and the modules. One file, types only: `Protocol`, dataclasses and constants. No implementation.
 
-## Odpovědnosti
+## Responsibilities
 
-- Protokoly `QuestionTypePlugin`, `ScoringStrategyPlugin`, `ThemePlugin`, `QuizFlowPlugin`, `QuizTypePlugin` (port `quiz_type`, jen definice sad nastavení, ADR-0062), `AuthenticationProvider`, `PersistenceProvider`, `MediaStorageProvider`, `ResultsExporterProvider` (port `results_exporter`), `TableSinkProvider` (port `table_sink`, kontrakt pro Google Sheets bez implementace, ADR-0055) a `RetentionProvider` (port `retention`).
-- Datové typy `ItemGrade`, `ScoreBreakdown`, `DefinitionRow`, `AdminFormError`, `ImageRefused`, `StoredImage`, `ExportTable`, `ExportJobView`, `RetentionRecord`, výjimka `ExportJobGone`.
-- `PORTS`: která schopnost má který protokol. `EXACTLY_ONE`, `REQUIRED_CAPABILITIES`.
+- Protocols `QuestionTypePlugin`, `ScoringStrategyPlugin`, `ThemePlugin`, `QuizFlowPlugin`, `QuizTypePlugin` (port `quiz_type`, only definitions of settings sets, ADR-0062), `AuthenticationProvider`, `PersistenceProvider`, `MediaStorageProvider`, `ResultsExporterProvider` (port `results_exporter`), `TableSinkProvider` (port `table_sink`, a contract for Google Sheets without an implementation, ADR-0055) and `RetentionProvider` (port `retention`).
+- Data types `ItemGrade`, `ScoreBreakdown`, `DefinitionRow`, `AdminFormError`, `ImageRefused`, `StoredImage`, `ExportTable`, `ExportJobView`, `RetentionRecord`, the exception `ExportJobGone`.
+- `PORTS`: which capability has which protocol. `EXACTLY_ONE`, `REQUIRED_CAPABILITIES`.
 
-## Zakázáno
+## Forbidden
 
-- Importovat Django nebo cokoli z `app.`: toto je jediný balíček, na kterém všichni závisejí.
-- Měnit protokol bez sdílené sady v `tests/contracts/` a bez `docs/plugin-api.md`.
+- Importing Django or anything from `app.`: this is the one package everyone depends on.
+- Changing a protocol without a shared suite in `tests/contracts/` and without `docs/plugin-api.md`.
 
-## Veřejné API
+## Public API
 
-Všechno v `__init__.py`. Popis pro autory modulů je v `docs/plugin-api.md`.
+Everything in `__init__.py`. The description for module authors is in `docs/plugin-api.md`.

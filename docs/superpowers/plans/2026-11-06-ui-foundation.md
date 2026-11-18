@@ -23,7 +23,7 @@
 ## Review Focus
 
 1. Start after the draft changed since the page was shown: nothing is published and no run opens; the page shows again (test in Task 2).
-2. Another admin opens a run during `Spustit kvíz`: the publication rolls back too and the admin sees the page again (Task 2).
+2. Another admin opens a run during `Start the quiz`: the publication rolls back too and the admin sees the page again (Task 2).
 3. Revisions published before this milestone have no `description` key: public pages, comparison, return to that revision and discard all work (Task 1).
 4. A stored palette value no longer in the catalogue, or a page with an unknown `data-palette`: the page falls back to the default colours and stays readable (Task 5).
 5. A quiz published in one language: the language switch shows its flag and offers nothing to change to, and no link leads to a language the quiz lacks (Task 4).
@@ -286,6 +286,6 @@ def test_catalogues_do_not_use_the_old_word_for_a_run():
 
 - [ ] **Step 5: Run the checks.** Dev container: ruff, mypy, pytest, gitleaks, `tech-debt-check`. Host: `make smoke`. Extend `deploy/smoke.sh`: `/privacy` returns 200, and `/admin/quizzes/<id>/runs` returns 200 for the admin. Expected: all pass.
 
-- [ ] **Step 6: Browser walkthrough** with Playwright against the Compose stack, at 360 px and 1280 px, in light and dark mode: create a quiz, add a question, `Spustit kvíz`, play on a phone width, change a question, `Publikovat změny`, `Ukončit běh`, `Spustit znovu`, change palette globally and per quiz; keyboard only for the dropdowns; JavaScript off for one pass. Check that no console errors appear and `document.documentElement.scrollWidth <= innerWidth` on each page. Send screenshots to the user.
+- [ ] **Step 6: Browser walkthrough** with Playwright against the Compose stack, at 360 px and 1280 px, in light and dark mode: create a quiz, add a question, `Start the quiz`, play on a phone width, change a question, `Publish changes`, `End the run`, `Start again`, change palette globally and per quiz; keyboard only for the dropdowns; JavaScript off for one pass. Check that no console errors appear and `document.documentElement.scrollWidth <= innerWidth` on each page. Send screenshots to the user.
 
 - [ ] **Step 7: Commit** `docs: record the UI foundation, and use "run" in the interface`.

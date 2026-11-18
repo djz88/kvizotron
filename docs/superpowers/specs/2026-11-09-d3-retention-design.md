@@ -58,7 +58,7 @@ Kept: the run record, its revisions and reward rules; `draw` and `draw_entry` wi
 
 Summary, computed from the existing statistics in the same transaction just before the rows go, and stored on the run: participants, started, submitted, unsent, average, percent, per-revision summary, and per-question statistics only where the profile kept every answer. **[user]** Statistics and the comparison of runs read it for a deleted run instead of recomputing. **[call]**
 
-Then the run moves to `ARCHIVED` and carries a label "Data smazána" / "Data deleted" with the date. **[user]** It can still be restored from the archive, but the data do not come back, and its period can no longer be changed. **[call]** The job and "Delete data now" skip a run with deletion recorded. **[call]**
+Then the run moves to `ARCHIVED` and carries a label "Data deleted" with the date. **[user]** It can still be restored from the archive, but the data do not come back, and its period can no longer be changed. **[call]** The job and "Delete data now" skip a run with deletion recorded. **[call]**
 
 After deletion, the public scoreboard, public archived results (ADR-0031) **[docs]**, the walkthrough and private result links show the same friendly "not available" state as other unavailable pages, without an error page. **[call]**
 

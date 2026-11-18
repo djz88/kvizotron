@@ -18,14 +18,14 @@ this way (tabs in `_quiz_header.html`).
 
 | Tab (cs label) | Address | Holds |
 |---|---|---|
-| Přehled / Overview (default) | `/admin/runs/<run>` | QR, public address, status chip, attempts submitted, not sent, revision and "Change the plan" for a scheduled run, start, deadline, time limit, deletion notice and link to the deletion history, and the run's actions (close, archive, restore, change deadline) |
-| Pokusy / Attempts | `/admin/runs/<run>/attempts` | the attempts table with its sorting and the inline name edit |
-| Žebříček / Scoreboard | `/admin/runs/<run>/scoreboard` | the admin view of the ranking, the scoreboard settings form (revision mode, visibility, columns), the shared board (ADR-0065: linked runs, split) and the projector link |
-| Statistiky / Statistics | `/admin/runs/<run>/statistics` | the run statistics now under `#statistics` |
-| Odměny / Rewards | `/admin/runs/<run>/rewards` (address unchanged) | today's rewards page (`admin_rewards.run_rewards`) |
-| Losování / Draw | `/admin/runs/<run>/draw` (address unchanged) | today's draw page (`admin_rewards.run_draw`); the tab shows only when the run has a rule with a draw |
+| Overview (default) | `/admin/runs/<run>` | QR, public address, status chip, attempts submitted, not sent, revision and "Change the plan" for a scheduled run, start, deadline, time limit, deletion notice and link to the deletion history, and the run's actions (close, archive, restore, change deadline) |
+| Attempts | `/admin/runs/<run>/attempts` | the attempts table with its sorting and the inline name edit |
+| Scoreboard | `/admin/runs/<run>/scoreboard` | the admin view of the ranking, the scoreboard settings form (revision mode, visibility, columns), the shared board (ADR-0065: linked runs, split) and the projector link |
+| Statistics | `/admin/runs/<run>/statistics` | the run statistics now under `#statistics` |
+| Rewards | `/admin/runs/<run>/rewards` (address unchanged) | today's rewards page (`admin_rewards.run_rewards`) |
+| Draw | `/admin/runs/<run>/draw` (address unchanged) | today's draw page (`admin_rewards.run_draw`); the tab shows only when the run has a rule with a draw |
 | Export | `/admin/runs/<run>/export` | what is under `#export` today |
-| Nastavení / Settings | `/admin/runs/<run>/settings` | access code, retention period, "Delete data now", the date of deletion |
+| Settings | `/admin/runs/<run>/settings` | access code, retention period, "Delete data now", the date of deletion |
 
 - The Rewards and Draw pages keep their addresses and content but join the tab bar: their views
   and templates in `app/api/admin_rewards.py` get the run header and the tab bar like the others

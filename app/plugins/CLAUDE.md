@@ -1,31 +1,31 @@
-# Modul: app/plugins
+# Module: app/plugins
 
-Funkce, které se dají zapínat a vypínat: `questions/` (typy otázek), `scoring/` (bodování), `quiz_flow/` (režimy navigace), `quiz_types/` (typy kvízů: pojmenované sady nastavení kvízu, jen definice, ADR-0062), `theme_default/` (téma), `participants/` (pravidla účastníků, ADR-0049), `results/` (oficiální pokus, pořadí žebříčku a souhrny, ADR-0051), `rewards/` (dosažené prahy odměn a tři nastavení odměn, ADR-0053), `drawings/` (pořadí, otisk a výběr losování, ADR-0013 a ADR-0053). Infrastruktura je v `app/providers/`.
+Features that can be enabled and disabled: `questions/` (question types), `scoring/` (scoring), `quiz_flow/` (navigation modes), `quiz_types/` (quiz types: named sets of quiz settings, definitions only, ADR-0062), `theme_default/` (theme), `participants/` (participant rules, ADR-0049), `results/` (official attempt, scoreboard order and summaries, ADR-0051), `rewards/` (reached reward thresholds and three reward settings, ADR-0053), `drawings/` (order, fingerprint and selection of a drawing, ADR-0013 and ADR-0053). Infrastructure is in `app/providers/`.
 
-## Co modul obsahuje
+## What a module contains
 
-`manifest.py` s povinným polem `settings` (ADR-0042), zápis do `[project.entry-points."kvizotron.modules"]`, `apps.py`, vlastní šablony v `jinja2/<název>/` a katalog v `locale/`. Nový katalog patří do `ROOTS` v `tools/messages.py`.
+`manifest.py` with the mandatory `settings` field (ADR-0042), an entry in `[project.entry-points."kvizotron.modules"]`, `apps.py`, its own templates in `jinja2/<name>/` and a catalog in `locale/`. A new catalog belongs in `ROOTS` in `tools/messages.py`.
 
-## Zakázáno
+## Forbidden
 
-- Importovat z `app/domain`, `app/api`, `app/providers` nebo z jiného pluginu: smí jen `app.contracts`.
-- Klíč odpovědi v `public_payload()` nebo v `render_public`.
-- Skládat HTML ručně: výstup se značí jako bezpečný, proto kreslí jen šablona s autoescape.
-- Vlastní tabulky bez migrace v modulu; úprava tabulek domény.
+- Importing from `app/domain`, `app/api`, `app/providers` or from another plugin: only `app.contracts` is allowed.
+- An answer key in `public_payload()` or in `render_public`.
+- Assembling HTML by hand: the output is marked as safe, so only a template with autoescape renders it.
+- Own tables without a migration in the module; modifying the domain's tables.
 
-## Pozor
+## Watch out
 
-- Každý typ otázky má `tests/contracts/test_<typ>.py`, který dědí `QuestionTypeContract`, a tím i testy escapování a `describe_definition`.
-- `describe_definition` musí změnit výstup při změně kteréhokoli pole definice, jinak ji přehled změn neukáže.
-- Vstupy se jmenují `<id otázky>:<pole>`. Hodnoty přicházejí jako řetězce; pole končící `[]` přijde jako seznam pod jménem bez závorek.
-- Typ známku počítá v `grade`, strategie ji jen váží. Nastavení plugin nečte: co potřebuje, dostane v `quiz_settings`.
-- Obrázky jsou v definici jako `asset`, případně `source`; co se ukáže, rozhodne API a doplní to do klíče `url`.
-- Sdílený obrázek otázky je v `app/contracts/question_image.py` a makro v `admin/_image_fields.html`, protože pluginy nesmí importovat jeden druhý.
-- Typ se soubory vrací `file_fields`; hodnotu takového pole dosazuje jen API ze skutečně přijatého souboru. `summarize` vrací prostý text pro veřejný průchod a soukromý odkaz, nikdy značky.
-- `from_csv` skládá formulář editoru a volá `parse_admin`, takže soubor odmítne totéž co editor. Buňku s obrázkem jen předá ve `source`, adresu od souboru rozlišuje doména.
-- `theme_default/`: paletu z dvou barev odvozuje `colours.py` a každá dvojice musí dosáhnout 4,5:1 ve světlém i tmavém režimu (`tests/test_palettes.py`). Nová předvolba potřebuje blok tokenů v `assets/theme.css`, položku v `PALETTE_CHOICES` a záznam v katalogu domény ve stejném commitu. Úložiště brandingu je v doméně, téma se k němu nedostane (ADR-0054). Odznaky patičky (`assets/badge-*.svg`) jsou vlastní textové SVG, ne převzatá loga; obsluhuje je `views.asset` podle `TYPES`, takže nový soubor tam musí dostat typ.
-- Některé validační hlášky pluginů jsou zatím anglicky.
+- Every question type has `tests/contracts/test_<type>.py` that inherits `QuestionTypeContract`, and with it the escaping and `describe_definition` tests.
+- `describe_definition` must change its output when any field of the definition changes, otherwise the change overview will not show it.
+- Inputs are named `<question id>:<field>`. Values arrive as strings; a field ending in `[]` arrives as a list under the name without the brackets.
+- The type computes the grade in `grade`, the strategy only weights it. The plugin does not read settings: what it needs, it receives in `quiz_settings`.
+- Images are in the definition as `asset`, possibly `source`; what is shown is decided by the API, which fills it into the `url` key.
+- The shared question image is in `app/contracts/question_image.py` and the macro in `admin/_image_fields.html`, because plugins must not import one another.
+- A type with files returns `file_fields`; the value of such a field is filled in only by the API from a file actually received. `summarize` returns plain text for the public walkthrough and the private link, never markup.
+- `from_csv` builds the editor form and calls `parse_admin`, so the file is rejected exactly as the editor would. A cell with an image is only passed on in `source`; the domain distinguishes an address from a file.
+- `theme_default/`: the palette from two colours is derived by `colours.py` and every pair must reach 4.5:1 in both light and dark mode (`tests/test_palettes.py`). A new preset needs a token block in `assets/theme.css`, an entry in `PALETTE_CHOICES` and a record in the domain catalog in the same commit. Branding storage is in the domain, the theme cannot reach it (ADR-0054). The footer badges (`assets/badge-*.svg`) are our own text SVGs, not borrowed logos; they are served by `views.asset` according to `TYPES`, so a new file must get a type there.
+- Some plugin validation messages are still in English.
 
-## Veřejné API
+## Public API
 
-Žádné importy zvenčí; ostatní znají modul jen přes registr a protokol.
+No imports from outside; other code knows the module only through the registry and the protocol.

@@ -22,11 +22,11 @@ LITERAL = re.compile(r"[\w.-]+")
 VOLUMES_FLAG = re.compile(r"(?:-[a-zA-Z]*v[a-zA-Z]*|--volumes)(?:=.*)?")
 PROJECT_ASSIGNMENT = re.compile(r"(?:-p|--project-name|COMPOSE_PROJECT_NAME)=(.*)")
 UNNAMED = (
-    "Příkaz maže svazky a neříká jednoznačně, kterého stacku, takže by mohl zasáhnout "
-    f"{KEPT}. Pojmenuj stack přes -p, nebo ať to člověk spustí sám."
+    "The command deletes volumes without saying clearly which stack, so it could hit "
+    f"{KEPT}. Name the stack with -p, or let the person run it."
 )
-KEPT_DATA = f"Data stacku {KEPT} se nemažou. Na nové ověření stačí nový kvíz."
-CONSENT = "Příkaz maže svazky Dockeru. Mazání dat potvrzuje člověk."
+KEPT_DATA = f"The data of the {KEPT} stack is not deleted. A new quiz is enough for a new check."
+CONSENT = "The command deletes Docker volumes. The person confirms deleting data."
 
 
 def simple_commands(command: str) -> list[list[str]]:
