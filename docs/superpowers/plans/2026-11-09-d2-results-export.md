@@ -165,7 +165,7 @@ POST form fields: `files` (multi), `photos` (`on`), `bundle` (`"zip"` | `"separa
 
 **Files:**
 - Create: `docs/_architecture/adr/0055-results-export-background-job-and-csv-dialect.md` (MADR 4, accepted)
-- Modify: `docs/_architecture/adr/README.md`, `acceptance-criteria.md` (AC-101…AC-109 exactly as in spec Verification), `roadmap.md` (D2 `Done 2026-11-XX`), `providers/csv-io.md` (results export, `export_job`, ports), `modules/contracts.md` (new ports), `modules/api-ui.md` (URLs), `data-model.md` (`export_job` columns), `docs/privacy.md` (exports and audit), `CLAUDE.md` (milestones, Stav, „Další je D3“), `app/api/CLAUDE.md`, `app/domain/CLAUDE.md`, `app/providers/CLAUDE.md` or `csv_io` notes, `.claude/skills/kvizotron-check-integration/flows.md` (flow Export).
+- Modify: `docs/_architecture/adr/README.md`, `acceptance-criteria.md` (AC-101…AC-109 exactly as in spec Verification), `roadmap.md` (D2 `Done 2026-11-XX`), `providers/csv-io.md` (results export, `export_job`, ports), `modules/contracts.md` (new ports), `modules/api-ui.md` (URLs), `data-model.md` (`export_job` columns), `docs/privacy.md` (exports and audit), `CLAUDE.md` (milestones, Status, "Next is D3"), `app/api/CLAUDE.md`, `app/domain/CLAUDE.md`, `app/providers/CLAUDE.md` or `csv_io` notes, `.claude/skills/kvizotron-check-integration/flows.md` (flow Export).
 
 - [ ] **Step 1:** Write the docs; `uv run pytest tests/test_docs.py -q` → PASS (every AC named by a test).
 - [ ] **Step 2:** `make quality` → all green.

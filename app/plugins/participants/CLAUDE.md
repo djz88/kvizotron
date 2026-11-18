@@ -1,15 +1,15 @@
-# Modul: app/plugins/participants
+# Module: app/plugins/participants
 
-Plugin `participants.basic`, port `participant_policy`: čistá pravidla pro účastníka. Čte přezdívku a e-mail a rozhoduje, co se stane při startu pokusu (`on_start`, tabulka je v `docs/plugin-api.md`).
+Plugin `participants.basic`, port `participant_policy`: pure rules for a participant. It reads the nickname and e-mail and decides what happens when an attempt starts (`on_start`, the table is in `docs/plugin-api.md`).
 
-## Co modul obsahuje
+## What the module contains
 
-`policy.py` (`BasicParticipantPolicy`), `manifest.py` s osmi nastaveními (`repeat_attempts`, `unfinished_attempt`, `max_attempts`, `after_pass`, `ask_name`, `ask_email`, `ask_when`, `duplicate_names`), `apps.py`. Rozsah nastavení je global a kvíz, protože platí pro celý pokus.
+`policy.py` (`BasicParticipantPolicy`), `manifest.py` with eight settings (`repeat_attempts`, `unfinished_attempt`, `max_attempts`, `after_pass`, `ask_name`, `ask_email`, `ask_when`, `duplicate_names`), `apps.py`. The settings scope is global and quiz, because they apply to the whole attempt.
 
-## Co modul není
+## What the module is not
 
-Nesahá do databáze ani do požadavku. Nezná pokusy, běhy ani cookies: stav mu předá API (`finished`, `used`, `passed`, `open_attempt`; kontrakt 1.1, AC-173) a on vrátí rozhodnutí. Nastavení nečte, dostane `rules`.
+It touches neither the database nor the request. It does not know attempts, runs or cookies: the API hands it the state (`finished`, `used`, `passed`, `open_attempt`; contract 1.1, AC-173) and it returns a decision. It does not read settings, it receives `rules`.
 
-## Zakázáno
+## Forbidden
 
-Importovat z `app/domain`, `app/api` nebo z jiného pluginu: smí jen `app.contracts`. Zapisovat přezdívku nebo e-mail do logu.
+Importing from `app/domain`, `app/api` or from another plugin: only `app.contracts` is allowed. Writing a nickname or e-mail to the log.

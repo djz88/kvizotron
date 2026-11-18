@@ -1,4 +1,4 @@
-# Soubory s tajnými údaji nepatří do repozitáře.
+# Files with secrets do not belong in the repository.
 .env
 .env.*
 !.env.example
@@ -6,7 +6,7 @@
 *.key
 .secrets*
 
-# Provozní data mohou obsahovat osobní údaje (výsledky, e-maily, fotky).
+# Operational data may contain personal data (results, e-mails, photos).
 *.db
 *.sqlite
 *.sqlite3
@@ -16,7 +16,7 @@ media/
 backups/
 exports/
 
-# Python a nástroje.
+# Python and tools.
 .venv/
 __pycache__/
 *.pyc
@@ -28,11 +28,11 @@ htmlcov/
 dist/
 build/
 
-# Pracovní kopie git worktree.
+# Git worktree working copies.
 .worktrees/
 
-# Skripty a uložené přihlášení z průchodů v prohlížeči.
+# Scripts and saved logins from browser walkthroughs.
 .playwright-mcp/
 
-# Pracovní prostory agentů.
+# Agent workspaces.
 .superpowers/

@@ -155,7 +155,7 @@ def test_grading_lists_no_planned_run()
 
 ```python
 def test_the_one_click_start_is_unchanged()      # POST admin_run_open: OPEN, deadline None, inherited limit
-def test_plan_link_sits_next_to_start()          # 'Naplánovat' link on the quiz page with no run
+def test_plan_link_sits_next_to_start()          # 'Plan…' link on the quiz page with no run
 def test_empty_start_opens_at_once_with_deadline_and_limit()
 def test_limit_is_prefilled_from_inheritance()   # quiz override 15: form initial 15
 def test_empty_limit_means_no_limit_for_this_run()
@@ -304,7 +304,7 @@ def test_a_draft_title_does_not_reach_the_page()    # title from the planned rev
 
 - [ ] **Step 2: Run them.** Expected: FAIL.
 
-- [ ] **Step 3: Implement.** `public.quiz` prefers the open run, then the planned one. `planned.js` reloads once after `data-starts-in` seconds plus a random delay up to 5 s; no polling. `Chystá se` is a section under the running quizzes, shown only when not empty.
+- [ ] **Step 3: Implement.** `public.quiz` prefers the open run, then the planned one. `planned.js` reloads once after `data-starts-in` seconds plus a random delay up to 5 s; no polling. `Coming up` is a section under the running quizzes, shown only when not empty.
 
 - [ ] **Step 4: Run tests, translate, commit.** `make messages && make test`. Expected: all pass. Commit `feat: planned quiz on its address and in Coming up`.
 

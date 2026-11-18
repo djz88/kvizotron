@@ -1,18 +1,18 @@
 {
-	# Prohlížeč připojený přes IP adresu neposílá jméno serveru (SNI) a Caddy by nevěděl, který certifikát vybrat.
+	# A browser connecting by IP address does not send the server name (SNI), so Caddy would not know which certificate to pick.
 	default_sni {$KVZ_DOMAIN}
 }
 
 {$KVZ_DOMAIN} {
-	# Prohlížeč si šest měsíců pamatuje, že se sem chodí jen přes HTTPS. Bez includeSubDomains a bez preload:
-	# jiné adresy téhož jména se tím nezamknou a návrat na HTTP zůstává možný. Přes IP adresu ani s
-	# nedůvěryhodným certifikátem prohlížeč hlavičku ignoruje (docs/deployment.md).
+	# The browser remembers for six months that this site is reached only over HTTPS. Without includeSubDomains and without preload:
+	# other addresses of the same name are not locked by it and going back to HTTP stays possible. Over an IP address or with an
+	# untrusted certificate the browser ignores the header (docs/deployment.md).
 	# ">" replaces the header the application sends as well (ADR-0066).
 	header >Strict-Transport-Security "max-age=15552000"
 
-	# ADR-0028: největší nahrávaný soubor má 15 MB, zbytek je rezerva na formulář.
-	# ADR-0045: import přijímá ZIP do 100 MB.
-	# ADR-0047: jedno odeslání nese všechny fotky pokusu; aplikace přijímá multipart jen od pokusu s fotkou.
+	# ADR-0028: the largest uploaded file is 15 MB, the rest is headroom for the form.
+	# ADR-0045: import accepts a ZIP of up to 100 MB.
+	# ADR-0047: one submission carries all photos of an attempt; the application accepts multipart only from an attempt with a photo.
 	@large path /admin/import/* /a/*/submit
 	@other not path /admin/import/* /a/*/submit
 	request_body @large {
@@ -21,8 +21,8 @@
 	request_body @other {
 		max_size 16MiB
 	}
-	# Gunicorn zavře nečinné spojení po 2 s. POST poslaný na spojení zavřené právě tehdy dostane
-	# reset a Caddy odpoví 502 (ukázal to `make load`), proto Caddy nečinná spojení zavře dřív.
+	# Gunicorn closes an idle connection after 2 s. A POST sent on a connection closed at that moment gets
+	# a reset and Caddy answers 502 (`make load` showed it), so Caddy closes idle connections earlier.
 	reverse_proxy app:8000 {
 		transport http {
 			keepalive 1s

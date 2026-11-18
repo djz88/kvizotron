@@ -1,5 +1,5 @@
 #!/bin/sh
-# Spustí celé nasazení na lokálním stroji a ověří ho. Po sobě uklidí jen vlastní projekt.
+# Starts the whole deployment on the local machine and verifies it. Cleans up only its own project afterwards.
 set -u
 
 PROJECT=kvizotron-smoke
@@ -8,10 +8,10 @@ HTTPS_PORT=${SMOKE_HTTPS_PORT:-18443}
 FILE=deploy/compose.yaml
 SECRET=$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')
 
-# Soubor deploy/.env provozovatele se sem nesmí dostat.
+# The operator's deploy/.env file must not get in here.
 export COMPOSE_DISABLE_ENV_FILE=1
-# Limity a doba uchování záloh z prostředí provozovatele by se přes compose dostaly do zkušebního
-# nasazení a 50 klientů z jedné adresy by dostalo 429.
+# Limits and backup retention from the operator's environment would reach the test
+# deployment through compose, and 50 clients from one address would get 429.
 unset KVZ_LOGIN_ATTEMPTS_PER_MINUTE KVZ_CODE_ATTEMPTS_PER_MINUTE KVZ_SUBMITS_PER_MINUTE \
     KVZ_STARTS_PER_MINUTE KVZ_LOGIN_ADDRESS_ATTEMPTS_PER_MINUTE KVZ_BACKUP_RETENTION_DAYS
 export KVZ_DOMAIN=localhost KVZ_SECRET_KEY="$SECRET" KVZ_HTTP_PORT="$HTTP_PORT" KVZ_HTTPS_PORT="$HTTPS_PORT"
@@ -94,7 +94,7 @@ check "jobs service is running" "$(compose ps --status running --services jobs)"
 compose exec -T jobs python manage.py retention >/dev/null 2>&1
 check "retention pass exits 0 in jobs" "$?" "0"
 
-# Záloha: první průchod služby `jobs` ji udělá hned po startu; svazek vidí jen `jobs`.
+# Backup: the first pass of the `jobs` service makes it right after start; only `jobs` sees the volume.
 dated='[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
 listing=""
 for _ in $(seq 1 30); do
@@ -104,10 +104,10 @@ for _ in $(seq 1 30); do
 done
 check "jobs makes one dated backup at start" "$(printf '%s\n' "$listing" | grep -c .)/$(printf '%s\n' "$listing" | grep -Ec "^$dated\$")" "1/1"
 check "jobs is not root" "$(compose exec -T jobs id -u)" "1000"
-# Prázdný adresář je v obrazu (vlastník `kvizotron`), obsah svazku ale jen v `jobs`.
+# The empty directory is in the image (owner `kvizotron`), but the volume contents are only in `jobs`.
 check "app does not see the backups" "$(compose exec -T app ls -A /data/backups | grep -c .)" "0"
 
-# Heslo jen přes stdin, generované pro tento běh; nikam se nevypisuje.
+# The password goes through stdin only, generated for this run; it is never printed.
 PASSWORD=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
 init_admin() { printf '%s\n' "$PASSWORD" | compose exec -T app python manage.py init_admin smoke-admin --password-stdin >/dev/null 2>&1; echo $?; }
 check "init_admin creates the first admin" "$(init_admin)" "0"
@@ -228,7 +228,7 @@ check "stored image is WebP" "$type" "image/webp"
 code=$(curl -sk -o /dev/null -w '%{http_code}' -H 'Host: localhost' "https://127.0.0.1:$HTTPS_PORT/healthz")
 check "TLS works without a server name" "$code" "200"
 
-# Nácvik obnovy je poslední: zastaví app a jobs a vymění data. Čerstvá záloha už obsahuje kvíz a obrázek.
+# The restore rehearsal is last: it stops app and jobs and swaps the data. A fresh backup already contains the quiz and the image.
 compose exec -T jobs python manage.py backup >/dev/null 2>&1
 check "manual backup exits 0 in jobs" "$?" "0"
 compose stop app jobs >/dev/null 2>&1

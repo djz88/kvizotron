@@ -188,7 +188,7 @@
 - `docs/_architecture/adr/0049-participants-and-access-code.md`, `adr/README.md`
 - `docs/_architecture/acceptance-criteria.md` (AC-70 to AC-76 as used in the tests above)
 - `docs/privacy.md` (`FR-32` "when to ask" is a choice, default at the end; names and e-mails are kept until retention arrives in D3; the two cookies)
-- `docs/_architecture/plugins/participants.md`, `security.md` (code storage, limit, IP source), `data-model.md`, `modules/domain.md` (`ABANDONED`), `modules/api-ui.md` (addresses and "Where things are set"), `roadmap.md` (C2 Done), `CLAUDE.md` (milestones, Stav, "Další je C3"), `app/*/CLAUDE.md` touched, `.claude/skills/kvizotron-check-integration/flows.md` (code → start → identity → submit → table)
+- `docs/_architecture/plugins/participants.md`, `security.md` (code storage, limit, IP source), `data-model.md`, `modules/domain.md` (`ABANDONED`), `modules/api-ui.md` (addresses and "Where things are set"), `roadmap.md` (C2 Done), `CLAUDE.md` (milestones, Status, "Next is C3"), `app/*/CLAUDE.md` touched, `.claude/skills/kvizotron-check-integration/flows.md` (code → start → identity → submit → table)
 - Remove the stale "until C1" comment at `ATTEMPT_LIFETIME`.
 
 ADR-0049 records: cookie only on need, a separate unlock cookie, the hash bound to the run id, the code per run without inheritance, "when to ask" as a setting, `ABANDONED` for "counts only when submitted", the client IP source.

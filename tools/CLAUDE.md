@@ -1,17 +1,17 @@
-# Modul: tools
+# Module: tools
 
-Pomocné skripty pro vývoj, volané z `Makefile`. Do image nejdou a aplikace je neimportuje.
+Helper scripts for development, called from the `Makefile`. They do not go into the image and the application does not import them.
 
-## Odpovědnosti
+## Responsibilities
 
-- `messages.py`: `make messages`. Vytáhne texty a zkompiluje katalogy z `ROOTS`.
-- `tech_debt.py`: `make tech-debt-*`. Pracuje s `docs/_architecture/TECH_DEBT.md` a archivem.
-- `plan_check.py`: `make plan-check`. Porovná soubory z plánu s gitem.
-- `private_traces.py`: hooky `private-traces*` z `.pre-commit-config.yaml` (commit, zpráva commitu, push). Odmítne domovský adresář, dočasný adresář agenta, odkaz na sezení agenta a slova ze seznamu `.git/info/private-traces`, který je mimo git (jméno, adresa domácí sítě, e-mail; jedno na řádek, `#` je komentář). Seznam hledá přes `git rev-parse --git-common-dir`, takže worktree sdílí seznam hlavní kopie. Bez seznamu hooky projdou s připomenutím; `list` (z `make hooks` a `make doctor`) hlásí, zda existuje, a `make private-traces` ho založí prázdný. Řádek `allow TEXT [CESTA…]` v témže seznamu je výjimka, ne slovo: nález uvnitř TEXT projde jen v jmenovaných souborech (cesta od kořene repozitáře), bez cesty všude; zpráva commitu bere jen výjimky pro všude, push je posuzuje po souborech. Slouží pro vlastníka v `.github/CODEOWNERS` a `SECURITY.md`; holé slovo jinde dál neprojde.
-- `load_deadline.py`: zátěžový test odeslání v jednu chvíli (AC-07).
-- `load_participants.py`: `make load` (spolu s `deploy/load.sh`). 50 účastníků začne, zavolá `check` tam, kde ho stránka chce, a pak naráz odešle formulář s fotkou (`--photo-file`: skutečný obrázek, `make load` ho vyrobí Pillow v kontejneru, asi 700 kB; bez něj JPEG sestavený bez Pillow z malého obrázku a výplně, který zkouší jen nahrání, ne dekódování); jeden řádek `PASS`/`FAIL`/`INFO` na kritérium (2xx, stejný výsledek při opakovaném odeslání, nejpomalejší pod 5 s) a řádek `WINDOW first=… last=…` s okénkem odesílání. S `--probe-from ADRESA` zkouší, zda aplikace počítá limit startů zvlášť pro různé zdroje (adresa z LAN proti smyčce 127.0.0.x; 127.0.0.1 a 127.0.0.2 od sebe nerozliší). Co zná jen databáze nebo log (každý pokus a fotka jednou, zámek, překryv záloh s okénkem, obnova ze zálohy po změně živých dat, počet dotazů stránky), kontroluje `deploy/load.sh` přes `docker compose exec`; ten běží jen v projektu `kvizotron-load` na portech `LOAD_HTTP_PORT` a `LOAD_HTTPS_PORT`.
+- `messages.py`: `make messages`. Extracts texts and compiles the catalogs from `ROOTS`.
+- `tech_debt.py`: `make tech-debt-*`. Works with `docs/_architecture/TECH_DEBT.md` and the archive.
+- `plan_check.py`: `make plan-check`. Compares the files named in a plan with git.
+- `private_traces.py`: the `private-traces*` hooks from `.pre-commit-config.yaml` (commit, commit message, push). Rejects the home directory, the agent's temporary directory, a link to an agent session and words from the list `.git/info/private-traces`, which is outside git (a name, a home-network address, an e-mail; one per line, `#` is a comment). It finds the list through `git rev-parse --git-common-dir`, so a worktree shares the list of the main checkout. Without the list the hooks pass with a reminder; `list` (from `make hooks` and `make doctor`) reports whether it exists and `make private-traces` creates it empty. A line `allow TEXT [PATH…]` in the same list is an exception, not a word: a finding inside TEXT passes only in the named files (path from the repository root), without a path everywhere; the commit message takes only the exceptions for everywhere, push judges them per file. It serves the owner in `.github/CODEOWNERS` and `SECURITY.md`; a bare word elsewhere still does not pass.
+- `load_deadline.py`: a load test of submission at one moment (AC-07).
+- `load_participants.py`: `make load` (together with `deploy/load.sh`). 50 participants start, call `check` where the page wants it, and then submit the form with a photo all at once (`--photo-file`: a real image, `make load` makes it with Pillow in the container, about 700 kB; without it a JPEG assembled without Pillow from a small image and padding, which tests only the upload, not the decoding); one `PASS`/`FAIL`/`INFO` line per criterion (2xx, the same result on repeated submission, the slowest under 5 s) and a `WINDOW first=… last=…` line with the submission window. With `--probe-from ADDRESS` it tests whether the application counts the start limit separately for different sources (a LAN address against loopback 127.0.0.x; it cannot tell 127.0.0.1 and 127.0.0.2 apart). What only the database or the log knows (each attempt and photo once, the lock, the overlap of backups with the window, restore from a backup after a change of live data, the number of page queries) is checked by `deploy/load.sh` through `docker compose exec`; it runs only in the `kvizotron-load` project on the ports `LOAD_HTTP_PORT` and `LOAD_HTTPS_PORT`.
 
-## Zakázáno
+## Forbidden
 
-- Závislost `load_participants.py`, `tech_debt.py`, `plan_check.py` a `private_traces.py` na čemkoli mimo standardní knihovnu: běží přes `python3` bez `uv`.
-- Přepisovat `.po` ručně mimo `msgstr`: `make messages` je přegeneruje.
+- `load_participants.py`, `tech_debt.py`, `plan_check.py` and `private_traces.py` depending on anything outside the standard library: they run through `python3` without `uv`.
+- Rewriting `.po` by hand outside `msgstr`: `make messages` regenerates them.

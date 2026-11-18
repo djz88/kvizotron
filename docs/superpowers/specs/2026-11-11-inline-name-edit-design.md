@@ -4,14 +4,14 @@ Tags: **[user]** the user decided, **[docs]** already in `docs/_architecture`, *
 
 ## Why
 
-A name in the administration is edited today in a form: a label, a field across the whole width, a full-width blue **Uložit** and below it **Smazat** (bank page, "Name and removal"). The name looks like a form, takes room and does not say what is only shown and what can be changed. Some names cannot be changed where the user sees them (a folder from inside itself, a bank from its heading). An analysis of the administration (subagent, 2026-11-11, read from code, the bank page also in a browser) found 14 places that edit text and four names where an edit on the spot is missing.
+A name in the administration is edited today in a form: a label, a field across the whole width, a full-width blue **Save** and below it **Delete** (bank page, "Name and removal"). The name looks like a form, takes room and does not say what is only shown and what can be changed. Some names cannot be changed where the user sees them (a folder from inside itself, a bank from its heading). An analysis of the administration (subagent, 2026-11-11, read from code, the bank page also in a browser) found 14 places that edit text and four names where an edit on the spot is missing.
 
 ## Goals
 
-1. **A pencil next to a name [user: variant A with HTMX]**: the name is shown as text with a small "edit" icon button; one click turns it into a field with **Uložit** and **Zrušit**; Enter saves and Esc cancels. Saving shows the name again, a refusal shows its message next to the field and keeps what was typed. **[user]** Without JavaScript the same works as full pages: the pencil is a link to `?edit=<field>` that draws the page with the field open, and **Zrušit** is a link back.
+1. **A pencil next to a name [user: variant A with HTMX]**: the name is shown as text with a small "edit" icon button; one click turns it into a field with **Save** and **Cancel**; Enter saves and Esc cancels. Saving shows the name again, a refusal shows its message next to the field and keeps what was typed. **[user]** Without JavaScript the same works as full pages: the pencil is a link to `?edit=<field>` that draws the page with the field open, and **Cancel** is a link back.
 2. **One component [call]**: a Jinja macro `admin/_inline_name.html` and two partials (the name shown, the name in edit), a small script for Enter and Esc and for focus, and HTMX for the swaps. Each place only gives its URLs and its field.
 3. **Places [user]** (the list comes from the analysis, the user's answers decide it):
-   - the **name of a bank**, as the heading of its page; the old field and **Uložit** in "Name and removal" go, **Smazat banku** stays there,
+   - the **name of a bank**, as the heading of its page; the old field and **Save** in "Name and removal" go, **Delete the bank** stays there,
    - the **name of a folder**, in its row (replacing the rename field in the menu) **and for the folder one is inside**, next to its name in the trail and heading (today it can be renamed only from the folder above),
    - the **name of a quiz**, in the header of the quiz pages, **for the default language only**; the other languages stay in "Name and languages" **[call]**. **[user: probably yes]** Every change makes a draft, so next to the icon and after saving the page says that visitors see it after publication,
    - the **name of a reward**, in its row on the rewards page of a run, for the default language **[call]**; the pencil is a button beside the summary, not inside it, because a `<details>` summary would swallow the click,
@@ -43,7 +43,7 @@ An admin can rename a nickname in the table of attempts of a run (moderation of 
 ## Constraints
 
 - Project rules apply. `HTMX_CONFIG` already swaps a 4xx response, so a refusal is a 400 partial. Every new POST route needs `{{ csrf_input }}` and an entry in the arguments of `tests/api/test_request_limits.py`; the script goes into `SCRIPTS` (`app/api/rendering.py`) and is used by a template (`tests/test_wiring.py`).
-- Accessibility: the icon button has an accessible name with the name it edits ("Upravit název: …"); focus goes to the field when it opens and back to the pencil when it closes; a result is announced (`role="status"` for saved, `role="alert"` for a refusal); the pencil is at least 44 px on a phone; the layout works at 390 px and in the dark theme with theme tokens only.
+- Accessibility: the icon button has an accessible name with the name it edits ("Edit name: …"); focus goes to the field when it opens and back to the pencil when it closes; a result is announced (`role="status"` for saved, `role="alert"` for a refusal); the pencil is at least 44 px on a phone; the layout works at 390 px and in the dark theme with theme tokens only.
 - Texts in cs and uk (`make messages`); new AC with test docstrings; `docs/_architecture/modules/api-ui.md` and the relevant ADR addenda (ADR-0041 for banks and folders, ADR-0054 for quiz names if it is the place, the rewards ADR for rewards) are updated by addenda, not new ADRs.
 - The audit entries that exist stay (`bank.renamed`, `bank.folder_renamed`, the draft of a quiz); a rename of a reward and of a nickname is audited without the names.
 

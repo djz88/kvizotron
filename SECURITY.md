@@ -1,11 +1,11 @@
-# Bezpečnostní politika
+# Security policy
 
-## Hlášení zranitelnosti
+## Reporting a vulnerability
 
-Zranitelnost nahlaste neveřejně správcům projektu, ne ve veřejném issue: kubala@ygg.cz
+Report a vulnerability privately to the project maintainers, not in a public issue: kubala@ygg.cz
 
-Popište problém, jak ho vyvolat a které verze se týká. Správci potvrdí přijetí a domluví s vámi další postup i zveřejnění opravy.
+Describe the problem, how to trigger it and which versions it affects. The maintainers will confirm receipt and agree with you on next steps and on publishing the fix.
 
-## Podporované verze
+## Supported versions
 
-Bezpečnostní opravy dostává poslední vydaná verze.
+Security fixes go to the latest released version.

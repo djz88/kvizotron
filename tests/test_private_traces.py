@@ -1,4 +1,4 @@
-"""tools/private_traces.py stops a commit or a push carrying local traces (CLAUDE.md, Pravidla)."""
+"""tools/private_traces.py stops a commit or a push carrying local traces (CLAUDE.md, Rules)."""
 
 import os
 import subprocess
@@ -149,7 +149,7 @@ def test_make_creates_an_empty_list_and_keeps_an_existing_one(tmp_path):
     assert private_traces.private_words(path) == []
     path.write_text("alice99\n")
     kept = subprocess.run(make, cwd=tmp_path, capture_output=True, text=True)  # noqa: S607
-    assert "už existuje" in kept.stdout
+    assert "already exists" in kept.stdout
     assert path.read_text() == "alice99\n"
 
 

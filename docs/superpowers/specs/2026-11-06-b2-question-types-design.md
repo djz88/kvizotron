@@ -23,8 +23,8 @@ milestone needs it. All settings below are in scope.
 
 ## Goals
 
-1. Question type **Výběr**: one, several or no correct answers; yes/no; pictures in the question or the answers.
-2. Question type **Přiřazení**: matching pairs, and ordering with drag and drop.
+1. Question type **Choice**: one, several or no correct answers; yes/no; pictures in the question or the answers.
+2. Question type **Matching**: matching pairs, and ordering with drag and drop.
 3. Settings per question, per quiz and globally.
 4. Admin image upload.
 5. Optional sources, shown with the result if the admin allows it.
@@ -44,7 +44,7 @@ milestone needs it. All settings below are in scope.
 
 ## Types
 
-### Výběr `choice` **[user: one type]**
+### Choice `choice` **[user: one type]**
 
 Replaces `choice.single` everywhere **[user: green field]**.
 
@@ -61,18 +61,18 @@ Answer: `{"options": [ids], "none": bool}`.
 **Reveal count** **[user]**: a checkbox on the question. When on, the question shows "(vyberte 3)". A trick question shows no such hint even when
 the box is on, because "vyberte 0" would give it away. The editor says so. Note that a quiz mixing hints with trick questions gives a clue by the hint's absence; the admin chooses **[call]**.
 
-**"Žádná z odpovědí"** **[user]**: a translated answer the admin does not write. A quiz setting says where it appears:
+**"None of the answers"** **[user]**: a translated answer the admin does not write. A quiz setting says where it appears:
 
 - `all_questions`: on every `standard` question of the quiz (default **[call]**, since it hides trick questions).
 - `trick_questions`: only on trick questions.
 
-Nothing ticked means unanswered and scores zero, even on a trick question **[call]**: only ticking "Žádná" counts as answering "none". Ticking "Žádná"
+Nothing ticked means unanswered and scores zero, even on a trick question **[call]**: only ticking "None" counts as answering "none". Ticking "None"
 with other options is treated as a wrong answer without an error **[call]**; a small script unticks the others.
 
 **Yes/No** **[user: wanted now; call: how]**: an item in the add menu, creating a `choice` with `kind: yes_no` and two options translated
-in every language of the quiz, so the admin only marks the correct one. Exactly one correct, and no "Žádná". The texts are editable.
+in every language of the quiz, so the admin only marks the correct one. Exactly one correct, and no "None". The texts are editable.
 
-### Přiřazení `matching` **[user: both behaviours; call: one type]**
+### Matching `matching` **[user: both behaviours; call: one type]**
 
 Definition: `prompt` per locale, `mode` of `pairs` or `order`, `items` each with an id and text per locale, up to 8 rows **[call]**.
 In `pairs` each item also has `match` text per locale, and in `order` a `direction`.
@@ -81,7 +81,7 @@ In `pairs` each item also has `match` text per locale, and in `order` a `directi
 - **Pairs** **[user: A→1, B→4]**: each left item has a dropdown with the right-hand texts. Unanswered rows are wrong. Two right-hand texts in one language cannot be the same; each text can be used once, enforced by the server and greyed out with JavaScript **[user, replacing the earlier call]**. Answer: `{"pairs": {item id: item id}}`.
 - **Order** **[user]**: the participant moves items by drag and drop, with up and down buttons for keyboard and accessibility **[call]**. Answer: `{"order": [ids]}`.
 - **Correct order** **[call]**: the admin always writes the rows in the correct order, first to last. `items` keeps that order.
-- **Direction** **[user]**: on the question the admin sets top-down or bottom-up. The question shows it to the participant, for example "Seřaďte shora dolů". Bottom-up means the first item belongs at the bottom, so the expected answer is the reversed list.
+- **Direction** **[user]**: on the question the admin sets top-down or bottom-up. The question shows it to the participant, for example "Arrange from top to bottom: the first belongs at the top.". Bottom-up means the first item belongs at the bottom, so the expected answer is the reversed list.
 - Without JavaScript, order falls back to a position dropdown per item **[call]**, and repeated positions are refused with a message that keeps the answers.
 - Items and right-hand texts are shown sorted by their random ids, so the order does not depend on the correct one and stays the same for a question **[call]**.
 - Drag and drop is one small script without a library: pointer events, working on touch screens, and delegated events so it works after an HTMX swap **[call]**.
@@ -102,7 +102,7 @@ Grading and weighing are apart **[call]**: `QuestionTypePlugin` gains `grade(con
 
 - All or nothing pays when `right == total` and `wrong == 0`.
 - Partial pays `points * max(0, right - wrong) / total`, computed once for the question with `Fraction` and rounded to 4 decimal places as `Decimal` at the end, so three of three correct ticks give exactly the points, not 0.9999. Contract score types change from `float` to `Decimal` **[call]**.
-- **"Žádná" scoring** **[call]**: on a trick question, "Žádná" alone is `right = total = 1`, anything else `right = 0`. On a question with correct answers, "Žádná" alone, or with other ticks, scores zero for the whole question.
+- **"None" scoring** **[call]**: on a trick question, "None" alone is `right = total = 1`, anything else `right = 0`. On a question with correct answers, "None" alone, or with other ticks, scores zero for the whole question.
 
 Percentages are rounded only for display (FR-25).
 
@@ -167,7 +167,7 @@ Layout as shown to the user: question text, image, answers with correct marks, q
 ## Acceptance
 
 - A question with 3 correct of 5 answers: partial scoring gives the right sum; ticking everything gives no more than the correct ticks minus the wrong ones.
-- A trick question scores only with "Žádná" ticked; nothing ticked scores zero. With `trick_questions`, "Žádná" appears only there, with `all_questions` everywhere except yes/no.
+- A trick question scores only with "None" ticked; nothing ticked scores zero. With `trick_questions`, "None" appears only there, with `all_questions` everywhere except yes/no.
 - Pairs and order score as defined, with bottom-up reversing the order. The HTML does not depend on the correct order.
 - The participant sees the direction, and drag and drop, keyboard and no-JS ordering all give the same result.
 - A published revision still shows its images. An image without alternative text blocks publication. A file that is not an image, or above the limit, is refused with a message and keeps the rest of the form.

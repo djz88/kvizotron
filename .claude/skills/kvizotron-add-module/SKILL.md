@@ -3,48 +3,48 @@ name: kvizotron-add-module
 description: Use when adding a new Kvízotron plugin or provider, a new question type, scoring strategy, theme or infrastructure backend, or when a feature would otherwise go into the kernel.
 ---
 
-# Nový modul
+# New module
 
-Funkce patří do modulu za kontraktem (ADR-0037). Vzory, které běží a testy je hlídají:
+A feature belongs in a module behind a contract (ADR-0037). Patterns that run and are guarded by tests:
 
-| Co stavíš | Opiš z |
+| What you are building | Copy from |
 |---|---|
-| Typ otázky | `app/plugins/questions/number/` |
-| Modul mimo tento repozitář | `tests/fixtures/demo_site/kvz_demo_question/` |
+| Question type | `app/plugins/questions/number/` |
+| Module outside this repository | `tests/fixtures/demo_site/kvz_demo_question/` |
 | Provider | `app/providers/csv_io/` |
 
-## 1. Než začneš
+## 1. Before you start
 
-- **Plugin, nebo provider?** Funkce, které se zapínají za běhu, jsou plugin. Infrastruktura vybraná při startu je provider.
-- **Existuje port?** Protokoly jsou v `app/contracts/`. Nový port je rozhodnutí: potřebuje ADR a sdílenou sadu v `tests/contracts/`.
-- **Má vlastní nastavení?** **REQUIRED SUB-SKILL:** `kvizotron-add-setting`. Bez nastavení se v manifestu uvádí `"settings": []`.
+- **Plugin or provider?** Features that are switched on at run time are plugins. Infrastructure chosen at startup is a provider.
+- **Does the port exist?** Protocols are in `app/contracts/`. A new port is a decision: it needs an ADR and a shared suite in `tests/contracts/`.
+- **Does it have settings of its own?** **REQUIRED SUB-SKILL:** `kvizotron-add-setting`. Without settings the manifest says `"settings": []`.
 
-## 2. Soubory
+## 2. Files
 
-V adresáři modulu:
+In the module directory:
 
-- `manifest.py` bez importu Djanga: běží, když se načítá konfigurace. `id`, `kind`, `version`, `app`, `api_compatibility`, `provides`, `requires`, `settings`.
-- `apps.py`: v `ready()` volá `registry.register(<port>, <klíč>, <objekt>, <id modulu>)`. Čtvrtý argument je `id` z manifestu.
-- Šablony v `jinja2/<název>/`, texty v `locale/`.
-- Importuje jen `app.contracts` a `app.kernel`. Pluginy jsou mezi sebou neviditelné.
+- `manifest.py` without importing Django: it runs while the configuration is loaded. `id`, `kind`, `version`, `app`, `api_compatibility`, `provides`, `requires`, `settings`.
+- `apps.py`: in `ready()` it calls `registry.register(<port>, <key>, <object>, <module id>)`. The fourth argument is the `id` from the manifest.
+- Templates in `jinja2/<name>/`, texts in `locale/`.
+- It imports only `app.contracts` and `app.kernel`. Plugins are invisible to each other.
 
-## 3. Napojení
+## 3. Wiring
 
-Každý bod hlídá test v `tests/test_wiring.py`:
+Each point is guarded by a test in `tests/test_wiring.py`:
 
-1. Řádek v `[project.entry-points."kvizotron.modules"]` v `pyproject.toml`. Potom `make setup`, jinak prostředí modul nevidí.
-2. Má-li texty: adresář v `ROOTS` v `tools/messages.py`, potom `make messages` a vyplněné `msgstr` v cs i uk.
-3. Sdílená sada v `tests/contracts/`. Typ otázky má `test_<typ>.py`, který dědí `QuestionTypeContract`.
-4. Dokument: `docs/_architecture/plugins/` nebo `providers/` se jménem modulu, typ otázky v `docs/_architecture/plugins/question-types.md`.
-5. Nové požadavky a rozhodnutí: mapa `FR-xx` v `docs/_architecture/README.md`, případně ADR.
+1. A line in `[project.entry-points."kvizotron.modules"]` in `pyproject.toml`. Then `make setup`, otherwise the environment does not see the module.
+2. If it has texts: a directory in `ROOTS` in `tools/messages.py`, then `make messages` and filled `msgstr` in cs and uk.
+3. A shared suite in `tests/contracts/`. A question type has `test_<type>.py`, which inherits `QuestionTypeContract`.
+4. Documentation: `docs/_architecture/plugins/` or `providers/` with the module's name, a question type in `docs/_architecture/plugins/question-types.md`.
+5. New requirements and decisions: the `FR-xx` map in `docs/_architecture/README.md`, possibly an ADR.
 
-## 4. Na co test nepřijde
+## 4. What a test will not catch
 
-- `describe_definition` musí změnit výstup při změně každého pole definice, jinak ji přehled změn neukáže. Totéž platí pro nové pole později.
-- Nový typ otázky mění počet v `tests/contracts/test_demo_question.py`, když přidáš test do `tests/contracts/question_type.py`.
-- Vypnutí pluginu za běhu: stará revize s jeho otázkami se musí dát dál vyhodnotit (`include_disabled`).
-- Vlastní tabulky mají migraci v modulu. Tabulky domény se neupravují.
+- `describe_definition` must change its output when any field of the definition changes, otherwise the change overview does not show it. The same holds for a new field added later.
+- A new question type changes the count in `tests/contracts/test_demo_question.py` when you add a test to `tests/contracts/question_type.py`.
+- Switching a plugin off at run time: an old revision with its questions must still be gradable (`include_disabled`).
+- Own tables have a migration in the module. Domain tables are not edited.
 
-## 5. Hotovo
+## 5. Done
 
 **REQUIRED SUB-SKILL:** `kvizotron-check-applied`.

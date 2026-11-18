@@ -19,8 +19,10 @@ jobs:
     steps:
       - name: Clone GitHub repository
         env:
-          GH_TOKEN: ${{ github.token }};
+          GH_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: "0"
         run: |
+          set -euo pipefail
           AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c http.extraheader="Authorization: Basic $AUTH" \
             clone --bare \
@@ -29,10 +31,16 @@ jobs:
 
       - name: Mirror to GitLab
         env:
-          SYNC_SECRET: ${{ secrets.SYNC_SECRET}}
-          SYNC_URL: ${{ secrets.SYNC_URL}}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+          SYNC_URL: ${{ secrets.SYNC_URL }}
+          GIT_TERMINAL_PROMPT: "0"
         run: |
+          set -euo pipefail
+          if [ -z "${SYNC_SECRET:-}" ] || [ -z "${SYNC_URL:-}" ]; then
+            echo "::error::Secrets SYNC_SECRET and SYNC_URL must be set in the repository settings."
+            exit 1
+          fi
           cd mirror.git
           AUTH=$(printf 'oauth2:%s' "$SYNC_SECRET" | base64 -w0)
           git -c http.extraheader="Authorization: Basic $AUTH" \
-          git push gitlab "$SYNC_URL" main:main
+            push "$SYNC_URL" main:main

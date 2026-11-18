@@ -99,7 +99,7 @@ Run: `make test`. Expected: PASS, including `test_translations`. Pages look as b
 
 **Interfaces:**
 - Consumes: `keys_for`, `SettingDefinition` from Task 1.
-- Produces: `settings.resolve(key, quiz=None, question=None) -> str`. `settings.ALL_TYPES_QUESTION_SETTINGS = {SHOW_SOURCES}`. `QuestionTypePlugin.question_settings() -> Sequence[str]`: Výběr returns `none_option`, `shuffle_options`; Přiřazení returns nothing; Task 3 adds `external_image_mode` to Výběr. `QuestionCommonForm(..., plugin=plugin)` adds fields `setting_<key>` and a method `setting_values() -> dict[str, str]`. `apply_fields(..., setting_values: Mapping[str, str] | None = None)`, and the same keyword on `authoring.save_question` and `banks.save_question`. `question_settings(quiz, question) -> dict[str, str]` in `rendering.py`. `attempts.option_seed_for(attempt, question) -> str | None`.
+- Produces: `settings.resolve(key, quiz=None, question=None) -> str`. `settings.ALL_TYPES_QUESTION_SETTINGS = {SHOW_SOURCES}`. `QuestionTypePlugin.question_settings() -> Sequence[str]`: Choice returns `none_option`, `shuffle_options`; Matching returns nothing; Task 3 adds `external_image_mode` to Choice. `QuestionCommonForm(..., plugin=plugin)` adds fields `setting_<key>` and a method `setting_values() -> dict[str, str]`. `apply_fields(..., setting_values: Mapping[str, str] | None = None)`, and the same keyword on `authoring.save_question` and `banks.save_question`. `question_settings(quiz, question) -> dict[str, str]` in `rendering.py`. `attempts.option_seed_for(attempt, question) -> str | None`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -220,7 +220,7 @@ Run: `make test`. Expected: FAIL, no module `remote`.
 - `_request` uses `http.client.HTTPSConnection`, subclassed so `connect()` opens `socket.create_connection((ip, port), timeout)` and wraps it with `ssl.create_default_context()` and `server_hostname=host`. Sends `User-Agent: Kvizotron` and no cookies.
 - Internal means: not `ip.is_global`, or `is_multicast`, or `is_reserved`, after unwrapping `ipv4_mapped`. Every address `getaddrinfo` returns must pass; the first one is used. A redirect goes through the same checks with a fresh resolve.
 - Manifest: `external_image_mode` with default scopes; `allow_internal_image_addresses` with `["global"]`, reason "It guards the server, not a quiz", and `help` saying any admin can turn it on, so a stolen admin account could use it to reach the internal network. Label text through a local `def _(text): return text`, so `make messages` extracts it.
-- Výběr's `question_settings()` adds `EXTERNAL_IMAGE_MODE`.
+- Choice's `question_settings()` adds `EXTERNAL_IMAGE_MODE`.
 
 - [ ] **Step 4: Run all tests**
 

@@ -48,7 +48,7 @@
 | Image answer | `image_answer` | B6; see [Photo](#photo-image_answer), FR-45 |
 | Video (LATER) | `question.video` | manifest example in [../../plugin-api.md](../../plugin-api.md) |
 
-## Výběr: `choice`
+## Choice: `choice`
 
 Definition: `prompt` per locale, optional `image`, `options` each with an id, text per locale and optional `image`, `correct` as a list of option ids, `allow_multiple`, `reveal_count`, `kind` of `standard` or `yes_no`. An image is `{"asset": id, "alt": {locale: text}}`.
 
@@ -63,7 +63,7 @@ Answer: `{"options": [ids], "none": "1"}`, both optional; among radio buttons "N
 
 Grade: `right` correct ticks, `wrong` other ticks, `total` correct options. On a trick question "none" alone is `right = total = 1`. On any other question "none" gives `right = 0`.
 
-## Přiřazení: `matching`
+## Matching: `matching`
 
 Definition: `prompt` per locale, `mode` of `pairs` or `order`, `items` each with an id and text per locale, 2 to 8 rows. In `pairs` an item also has `match_id` and `match` per locale, and in `order` the question has `direction` of `top_down` or `bottom_up`. Texts on one side cannot repeat in a language.
 

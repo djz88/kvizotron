@@ -52,7 +52,7 @@ An admin wants to see everyone in one table without clicking through revisions o
   together by percent with the main run's tie rules. Visibility, columns, live names and unnamed rows
   follow the main run's settings.
 - A participant is per run, so the same browser in two runs gives two rows. Anonymous labels carry
-  the run number when the board is shared ("Běh 2 · Hráč 3").
+  the run number when the board is shared ("Run 2 · Player 3").
 - Grading pending in any linked run holds the shared board like it holds a run's own board.
 - Member runs keep their own scoreboard pages unchanged. The main run page and the shared public
   board say which runs are combined.

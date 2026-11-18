@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the single question type with Výběr and Přiřazení, with images, points, two scoring strategies, sources and an editor that does not lose or duplicate work.
+**Goal:** Replace the single question type with Choice and Matching, with images, points, two scoring strategies, sources and an editor that does not lose or duplicate work.
 
 **Architecture:** Question types grade answers (`grade`), strategies only weigh the grade. Images go through a new `media.local` provider behind a `media_storage` port; plugins see only asset ids. The API draws the fields common to all types around each plugin's form. Everything works without JavaScript; three small scripts improve it.
 
@@ -26,7 +26,7 @@
 2. Validation fails after files were uploaded in the same form: images stay referenced, and the admin need not choose them again (Task 5).
 3. A file with an image extension that is not an image, a decompression bomb, or a corrupt file: refused with a message and no server error (Task 4).
 4. A quiz published in one language has an image whose alternative text is filled only in another language after a language is added: publication names the problem (Task 5).
-5. "Přepnout" during a run with ticked boxes, pairs and order: answers to unchanged questions come back in every type (Tasks 2, 3).
+5. "Switch" during a run with ticked boxes, pairs and order: answers to unchanged questions come back in every type (Tasks 2, 3).
 
 ---
 
@@ -70,7 +70,7 @@ def test_all_or_nothing(right, wrong, total, earned): ...
 - [ ] **Step 4: Run all tests.** Expected: PASS.
 - [ ] **Step 5: Commit** `feat: question types grade answers, and strategies only weigh them`.
 
-### Task 2: Výběr
+### Task 2: Choice
 
 **Files:**
 - Create: `app/plugins/questions/choice/` (renamed from `choice_single`, git mv), `tests/contracts/test_choice.py`
@@ -109,11 +109,11 @@ def test_same_text_rule_kept (cases from the existing tests)
   In `tests/api/test_play.py`: `test_two_ticks_reach_the_plugin_as_a_list`. In `tests/api/test_public_pages.py`: `test_none_option_all_questions_appears_on_a_standard_question`, `test_none_option_trick_questions_appears_only_on_trick`.
 
 - [ ] **Step 2: Run them.** Expected: FAIL.
-- [ ] **Step 3: Implement.** Move the package. Editor: a checkbox `correct_<row>` per row. `AdminFormError` when `yes_no` has not exactly one correct. Update `helpers.definition` to the new shape; `OPTION_A`, `OPTION_B` stay. Translate "Žádná z odpovědí", "vyberte %(count)s", "Ano", "Ne", in cs, en and uk.
+- [ ] **Step 3: Implement.** Move the package. Editor: a checkbox `correct_<row>` per row. `AdminFormError` when `yes_no` has not exactly one correct. Update `helpers.definition` to the new shape; `OPTION_A`, `OPTION_B` stay. Translate "None of the answers", "select %(count)s", "Yes", "No" in cs, en and uk.
 - [ ] **Step 4: Run all tests, `make messages`.** Expected: PASS.
 - [ ] **Step 5: Commit** `feat: one choice type for one, several or no correct answers, and yes/no`.
 
-### Task 3: Přiřazení
+### Task 3: Matching
 
 **Files:**
 - Create: `app/plugins/questions/matching/`, `app/api/assets/sortable.js`, `tests/contracts/test_matching.py`
@@ -243,7 +243,7 @@ def test_percentage_is_written_for_the_language(client):
 ```
 
 - [ ] **Step 2: Run them.** Expected: FAIL.
-- [ ] **Step 3: Implement.** `editor.js` (loaded only on admin pages): warns through `beforeunload` when a `form.watch-changes` differs from its initial state, disables a submit button after the first click, and unticks other options when "Žádná" is ticked in public forms, so that one is loaded everywhere and checks what is on the page. Add `watch-changes` to the question and settings forms. Replace `percentage_display` use with the filter. Close TD-010 with `make tech-debt-resolve id=TD-010`.
+- [ ] **Step 3: Implement.** `editor.js` (loaded only on admin pages): warns through `beforeunload` when a `form.watch-changes` differs from its initial state, disables a submit button after the first click, and unticks other options when "None of the answers" is ticked in public forms, so that one is loaded everywhere and checks what is on the page. Add `watch-changes` to the question and settings forms. Replace `percentage_display` use with the filter. Close TD-010 with `make tech-debt-resolve id=TD-010`.
 - [ ] **Step 4: Run all tests, `make messages`.** Expected: PASS.
 - [ ] **Step 5: Commit** `feat: full question editor, sources on the result and TD-010`.
 
@@ -256,5 +256,5 @@ def test_percentage_is_written_for_the_language(client):
 - [ ] **Step 1: Update docs.** Roadmap: B2 row as built, B4 keeps external addresses, new B6 with numeric, text fill-in, image upload by participant, `FR-46`; AC-16 and AC-17 stage notes; a note in C on sources in competitions. New `FR` for sources in `question-types.md` plus the `README.md` map. New `AC` for types, images and sources. Settings table in `api-ui.md` gains the new rows. `security.md`: multipart exception, SVG headers. `THIRD_PARTY.md`: Pillow.
 - [ ] **Step 2: Extend `deploy/smoke.sh`:** create a question with an image through the service, confirm its `/media/<id>` answers 200 with `image/webp`, and that a multipart POST to `/` answers 415.
 - [ ] **Step 3: Run the checks.** Dev container: ruff, mypy, pytest, gitleaks, `tech-debt-check`. Host: `make smoke`. Expected: all pass.
-- [ ] **Step 4: Browser walkthrough** on the Compose stack at 360 and 1280 px, light and dark: write the user's quiz question with 3 correct answers in three languages; a trick question; yes/no; pairs; order in both directions by mouse, touch, keyboard and without JavaScript; images in question and answers, including a real phone photo size; result with sources on and off; leaving a changed form; publishing during a run and "Přepnout" keeping answers. No console errors, no horizontal page scroll. Send screenshots to the user.
+- [ ] **Step 4: Browser walkthrough** on the Compose stack at 360 and 1280 px, light and dark: write the user's quiz question with 3 correct answers in three languages; a trick question; yes/no; pairs; order in both directions by mouse, touch, keyboard and without JavaScript; images in question and answers, including a real phone photo size; result with sources on and off; leaving a changed form; publishing during a run and "Switch" keeping answers. No console errors, no horizontal page scroll. Send screenshots to the user.
 - [ ] **Step 5: Commit** `docs: record question types, images and sources`.

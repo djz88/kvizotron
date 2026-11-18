@@ -102,7 +102,7 @@ templates and in the domain catalogue, so neither is possible.
 
 ### Admin
 
-- Global: `Nastavení`, group `look`: name, motto, footer (cs/en/uk), logo, colours **[call]**.
+- Global: `Settings`, group `look`: name, motto, footer (cs/en/uk), logo, colours **[call]**.
   Name, logo and colours are `basic`; motto and footer `advanced` (ADR-0052) **[call]**.
 - Quiz: the quiz's settings in group `look`, each field with "inherited from global" / override and a
   way to delete the override, same pattern as existing quiz overrides **[call]**.
@@ -184,7 +184,7 @@ Asked by the user after the first review of D1; built on the same branch **[user
   max 254 characters **[call]**. It is shown publicly; the form says so **[call]**.
 - Fallback when neither level sets it: the e-mail of the admin account that created the quiz **[user]**. Pages
   without a quiz have no fallback **[call]**.
-- Admin accounts gain an optional e-mail, set on `Správci` **[user, as a consequence]**; its help says it can appear
+- Admin accounts gain an optional e-mail, set on `Admins` **[user, as a consequence]**; its help says it can appear
   in quiz footers **[call]**. Participant e-mails are never shown; this concerns admins only **[docs]**.
 - A quiz remembers who created it (new quiz, duplicate) **[user]**. Existing quizzes get it retroactively **[user]**:
   the admin of the oldest audit event that names the quiz, else the oldest admin account **[call]**.

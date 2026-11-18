@@ -35,7 +35,7 @@ Organisers want a quiz that differs between participants, drawn from questions t
 
 **Model.** `question_bank` and `bank_question` per `data-model.md` **[docs]**, with these corrections **[call]**: a bank question stores the same dictionary a quiz question stores in a draft, including `sources` and `explanation`, plus `tags` as a list of strings. `labels` on the bank and `active` on the question are dropped as unused. `data-model.md` is updated.
 
-**Administration.** New top-level item **Banky**, available to all admins **[docs: shared]**: list, create, rename, delete, and a bank page listing its questions with their tags and complete languages. The bank question editor is the quiz question editor with a tags field, and without points, because a draw row sets those **[user]**. The question's scoring strategy stays on the question **[user]**.
+**Administration.** New top-level item **Banks**, available to all admins **[docs: shared]**: list, create, rename, delete, and a bank page listing its questions with their tags and complete languages. The bank question editor is the quiz question editor with a tags field, and without points, because a draw row sets those **[user]**. The question's scoring strategy stays on the question **[user]**.
 
 **Languages.** All three language fields are shown. A bank question must be complete in at least one language to be saved **[call]**. A language counts as complete when the question type's own publication check passes for it **[call]**.
 
@@ -45,7 +45,7 @@ Organisers want a quiz that differs between participants, drawn from questions t
 
 ## Draw rows
 
-**In the quiz.** The Otázky list holds own questions and draw rows in one order **[user]**. A row: bank, optional single tag **[user]**, count, points per question **[user]**. The row shows "usable 17 of 20".
+**In the quiz.** The Questions list holds own questions and draw rows in one order **[user]**. A row: bank, optional single tag **[user]**, count, points per question **[user]**. The row shows "usable 17 of 20".
 
 **Usable.** A bank question is usable in a quiz when it matches the tag and is complete in all the quiz's languages **[user]**. Unusable questions are left out silently, and the count shows it.
 
@@ -96,7 +96,7 @@ Levels are cumulative **[user]**: `verdict` shows whether each question is right
 
 ## Shuffling options
 
-`shuffle_options` applies to Výběr **[user]**. Yes/no is never shuffled, and "None of the answers" stays last **[call]**. The setting does not touch Přiřazení in any mode, which keeps the rules in `plugins/question-types.md` **[user]**. The order follows from the stored seed and the question id, so a re-render gives the same order **[call]**.
+`shuffle_options` applies to Choice **[user]**. Yes/no is never shuffled, and "None of the answers" stays last **[call]**. The setting does not touch Matching in any mode, which keeps the rules in `plugins/question-types.md` **[user]**. The order follows from the stored seed and the question id, so a re-render gives the same order **[call]**.
 
 ## Navigation
 
@@ -104,13 +104,13 @@ One form holds all selected questions, and answers are submitted together at the
 
 - `step_back`: Back and Next. `step_no_back`: Next only. The page enforces it; it is not a security boundary **[docs: ADR-0035]**.
 - An empty answer may be passed over, as an unanswered question scores zero today **[call]**. The last question's button submits.
-- **Progress** **[user]**: step modes show "Otázka 3 z 12" with a bar; all at once shows "Zodpovězeno 3 z 12" with a bar, only with JavaScript. It is announced to screen readers, and keyboard focus moves to the new question **[call]**.
+- **Progress** **[user]**: step modes show "Question 3 of 12" with a bar; all at once shows "Answered 3 of 12" with a bar, only with JavaScript. It is announced to screen readers, and keyboard focus moves to the new question **[call]**.
 
 Implementation follows `QuizFlowPlugin` in `modules/contracts.md`, narrowed to what these modes need **[call]**.
 
 ## Reveal
 
-**After each question** **[user]**. The sequence is Zkontrolovat, then the reveal, then Další. The page locks the checked answer, including on going back **[user]**. The lock is a page rule only **[user, docs: ADR-0035]**: a new tab or an edited page gets around it, and the server scores what is submitted. That is accepted because this mode is for learning, and Stage C blocks it in competitions. Nothing is stored, and the checked answer still goes in with the final submission.
+**After each question** **[user]**. The sequence is Check the answer, then the reveal, then Next. The page locks the checked answer, including on going back **[user]**. The lock is a page rule only **[user, docs: ADR-0035]**: a new tab or an edited page gets around it, and the server scores what is submitted. That is accepted because this mode is for learning, and Stage C blocks it in competitions. Nothing is stored, and the checked answer still goes in with the final submission.
 
 A new endpoint `POST /a/<attempt>/check` takes the attempt token, a question id and an answer, and returns the reveal fragment. It refuses unless the attempt is in progress, its frozen moment is `after_each`, and the question is in its selection **[call]**. It stores nothing.
 
@@ -120,12 +120,12 @@ A new endpoint `POST /a/<attempt>/check` takes the attempt token, a question id 
 
 | State | Condition |
 |---|---|
-| Správně | earned equals the question's points |
-| Částečně, with points | earned between zero and full |
-| Špatně | earned zero, answered |
-| Bez odpovědi | nothing answered |
+| Answered correctly | earned equals the question's points |
+| Partly correct, with points | earned between zero and full |
+| Wrong | earned zero, answered |
+| No answer | nothing answered |
 
-At level `answers` and above, correct options are marked and the participant's wrong one is marked as theirs. A trick question shows "None of the answers" as correct. Přiřazení shows the correct pairs or order.
+At level `answers` and above, correct options are marked and the participant's wrong one is marked as theirs. A trick question shows "None of the answers" as correct. Matching shows the correct pairs or order.
 
 Colour is never the only signal; each state has text **[call]**.
 

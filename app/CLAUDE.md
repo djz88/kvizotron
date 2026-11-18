@@ -1,19 +1,19 @@
-# Modul: app
+# Module: app
 
-Aplikace. Vlastní kód je jen v podadresářích, tady zůstává Django konfigurace: `settings.py`, `urls.py`, `wsgi.py`.
+The application. Own code lives only in subdirectories; the Django configuration stays here: `settings.py`, `urls.py`, `wsgi.py`.
 
-## Odpovědnosti
+## Responsibilities
 
-- `settings.py`: nastavení z proměnných prostředí, seznam middlewaru, CSP, logování.
-- `urls.py`: skládá veřejné routy, `/admin/` a routy modulů z `KVZ_MODULES`.
-- `wsgi.py`: po startu Djanga spustí `verify_startup()`.
+- `settings.py`: settings from environment variables, the middleware list, CSP, logging.
+- `urls.py`: assembles the public routes, `/admin/` and the module routes from `KVZ_MODULES`.
+- `wsgi.py`: runs `verify_startup()` after Django starts.
 
-## Není tady
+## Not here
 
-- Logika kvízu, modely, view: patří do `domain/` a `api/`.
-- Tajné hodnoty, ani jako výchozí: `settings.py` bez `KVZ_SECRET_KEY` nenastartuje.
+- Quiz logic, models, views: they belong in `domain/` and `api/`.
+- Secret values, not even as defaults: `settings.py` does not start without `KVZ_SECRET_KEY`.
 
-## Směr závislostí
+## Dependency direction
 
 ```
 contracts  ←  kernel  ←  domain  ←  api
@@ -21,4 +21,4 @@ contracts  ←  kernel  ←  domain  ←  api
     └── plugins, providers
 ```
 
-Hlídá `tests/test_layers.py`.
+Enforced by `tests/test_layers.py`.
