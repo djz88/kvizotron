@@ -151,3 +151,108 @@ def test_make_creates_an_empty_list_and_keeps_an_existing_one(tmp_path):
     kept = subprocess.run(make, cwd=tmp_path, capture_output=True, text=True)  # noqa: S607
     assert "už existuje" in kept.stdout
     assert path.read_text() == "alice99\n"
+
+
+ALLOWING = (
+    "alice99\n"
+    "# the owner may be named where GitHub and readers look for them\n"
+    "allow alice99@example.org SECURITY.md .github/CODEOWNERS  # contact\n"
+    "allow @alice99\n"
+)
+
+
+def test_allow_lines_are_exceptions_not_words(tmp_path):
+    path = tmp_path / "private-traces"
+    path.write_text(ALLOWING)
+    assert private_traces.private_words(path) == ["alice99"]
+    assert private_traces.allowances(path) == [
+        private_traces.Allow("alice99@example.org", ("SECURITY.md", ".github/CODEOWNERS")),
+        private_traces.Allow("@alice99", ()),
+    ]
+
+
+def test_an_allowed_text_hides_only_the_hits_inside_it():
+    found = private_traces.pattern(["alice99"])
+    text = "write to ALICE99@example.org, ask @alice99, not alice99 alone"
+    allowed = ["alice99@example.org", "@alice99"]
+    assert private_traces.traces(text, found, allowed) == ["alice99"]
+    assert private_traces.traces("only ALICE99@example.org", found, allowed) == []
+
+
+def test_an_allowance_holds_in_its_files_or_everywhere(tmp_path):
+    repo(tmp_path, ALLOWING)
+    (tmp_path / ".github").mkdir()
+    (tmp_path / ".github" / "CODEOWNERS").write_text("* @alice99 alice99@example.org\n")
+    (tmp_path / "SECURITY.md").write_text("Write to alice99@example.org.\n")
+    (tmp_path / "docs.md").write_text("Owner: @alice99\n")
+    (tmp_path / "plan.md").write_text("Write to alice99@example.org.\n")
+    allowed = run(tmp_path, "files", "SECURITY.md", ".github/CODEOWNERS", "docs.md")
+    assert allowed.returncode == 0, allowed.stderr
+    refused = run(tmp_path, "files", "plan.md")
+    assert refused.returncode == 1
+    assert "plan.md: alice99" in refused.stderr
+    (tmp_path / "SECURITY.md").write_text("Ask alice99 directly.\n")
+    assert run(tmp_path, "files", "SECURITY.md").returncode == 1
+    absolute = run(tmp_path, "files", str(tmp_path / ".github" / "CODEOWNERS"))
+    assert absolute.returncode == 0, absolute.stderr
+
+
+def test_a_push_honours_the_allowances_per_file(tmp_path):
+    repo(tmp_path, ALLOWING)
+    (tmp_path / "a.md").write_text("clean\n")
+    git(tmp_path, "add", "a.md")
+    git(tmp_path, "commit", "-qm", "old")
+    old = git(tmp_path, "rev-parse", "HEAD")
+    (tmp_path / "SECURITY.md").write_text("Write to alice99@example.org.\n")
+    git(tmp_path, "add", "SECURITY.md")
+    git(tmp_path, "commit", "-qm", "contact for @alice99")
+    env = {**os.environ, "PRE_COMMIT_FROM_REF": old, "PRE_COMMIT_TO_REF": "HEAD"}
+    assert run(tmp_path, "push", env=env).returncode == 0
+    (tmp_path / "b.md").write_text("Write to alice99@example.org.\n")
+    git(tmp_path, "add", "b.md")
+    git(tmp_path, "commit", "-qm", "leak")
+    pushed = run(tmp_path, "push", env=env)
+    assert pushed.returncode == 1
+    assert ": alice99" in pushed.stderr
+
+
+def test_a_commit_message_takes_only_the_allowances_for_everywhere(tmp_path):
+    repo(tmp_path, ALLOWING)
+    message = tmp_path / "MSG"
+    message.write_text("docs: thanks @alice99\n")
+    assert run(tmp_path, "message", str(message)).returncode == 0
+    message.write_text("docs: write to alice99@example.org\n")
+    assert run(tmp_path, "message", str(message)).returncode == 1
+
+
+def test_a_bare_allow_line_is_neither_a_word_nor_an_exception(tmp_path):
+    path = tmp_path / "private-traces"
+    path.write_text("alice99\nallow\nallow\t # forgot the text\n")
+    assert private_traces.private_words(path) == ["alice99"]
+    assert private_traces.allowances(path) == []
+
+
+def test_an_allowance_names_one_exact_path(tmp_path):
+    repo(tmp_path, ALLOWING)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "SECURITY.md").write_text("Write to alice99@example.org.\n")
+    (tmp_path / "docs" / "SECURITY.md").write_text("Write to alice99@example.org.\n")
+    assert run(tmp_path, "files", "./SECURITY.md").returncode == 0
+    other = run(tmp_path, "files", "docs/SECURITY.md")
+    assert other.returncode == 1
+    assert "docs/SECURITY.md: alice99" in other.stderr
+
+
+def test_a_push_reads_file_names_only_outside_the_changed_lines(tmp_path):
+    repo(tmp_path, ALLOWING)
+    (tmp_path / "a.md").write_text("clean\n")
+    git(tmp_path, "add", "a.md")
+    git(tmp_path, "commit", "-qm", "old")
+    old = git(tmp_path, "rev-parse", "HEAD")
+    # An added line "++ …" shows in the diff as "+++ …", like a file header.
+    (tmp_path / "SECURITY.md").write_text("++ contact\nWrite to alice99@example.org.\n")
+    git(tmp_path, "add", "SECURITY.md")
+    git(tmp_path, "commit", "-qm", "contact")
+    env = {**os.environ, "PRE_COMMIT_FROM_REF": old, "PRE_COMMIT_TO_REF": "HEAD"}
+    pushed = run(tmp_path, "push", env=env)
+    assert pushed.returncode == 0, pushed.stderr

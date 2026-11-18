@@ -5,6 +5,11 @@ The repository is public, so the personal words (a username, the address of a ho
 an e-mail) never go into it: they live in the untracked `.git/info/private-traces`, one per line,
 `#` starts a comment. The general patterns below need no list.
 
+A line `allow TEXT [PATH...]` in the same list is an exception, not a word: a hit that lies inside
+TEXT passes, in the named files only, or everywhere without a path (commit messages take only
+those). It lets the owner be named where GitHub and readers look for them, such as
+`.github/CODEOWNERS` and `SECURITY.md`, while the bare word is still refused elsewhere.
+
     python3 tools/private_traces.py files PATH...      # pre-commit: the staged files
     python3 tools/private_traces.py message FILE       # commit-msg: the message being written
     python3 tools/private_traces.py push               # pre-push: commits and files not yet pushed
@@ -18,6 +23,8 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 GENERAL = re.compile(
@@ -42,14 +49,48 @@ def list_path(root: Path) -> Path:
     return common / "info" / "private-traces"
 
 
-def private_words(path: Path) -> list[str]:
-    """The developer's own list; a missing file is an empty list."""
+@dataclass(frozen=True)
+class Allow:
+    """A text that may appear in `paths` (all files when empty) although it holds a listed word."""
+
+    text: str
+    paths: tuple[str, ...] = ()
+
+    def holds_in(self, name: str | None) -> bool:
+        return not self.paths or name in self.paths
+
+
+def _entries(path: Path) -> list[str]:
     if not path.is_file():
         return []
     lines = (
         line.split("#", 1)[0].strip() for line in path.read_text(encoding="utf-8").splitlines()
     )
     return [line for line in lines if line]
+
+
+def _is_allow(line: str) -> bool:
+    return line.split()[0] == "allow"
+
+
+def private_words(path: Path) -> list[str]:
+    """The developer's own list; a missing file is an empty list."""
+    return [line for line in _entries(path) if not _is_allow(line)]
+
+
+def allowances(path: Path) -> list[Allow]:
+    """The `allow TEXT [PATH...]` lines of the same list; `allow` without a text is ignored."""
+    found = []
+    for line in _entries(path):
+        if _is_allow(line) and len(line.split()) > 1:
+            text, *paths = line.split()[1:]
+            found.append(Allow(text, tuple(paths)))
+    return found
+
+
+def allowed_in(allows: Sequence[Allow], name: str | None) -> list[str]:
+    """The allowed texts for a file; `None` (a commit message) takes only those for everywhere."""
+    return [allow.text for allow in allows if allow.holds_in(name)]
 
 
 def pattern(words: list[str]) -> re.Pattern[str]:
@@ -59,11 +100,36 @@ def pattern(words: list[str]) -> re.Pattern[str]:
     return re.compile(f"{GENERAL.pattern}|(?i:{personal})", re.MULTILINE)
 
 
-def traces(text: str, found: re.Pattern[str]) -> list[str]:
-    return sorted({match.group(0) for match in found.finditer(text)})
+def traces(text: str, found: re.Pattern[str], allowed: Sequence[str] = ()) -> list[str]:
+    """A hit that lies inside an occurrence of an allowed text (any case) is not a trace."""
+    spans = [
+        (match.start(), match.end())
+        for text_allowed in allowed
+        for match in re.finditer(re.escape(text_allowed), text, re.IGNORECASE)
+    ]
+    return sorted(
+        {
+            match.group(0)
+            for match in found.finditer(text)
+            if not any(start <= match.start() and match.end() <= end for start, end in spans)
+        }
+    )
 
 
-def check_files(paths: list[str], found: re.Pattern[str]) -> list[str]:
+def _relative(name: str) -> str:
+    """The path as the list names it: from the repository root, with `/`."""
+    path = Path(name)
+    if path.is_absolute():
+        try:
+            path = path.resolve().relative_to(Path.cwd().resolve())
+        except ValueError:
+            return path.as_posix()
+    return path.as_posix().removeprefix("./")
+
+
+def check_files(
+    paths: list[str], found: re.Pattern[str], allows: Sequence[Allow] = ()
+) -> list[str]:
     problems = []
     for name in paths:
         path = Path(name)
@@ -72,14 +138,16 @@ def check_files(paths: list[str], found: re.Pattern[str]) -> list[str]:
         data = path.read_bytes()
         if b"\0" in data[:8192]:
             continue
-        problems += [f"{name}: {hit}" for hit in traces(data.decode("utf-8", "ignore"), found)]
+        allowed = allowed_in(allows, _relative(name))
+        text = data.decode("utf-8", "ignore")
+        problems += [f"{name}: {hit}" for hit in traces(text, found, allowed)]
     return problems
 
 
-def check_message(path: str, found: re.Pattern[str]) -> list[str]:
+def check_message(path: str, found: re.Pattern[str], allows: Sequence[Allow] = ()) -> list[str]:
     text = Path(path).read_text(encoding="utf-8", errors="ignore")
     body = "\n".join(line for line in text.splitlines() if not line.startswith("#"))
-    return [f"commit message: {hit}" for hit in traces(body, found)]
+    return [f"commit message: {hit}" for hit in traces(body, found, allowed_in(allows, None))]
 
 
 def _git(*args: str) -> str:
@@ -87,7 +155,30 @@ def _git(*args: str) -> str:
     return done.stdout
 
 
-def check_push(found: re.Pattern[str]) -> list[str]:
+def _added_lines(commit: str) -> dict[str, list[str]]:
+    """The lines a commit adds, by the file they go to.
+
+    A file header is read only between `diff --git` and the first `@@`, so an added line that
+    itself starts with "++" is not taken for one.
+    """
+    added: dict[str, list[str]] = {}
+    name, in_hunk = "", False
+    shown = _git(
+        "-c", "core.quotePath=false", "show", "--format=", "--unified=0", "--no-color", commit
+    )
+    for line in shown.splitlines():
+        if line.startswith("diff --git "):
+            in_hunk = False
+        elif not in_hunk and line.startswith("+++ "):
+            name = line[4:].removeprefix("b/")
+        elif line.startswith("@@"):
+            in_hunk = True
+        elif in_hunk and line.startswith("+"):
+            added.setdefault(name, []).append(line[1:])
+    return added
+
+
+def check_push(found: re.Pattern[str], allows: Sequence[Allow] = ()) -> list[str]:
     """pre-commit gives the range in PRE_COMMIT_FROM_REF and PRE_COMMIT_TO_REF."""
     start, end = os.environ.get("PRE_COMMIT_FROM_REF"), os.environ.get("PRE_COMMIT_TO_REF")
     if not end:
@@ -96,13 +187,11 @@ def check_push(found: re.Pattern[str]) -> list[str]:
     problems = []
     for commit in _git("rev-list", span).split():
         message = _git("log", "-1", "--format=%B", commit)
-        problems += [f"{commit[:7]} message: {hit}" for hit in traces(message, found)]
-        added = "\n".join(
-            line[1:]
-            for line in _git("show", "--format=", "--unified=0", "--no-color", commit).splitlines()
-            if line.startswith("+") and not line.startswith("+++")
-        )
-        problems += [f"{commit[:7]}: {hit}" for hit in traces(added, found)]
+        hits = traces(message, found, allowed_in(allows, None))
+        problems += [f"{commit[:7]} message: {hit}" for hit in hits]
+        for name, lines in _added_lines(commit).items():
+            hits = traces("\n".join(lines), found, allowed_in(allows, name))
+            problems += [f"{commit[:7]}: {hit}" for hit in hits]
     return problems
 
 
@@ -121,13 +210,13 @@ def main(argv: list[str]) -> int:
         return 0
     if not path.is_file():
         print(MISSING.format(path=path), file=sys.stderr)
-    found = pattern(words)
+    found, allows = pattern(words), allowances(path)
     if mode == "files":
-        problems = check_files(rest, found)
+        problems = check_files(rest, found, allows)
     elif mode == "message":
-        problems = check_message(rest[0], found)
+        problems = check_message(rest[0], found, allows)
     else:
-        problems = check_push(found)
+        problems = check_push(found, allows)
     for problem in problems:
         print(f"Local trace: {problem}", file=sys.stderr)
     if problems:
